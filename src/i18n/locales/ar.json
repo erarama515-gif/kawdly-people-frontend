@@ -1,0 +1,1526 @@
+{
+  "brand": {
+    "name": "Kawdly",
+    "suffix": "People"
+  },
+  "nav": {
+    "dashboard": "لوحة التحكم",
+    "people": "الأشخاص",
+    "workforce": "الدوام",
+    "finance": "المالية",
+    "talent": "المواهب",
+    "intelligence": "الذكاء",
+    "settings": "الإعدادات",
+    "organization": "الهيكل التنظيمي",
+    "employees": "الموظفون",
+    "contracts": "العقود",
+    "documents": "المستندات",
+    "attendance": "الحضور والانصراف",
+    "leave": "الإجازات",
+    "payroll": "الرواتب",
+    "compensation": "التعويضات",
+    "loans": "السلف والقروض",
+    "recruitment": "التوظيف",
+    "onboarding": "التهيئة",
+    "performance": "الأداء",
+    "learning": "التعلّم والتطوير",
+    "career": "المسار الوظيفي",
+    "analytics": "التحليلات",
+    "copilot": "مساعد الذكاء الاصطناعي"
+  },
+  "page": {
+    "dashboard": {
+      "description": "نظرة شاملة على ما يحتاج إلى اهتمامك اليوم في المنشأة."
+    },
+    "organization": {
+      "description": "هيكل المنشأة، الإدارات، والفروع."
+    },
+    "employees": {
+      "description": "سجل الموظفين والبيانات الوظيفية."
+    },
+    "contracts": {
+      "description": "عقود العمل وحالاتها وتواريخ التجديد."
+    },
+    "documents": {
+      "description": "مستندات الموظفين وملفاتهم الرسمية."
+    },
+    "attendance": {
+      "description": "سجل الحضور والانصراف اليومي."
+    },
+    "leave": {
+      "description": "طلبات الإجازات والأرصدة المتبقية."
+    },
+    "payroll": {
+      "description": "مسير الرواتب ودورات الصرف."
+    },
+    "compensation": {
+      "description": "الرواتب الأساسية والمكافآت والمزايا."
+    },
+    "loans": {
+      "description": "طلبات السلف والقروض وأحوالتها."
+    },
+    "recruitment": {
+      "description": "الوظائف الشاغرة وخطوات التوظيف."
+    },
+    "onboarding": {
+      "description": "خطط تهيئة الموظفين الجدد."
+    },
+    "performance": {
+      "description": "تقييمات الأداء والمراجعات الدورية."
+    },
+    "learning": {
+      "description": "برامج التعلّم والتطوير."
+    },
+    "career": {
+      "description": "المسارات الوظيفية والترقيات."
+    },
+    "analytics": {
+      "description": "مؤشرات وتحليلات الموارد البشرية."
+    },
+    "copilot": {
+      "description": "مساعد ذكاء اصطناعي للإجابة على أسئلتك."
+    },
+    "settings": {
+      "description": "إعدادات المنشأة وتفضيلات المستخدم."
+    }
+  },
+  "dashboard": {
+    "greeting": "صباح الخير، {{name}}",
+    "role": {
+      "admin": "مدير الموارد البشرية",
+      "manager": "مدير قسم"
+    },
+    "roleSwitch": {
+      "label": "الدور (مؤقت للمراجعة)",
+      "admin": "مدير الموارد البشرية",
+      "manager": "مدير قسم"
+    },
+    "decisions": {
+      "prefix": "أمامك",
+      "suffix": "أمرًا بانتظار قرارك اليوم:",
+      "allClear": "لا شيء يحتاج قرارك اليوم — كل شيء يسير على ما يرام.",
+      "chip": {
+        "leave": "طلبات إجازة",
+        "payroll": "مسير الرواتب",
+        "contracts": "عقود",
+        "leaveFromTeam": "إجازات",
+        "performanceReview": "تقييم أداء"
+      }
+    },
+    "quickActions": {
+      "label": "إجراءات سريعة",
+      "addEmployee": "إضافة موظف",
+      "runPayroll": "تشغيل المسير",
+      "publishJob": "نشر وظيفة",
+      "requestLeave": "طلب إجازة لعضو",
+      "manualAttendance": "تسجيل حضور يدوي",
+      "startReview": "بدء تقييم أداء"
+    },
+    "queue": {
+      "title": "بانتظار قرارك",
+      "urgent": "عاجل",
+      "footerCount": "أمرًا بانتظار قرارك اليوم",
+      "viewAll": "عرض الكل",
+      "empty": {
+        "headline": "لا شيء ينتظر قرارك الآن",
+        "detail": "كل الطلبات اتُّخذ فيها قرار — عمل نظيف"
+      },
+      "leave": {
+        "caption": "طلبات إجازة",
+        "description": "بانتظار موافقتك",
+        "action": "اعتماد"
+      },
+      "payroll": {
+        "caption": "تشغيل المسير",
+        "description": "إجمالي {{total}}M · لـ {{employees}} موظف",
+        "action": "تشغيل المسير"
+      },
+      "contracts": {
+        "caption": "عقود تنتهي قريباً",
+        "description": "بانتظار قرار التجديد",
+        "action": "تجديد العقد"
+      },
+      "leaveFromTeam": {
+        "caption": "إجازات أعضاء فريقك",
+        "description": "بانتظار موافقتك",
+        "action": "اعتماد"
+      },
+      "performanceReview": {
+        "caption": "تقييم أداء مستحق",
+        "description": "موظف واحد بانتظار مراجعته",
+        "action": "بدء التقييم"
+      }
+    },
+    "kpi": {
+      "employees": {
+        "caption": "الموظفون",
+        "delta": "+12",
+        "deltaSuffix": "هذا الشهر"
+      },
+      "attendanceToday": {
+        "caption": "حضور اليوم",
+        "delta": "-0.4%",
+        "deltaSuffix": "عن أمس"
+      },
+      "payrollCostMTD": {
+        "caption": "مسير الرواتب (MTD)",
+        "delta": "+0.5M",
+        "deltaSuffix": "عن الأسبوع الماضي"
+      },
+      "openPositions": {
+        "caption": "الوظائف الشاغرة",
+        "delta": "+3",
+        "deltaSuffix": "هذا الأسبوع"
+      },
+      "teamMembers": {
+        "caption": "أعضاء الفريق",
+        "delta": "+1",
+        "deltaSuffix": "هذا الشهر"
+      },
+      "teamAttendanceToday": {
+        "caption": "حضور الفريق اليوم",
+        "delta": "+1.1%",
+        "deltaSuffix": "عن أمس"
+      },
+      "pendingLeave": {
+        "caption": "إجازات معلقة",
+        "delta": "بلا تغيير"
+      },
+      "reviewsDue": {
+        "caption": "تقييمات مستحقة",
+        "delta": "خلال 7 أيام"
+      },
+      "updated": "تم التحديث · الآن",
+      "updatedAt": "تم التحديث · {{time}}",
+      "refresh": "تحديث لوحة المعلومات"
+    },
+    "trends": {
+      "title": "آخر 7 أيام",
+      "headcount": "عدد الموظفين",
+      "attendance": "الحضور %",
+      "payroll": "مسير الرواتب (MTD)",
+      "openRoles": "الوظائف الشاغرة"
+    },
+    "alerts": {
+      "payrollBefore": "يقفل مسير الرواتب الجمعة 17:00 — اعتمد ",
+      "payrollItem": " عنصرًا المتبقي.",
+      "reviewCycle": "تبدأ دورة تقييم الأداء الأسبوع القادم.",
+      "dismiss": "إغلاق التنبيه",
+      "loadFailed": "تعذّر تحميل التنبيهات."
+    },
+    "error": {
+      "title": "تعذّر تحميل بيانات لوحة المعلومات",
+      "description": "تعذّر تحميل أحدث الأرقام الآن. تحقّق من اتصالك وحاول مرة أخرى.",
+      "retry": "إعادة المحاولة"
+    },
+    "stale": {
+      "retry": "فشل التحديث — إعادة المحاولة"
+    },
+    "attendanceCard": {
+      "title": "حضور اليوم",
+      "present": "حاضر",
+      "absent": "غائب",
+      "late": "متأخر",
+      "today": "اليوم",
+      "earlierDays": "الأيام السابقة",
+      "ofTotal": "من {{count}}"
+    },
+    "upcomingCard": {
+      "title": "قريباً",
+      "contract": "عقد",
+      "birthday": "عيد ميلاد",
+      "contractRenewals": "تجديد العقود",
+      "birthdays": "أعياد الميلاد"
+    },
+    "departmentsCard": {
+      "share": "حصة {{total}} موظف في أكبر أربع إدارات",
+      "viewAll": "عرض كل الإدارات"
+    },
+    "footer": {
+      "copyright": "© 2026 Kawdly People",
+      "privacy": "الخصوصية",
+      "support": "الدعم"
+    },
+    "rosterCard": {
+      "title": "فريقك",
+      "active": "نشط",
+      "onLeave": "في إجازة"
+    }
+  },
+  "topbar": {
+    "search": "بحث",
+    "searchPlaceholder": "ابحث أو انتقل إلى…",
+    "notifications": "الإشعارات",
+    "openMenu": "فتح القائمة",
+    "closeMenu": "إغلاق القائمة"
+  },
+  "notifications": {
+    "title": "الإشعارات",
+    "viewAll": "عرض الكل",
+    "count": "3",
+    "items": [
+      {
+        "title": "طلب إجازة بانتظار الموافقة",
+        "description": "أحمد علي قدّم طلب إجازة سنوية لمدة 5 أيام.",
+        "time": "منذ ساعتين"
+      },
+      {
+        "title": "انتهاء عقد قريباً",
+        "description": "عقد 3 موظفين ينتهي خلال 30 يوماً.",
+        "time": "منذ 5 ساعات"
+      },
+      {
+        "title": "مسير الرواتب جاهز",
+        "description": "مسير رواتب سبتمبر جاهز للمراجعة.",
+        "time": "أمس"
+      }
+    ]
+  },
+  "userMenu": {
+    "profile": "الملف الشخصي",
+    "language": "اللغة",
+    "languageArabic": "العربية",
+    "languageEnglish": "English",
+    "logout": "تسجيل الخروج"
+  },
+  "sidebar": {
+    "collapse": "طي القائمة",
+    "expand": "توسيع القائمة",
+    "openGroup": "فتح قائمة {{group}}",
+    "primaryNav": "التنقل الرئيسي",
+    "groupNav": "أقسام النظام"
+  },
+  "palette": {
+    "title": "البحث السريع",
+    "placeholder": "ابحث عن صفحة أو موظف…",
+    "groups": {
+      "pages": "الصفحات",
+      "employees": "الموظفون"
+    },
+    "empty": "لا توجد نتائج",
+    "hint": "استخدم مفاتيح الأسهم للتنقل و Enter للفتح"
+  },
+  "emptyState": {
+    "comingSoonTitle": "قريباً",
+    "comingSoonDescription": "هذه الصفحة قيد الإنشاء. ستتوفر في إحدى المراحل القادمة."
+  },
+  "notFound": {
+    "title": "الصفحة غير موجودة",
+    "description": "الرابط الذي طلبته غير متاح أو تم نقله.",
+    "backToDashboard": "العودة إلى لوحة التحكم"
+  },
+  "breadcrumb": {
+    "label": "مسار التنقل"
+  },
+  "common": {
+    "save": "حفظ",
+    "saving": "جارٍ الحفظ…",
+    "cancel": "إلغاء",
+    "delete": "حذف",
+    "deleting": "جارٍ الحذف…",
+    "edit": "تعديل",
+    "add": "إضافة",
+    "confirm": "تأكيد",
+    "loading": "جارٍ التحميل…",
+    "error": "حدث خطأ ما.",
+    "retry": "إعادة المحاولة",
+    "actions": "الإجراءات",
+    "selectPlaceholder": "— بدون —",
+    "requiredField": "هذا الحقل مطلوب.",
+    "invalidEmail": "أدخل بريدًا إلكترونيًا صحيحًا.",
+    "yes": "نعم",
+    "no": "لا",
+    "pagination": {
+      "previous": "الصفحة السابقة",
+      "next": "الصفحة التالية",
+      "page": "صفحة {{page}} من {{lastPage}}",
+      "range": "عرض {{from}}–{{to}} من {{total}}"
+    }
+  },
+  "employees": {
+    "title": "الموظفون",
+    "addEmployee": "إضافة موظف",
+    "editEmployee": "تعديل موظف",
+    "searchPlaceholder": "بحث عن موظفين…",
+    "emptySearch": "لا يوجد موظفون مطابقون للبحث.",
+    "stat": {
+      "totalEmployees": "إجمالي الموظفين",
+      "active": "نشط",
+      "onLeave": "في إجازة",
+      "newThisMonth": "جدد هذا الشهر"
+    },
+    "filter": {
+      "all": "الكل",
+      "active": "نشط",
+      "onLeave": "في إجازة",
+      "suspended": "موقوف",
+      "terminated": "منتهي",
+      "resigned": "مستقيل"
+    },
+    "table": {
+      "employee": "الموظف",
+      "id": "الرقم",
+      "department": "القسم",
+      "position": "المسمى الوظيفي",
+      "status": "الحالة",
+      "joined": "تاريخ الانضمام",
+      "actions": "الإجراءات"
+    },
+    "status": {
+      "active": "نشط",
+      "on_leave": "في إجازة",
+      "suspended": "موقوف",
+      "terminated": "منتهي",
+      "resigned": "مستقيل"
+    },
+    "form": {
+      "firstName": "الاسم الأول",
+      "lastName": "اسم العائلة",
+      "firstNameAr": "الاسم الأول (عربي)",
+      "lastNameAr": "اسم العائلة (عربي)",
+      "employeeNumber": "الرقم الوظيفي",
+      "email": "البريد الإلكتروني",
+      "phone": "الهاتف",
+      "branch": "الفرع",
+      "department": "القسم",
+      "jobPosition": "المسمى الوظيفي",
+      "jobGrade": "الدرجة الوظيفية",
+      "jobLevel": "المستوى الوظيفي",
+      "employmentType": "نوع التوظيف",
+      "workLocation": "موقع العمل",
+      "gender": "الجنس",
+      "maritalStatus": "الحالة الاجتماعية",
+      "joiningDate": "تاريخ الانضمام",
+      "status": "الحالة",
+      "employmentType.full_time": "دوام كامل",
+      "employmentType.part_time": "دوام جزئي",
+      "employmentType.contract": "عقد",
+      "employmentType.intern": "متدرب",
+      "workLocation.office": "المكتب",
+      "workLocation.remote": "عن بُعد",
+      "workLocation.hybrid": "مختلط",
+      "gender.male": "ذكر",
+      "gender.female": "أنثى",
+      "maritalStatus.single": "أعزب",
+      "maritalStatus.married": "متزوج",
+      "maritalStatus.divorced": "مطلق",
+      "maritalStatus.widowed": "أرمل"
+    },
+    "deleteConfirm": {
+      "title": "حذف الموظف؟",
+      "description": "سيؤدي هذا إلى إزالة {{name}} نهائياً من سجلات الموظفين. لا يمكن التراجع عن هذا الإجراء."
+    },
+    "editAction": "تعديل الموظف",
+    "deleteAction": "حذف الموظف",
+    "loadFailed": "تعذّر تحميل بيانات الموظفين.",
+    "createFailed": "تعذّر إنشاء الموظف.",
+    "updateFailed": "تعذّر تحديث الموظف.",
+    "deleteFailed": "تعذّر حذف الموظف."
+  },
+  "contracts": {
+    "title": "العقود",
+    "newContract": "عقد جديد",
+    "addContract": "إضافة عقد",
+    "editContract": "تعديل العقد",
+    "searchPlaceholder": "بحث في العقود…",
+    "emptySearch": "لا توجد عقود تطابق بحثك.",
+    "loadFailed": "فشل تحميل العقود.",
+    "editAction": "تعديل العقد",
+    "deleteAction": "حذف العقد",
+    "stat": {
+      "total": "إجمالي العقود",
+      "active": "نشط",
+      "expiringSoon": "ينتهي قريباً",
+      "expired": "منتهي",
+      "draft": "مسودة"
+    },
+    "filter": {
+      "all": "الكل",
+      "active": "نشط",
+      "expired": "منتهي",
+      "draft": "مسودة",
+      "terminated": "مُنهى"
+    },
+    "type": {
+      "initial": "ابتدائي",
+      "renewal": "تجديد",
+      "amendment": "تعديل"
+    },
+    "status": {
+      "draft": "مسودة",
+      "active": "نشط",
+      "expired": "منتهي",
+      "terminated": "مُنهى"
+    },
+    "table": {
+      "employee": "الموظف",
+      "type": "النوع",
+      "startDate": "تاريخ البدء",
+      "endDate": "تاريخ الانتهاء",
+      "status": "الحالة",
+      "daysLeft": "الأيام المتبقية",
+      "salary": "الراتب الأساسي",
+      "actions": "الإجراءات"
+    },
+    "form": {
+      "employee": "الموظف",
+      "type": "نوع العقد",
+      "status": "الحالة",
+      "startDate": "تاريخ البدء",
+      "endDate": "تاريخ الانتهاء",
+      "basicSalary": "الراتب الأساسي",
+      "probationMonths": "أشهر التجربة",
+      "signedAt": "تاريخ التوقيع",
+      "terms": "الشروط والأحكام"
+    },
+    "deleteConfirm": {
+      "title": "حذف العقد",
+      "description": "هل أنت متأكد من حذف عقد {{name}}؟ لا يمكن التراجع عن هذا الإجراء."
+    },
+    "alert": {
+      "expiringSoon_one": "{{count}} عقد ينتهي قريباً",
+      "expiringSoon_other": "{{count}} عقود تنتهي قريباً",
+      "urgentAttention_one": "{{count}} يحتاج اهتمام فوري — ينتهي خلال 7 أيام.",
+      "urgentAttention_other": "{{count}} تحتاج اهتماماً فورياً — تنتهي خلال 7 أيام.",
+      "reviewAndRenew": "راجع العقود وجدّدها قبل انتهائها."
+    },
+    "view": "عرض",
+    "renew": "تجديد"
+  },
+  "documents": {
+    "title": "المستندات",
+    "uploadDocument": "رفع مستند",
+    "addDocument": "إضافة مستند",
+    "editDocument": "تعديل المستند",
+    "searchPlaceholder": "البحث في المستندات...",
+    "loadFailed": "فشل تحميل المستندات.",
+    "emptySearch": "لا توجد مستندات.",
+    "editAction": "تعديل المستند",
+    "deleteAction": "حذف المستند",
+    "stat": {
+      "totalDocuments": "إجمالي المستندات",
+      "valid": "سارية",
+      "expiringSoon": "ينتهي قريباً",
+      "expired": "منتهي",
+      "pendingRenewal": "بانتظار التجديد",
+      "templates": "النماذج"
+    },
+    "table": {
+      "employee": "الموظف",
+      "documentType": "نوع المستند",
+      "documentNumber": "رقم المستند",
+      "issueDate": "تاريخ الإصدار",
+      "expiryDate": "تاريخ الانتهاء",
+      "status": "الحالة",
+      "actions": "الإجراءات"
+    },
+    "statusOptions": {
+      "valid": "ساري",
+      "expired": "منتهي",
+      "pending_renewal": "بانتظار التجديد",
+      "expiring_soon": "ينتهي قريباً"
+    },
+    "filter": {
+      "all": "الكل"
+    },
+    "form": {
+      "employee": "الموظف",
+      "documentType": "نوع المستند",
+      "title": "العنوان",
+      "filePath": "مسار الملف",
+      "fileName": "اسم الملف",
+      "mimeType": "نوع MIME",
+      "fileSize": "حجم الملف (بايت)",
+      "issueDate": "تاريخ الإصدار",
+      "expiryDate": "تاريخ الانتهاء",
+      "documentNumber": "رقم المستند",
+      "notes": "ملاحظات",
+      "statusLabel": "الحالة"
+    },
+    "deleteConfirm": {
+      "title": "حذف المستند",
+      "description": "حذف \"{{title}}\" للموظف {{name}}؟ لا يمكن التراجع عن هذا الإجراء."
+    }
+  },
+  "attendance": {
+    "title": "الحضور والانصراف",
+    "manualCheckIn": "تسجيل حضور يدوي",
+    "addRecord": "إضافة سجل",
+    "editRecord": "تعديل السجل",
+    "searchPlaceholder": "بحث عن موظف…",
+    "emptySearch": "لا توجد سجلات حضور تطابق بحثك.",
+    "loadFailed": "تعذّر تحميل سجلات الحضور.",
+    "editAction": "تعديل السجل",
+    "deleteAction": "حذف السجل",
+    "filter": {
+      "all": "الكل"
+    },
+    "stat": {
+      "total": "إجمالي السجلات",
+      "present": "حاضر",
+      "absent": "غائب",
+      "late": "متأخر",
+      "onLeave": "في إجازة"
+    },
+    "table": {
+      "employee": "الموظف",
+      "department": "القسم",
+      "date": "التاريخ",
+      "checkIn": "الحضور",
+      "checkOut": "الانصراف",
+      "hours": "الساعات",
+      "late": "التأخير",
+      "status": "الحالة",
+      "actions": "الإجراءات"
+    },
+    "status": {
+      "present": "حاضر",
+      "absent": "غائب",
+      "late": "متأخر",
+      "leave": "في إجازة",
+      "holiday": "عطلة",
+      "weekend": "عطلة أسبوعية",
+      "half_day": "نصف يوم"
+    },
+    "form": {
+      "employee": "الموظف",
+      "date": "التاريخ",
+      "status": "الحالة",
+      "checkIn": "وقت الحضور",
+      "checkOut": "وقت الانصراف",
+      "lateMinutes": "دقائق التأخير",
+      "workScheduleId": "رقم جدول العمل",
+      "notes": "ملاحظات"
+    },
+    "deleteConfirm": {
+      "title": "حذف سجل الحضور",
+      "description": "هل أنت متأكد من حذف سجل الحضور لـ \"{{name}}\" بتاريخ {{date}}؟ لا يمكن التراجع عن هذا الإجراء."
+    }
+  },
+  "leave": {
+    "title": "إدارة الإجازات",
+    "newLeaveRequest": "طلب إجازة جديد",
+    "addLeaveRequest": "إضافة طلب إجازة",
+    "showing": "عرض {{count}} طلب",
+    "searchPlaceholder": "بحث بالاسم…",
+    "emptySearch": "لا توجد طلبات إجازة تطابق بحثك.",
+    "loadFailed": "تعذّر تحميل طلبات الإجازة.",
+    "editAction": "تعديل طلب الإجازة",
+    "deleteAction": "حذف طلب الإجازة",
+    "filter": {
+      "all": "الكل",
+      "pending": "معلق",
+      "approved": "موافق عليه",
+      "rejected": "مرفوض"
+    },
+    "stat": {
+      "total": "إجمالي الطلبات",
+      "pending": "معلقة",
+      "approved": "موافق عليها",
+      "pendingRequests": "طلبات معلقة",
+      "approvedToday": "موافق عليها اليوم",
+      "onLeaveNow": "في إجازة حالياً",
+      "balanceUsed": "الرصيد المستخدم"
+    },
+    "table": {
+      "employee": "الموظف",
+      "leaveType": "نوع الإجازة",
+      "from": "من",
+      "to": "إلى",
+      "days": "الأيام",
+      "status": "الحالة",
+      "actions": "الإجراءات"
+    },
+    "type": {
+      "annual": "سنوية",
+      "sick": "مرضية",
+      "emergency": "طارئة",
+      "unpaid": "بدون راتب",
+      "maternity": "أمومة"
+    },
+    "status": {
+      "pending": "معلق",
+      "approved": "موافق عليه",
+      "rejected": "مرفوض",
+      "cancelled": "ملغى"
+    },
+    "form": {
+      "addTitle": "إضافة طلب إجازة",
+      "editTitle": "تعديل طلب الإجازة",
+      "employee": "الموظف",
+      "leaveType": "نوع الإجازة",
+      "startDate": "تاريخ البداية",
+      "endDate": "تاريخ النهاية",
+      "days": "الأيام",
+      "reason": "السبب",
+      "status": "الحالة"
+    },
+    "deleteConfirm": {
+      "title": "حذف طلب الإجازة",
+      "description": "هل أنت متأكد من حذف طلب الإجازة لـ \"{{name}}\"؟ لا يمكن التراجع عن هذا الإجراء."
+    },
+    "approve": "موافقة",
+    "reject": "رفض"
+  },
+  "payroll": {
+    "title": "الرواتب",
+    "run": {
+      "sectionTitle": "مسيرات الرواتب",
+      "add": "مسيرة رواتب جديدة",
+      "addTitle": "إضافة مسيرة رواتب",
+      "editTitle": "تعديل مسيرة الرواتب",
+      "allStatuses": "جميع الحالات",
+      "filterByStatus": "تصفية حسب الحالة",
+      "selectRun": "اختر مسيرة رواتب",
+      "empty": "لا توجد مسيرات رواتب.",
+      "loadFailed": "فشل تحميل مسيرات الرواتب.",
+      "editAction": "تعديل مسيرة الرواتب",
+      "deleteAction": "حذف مسيرة الرواتب",
+      "deleteTitle": "حذف مسيرة الرواتب",
+      "deleteDescription": "هل أنت متأكد من حذف مسيرة الرواتب لـ \"{{period}}\"؟ لا يمكن التراجع عن هذا الإجراء.",
+      "stat": {
+        "total": "إجمالي المسيرات",
+        "draft": "مسودة",
+        "reviewing": "قيد المراجعة"
+      },
+      "table": {
+        "period": "الفترة",
+        "status": "الحالة",
+        "gross": "الإجمالي",
+        "deductions": "الاستقطاعات",
+        "net": "الصافي",
+        "employees": "الموظفون",
+        "locked": "مقفل"
+      },
+      "form": {
+        "periodMonth": "شهر الفترة",
+        "periodYear": "سنة الفترة",
+        "status": "الحالة",
+        "totalGross": "إجمالي الرواتب",
+        "totalDeductions": "إجمالي الاستقطاعات",
+        "totalNet": "صافي الرواتب",
+        "employeeCount": "عدد الموظفين",
+        "notes": "ملاحظات",
+        "isLocked": "مقفل"
+      }
+    },
+    "runStatusOptions": {
+      "draft": "مسودة",
+      "calculating": "جارٍ الحساب",
+      "calculated": "محسوب",
+      "reviewing": "قيد المراجعة",
+      "approved": "معتمد",
+      "posted": "منشور",
+      "paid": "مدفوع"
+    },
+    "payslip": {
+      "sectionTitle": "قسائم الرواتب",
+      "add": "إضافة قسيمة",
+      "addTitle": "إضافة قسيمة راتب",
+      "editTitle": "تعديل قسيمة الراتب",
+      "allStatuses": "جميع الحالات",
+      "filterByStatus": "تصفية حسب الحالة",
+      "selectRunHint": "اختر مسيرة رواتب من الأعلى لعرض قسائمها.",
+      "empty": "لا توجد قسائم لهذه المسيرة.",
+      "loadFailed": "فشل تحميل قسائم الرواتب.",
+      "editAction": "تعديل القسيمة",
+      "deleteAction": "حذف القسيمة",
+      "deleteTitle": "حذف قسيمة الراتب",
+      "deleteDescription": "هل أنت متأكد من حذف قسيمة الراتب لـ \"{{name}}\"؟ لا يمكن التراجع عن هذا الإجراء.",
+      "table": {
+        "employee": "الموظف",
+        "basic": "الراتب الأساسي",
+        "gross": "الإجمالي",
+        "earnings": "المكتسبات",
+        "deductions": "الاستقطاعات",
+        "net": "الصافي",
+        "status": "الحالة"
+      },
+      "form": {
+        "employee": "الموظف",
+        "status": "الحالة",
+        "basicSalary": "الراتب الأساسي",
+        "grossSalary": "الراتب الإجمالي",
+        "totalEarnings": "إجمالي المكتسبات",
+        "totalDeductions": "إجمالي الاستقطاعات",
+        "netSalary": "صافي الراتب",
+        "workingDays": "أيام العمل",
+        "presentDays": "أيام الحضور",
+        "absentDays": "أيام الغياب",
+        "overtimeHours": "ساعات الإضافي",
+        "overtimeAmount": "بدل الإضافي"
+      }
+    },
+    "payslipStatusOptions": {
+      "draft": "مسودة",
+      "finalized": "معتمد",
+      "paid": "مدفوع"
+    }
+  },
+  "compensation": {
+    "title": "التعويضات والمزايا",
+    "loadFailed": "فشل تحميل البيانات.",
+    "stat": {
+      "totalStructures": "إجمالي الهياكل",
+      "activeStructures": "الهياكل النشطة",
+      "totalComponents": "إجمالي المكونات"
+    },
+    "form": {
+      "name": "الاسم",
+      "description": "الوصف",
+      "isDefault": "افتراضي",
+      "isActive": "نشط",
+      "structure": "هيكل الرواتب",
+      "code": "الرمز",
+      "type": "النوع",
+      "calculationType": "طريقة الحساب",
+      "percentageOf": "نسبة من",
+      "percentageOfNone": "— بلا (مبلغ ثابت) —",
+      "defaultAmount": "المبلغ الافتراضي",
+      "sortOrder": "ترتيب الفرز",
+      "isTaxable": "خاضع للضريبة",
+      "isVariable": "متغير"
+    },
+    "typeOptions": {
+      "earning": "استحقاق",
+      "deduction": "خصم"
+    },
+    "calculationTypeOptions": {
+      "fixed": "ثابت",
+      "percentage": "نسبة مئوية",
+      "formula": "صيغة"
+    },
+    "structure": {
+      "title": "هياكل الرواتب",
+      "add": "إضافة هيكل",
+      "addTitle": "إضافة هيكل راتب",
+      "editTitle": "تعديل هيكل الراتب",
+      "searchPlaceholder": "بحث في الهياكل…",
+      "empty": "لا توجد هياكل رواتب.",
+      "col": {
+        "name": "الاسم",
+        "description": "الوصف",
+        "isDefault": "افتراضي",
+        "isActive": "نشط",
+        "actions": "الإجراءات"
+      },
+      "deleteConfirm": {
+        "title": "حذف هيكل الراتب",
+        "description": "حذف \"{{name}}\"؟ سيتم حذف جميع المكونات المرتبطة بهذا الهيكل أيضاً."
+      }
+    },
+    "component": {
+      "title": "مكونات الراتب",
+      "add": "إضافة مكوّن",
+      "addTitle": "إضافة مكوّن راتب",
+      "editTitle": "تعديل مكوّن الراتب",
+      "searchPlaceholder": "بحث في المكونات…",
+      "empty": "لا توجد مكونات راتب.",
+      "filterAll": "جميع الأنواع",
+      "filterAllStructures": "جميع الهياكل",
+      "col": {
+        "name": "الاسم",
+        "structure": "الهيكل",
+        "type": "النوع",
+        "code": "الرمز",
+        "calcType": "طريقة الحساب",
+        "amount": "المبلغ الافتراضي",
+        "taxable": "خاضع للضريبة",
+        "variable": "متغير",
+        "actions": "الإجراءات"
+      },
+      "deleteConfirm": {
+        "title": "حذف مكوّن الراتب",
+        "description": "حذف \"{{name}}\"؟ لا يمكن التراجع عن هذا الإجراء."
+      }
+    }
+  },
+  "loans": {
+    "title": "السلف والقروض",
+    "newLoanRequest": "طلب سلفة جديد",
+    "addLoan": "إضافة قرض",
+    "editLoan": "تعديل القرض",
+    "showing": "عرض {{count}} سجل",
+    "searchPlaceholder": "بحث عن موظف…",
+    "loadFailed": "فشل تحميل القروض.",
+    "emptySearch": "لا توجد قروض تطابق بحثك.",
+    "editAction": "تعديل القرض",
+    "deleteAction": "حذف القرض",
+    "stat": {
+      "activeLoans": "قروض نشطة",
+      "totalDisbursed": "إجمالي المصروف",
+      "monthlyCollection": "التحصيل الشهري",
+      "pendingRequests": "طلبات معلقة",
+      "totalLoans": "إجمالي القروض",
+      "pendingLoans": "القروض المعلقة"
+    },
+    "status": {
+      "pending": "معلق",
+      "active": "نشط",
+      "completed": "مكتمل",
+      "cancelled": "ملغي"
+    },
+    "filter": {
+      "all": "الكل",
+      "pending": "معلق",
+      "active": "نشط",
+      "completed": "مكتمل",
+      "cancelled": "ملغي"
+    },
+    "form": {
+      "employee": "الموظف",
+      "type": "نوع القرض",
+      "typeOptions": {
+        "loan": "قرض",
+        "advance": "سلفة"
+      },
+      "status": "الحالة",
+      "amount": "المبلغ",
+      "startDate": "تاريخ البدء",
+      "installmentAmount": "مبلغ القسط",
+      "totalInstallments": "إجمالي الأقساط",
+      "paidInstallments": "الأقساط المدفوعة",
+      "remainingAmount": "المبلغ المتبقي",
+      "reason": "السبب"
+    },
+    "table": {
+      "employee": "الموظف",
+      "type": "النوع",
+      "amount": "المبلغ",
+      "installment": "القسط",
+      "progress": "التقدم",
+      "remaining": "المتبقي",
+      "status": "الحالة",
+      "actions": "الإجراءات"
+    },
+    "deleteConfirm": {
+      "title": "حذف القرض",
+      "description": "هل أنت متأكد من حذف قرض {{name}}؟ لا يمكن التراجع عن هذا الإجراء."
+    },
+    "perMonth": "/ شهر",
+    "installments": "{{paid}} / {{total}} قسط"
+  },
+  "recruitment": {
+    "title": "التوظيف",
+    "postNewJob": "نشر وظيفة جديدة",
+    "hiringPipeline": "مراحل التوظيف",
+    "addJobPosting": "إضافة وظيفة",
+    "searchPlaceholder": "بحث في الوظائف…",
+    "emptySearch": "لا توجد وظائف تطابق بحثك.",
+    "loadFailed": "تعذّر تحميل الوظائف.",
+    "editAction": "تعديل الوظيفة",
+    "deleteAction": "حذف الوظيفة",
+    "filter": {
+      "all": "الكل",
+      "open": "مفتوح",
+      "closed": "مغلق",
+      "draft": "مسودة"
+    },
+    "stat": {
+      "openPositions": "وظائف شاغرة",
+      "totalApplicants": "إجمالي المتقدمين",
+      "inInterview": "في المقابلات",
+      "offersSent": "عروض مُرسلة",
+      "totalPostings": "إجمالي الوظائف",
+      "openPostings": "مفتوحة",
+      "closedPostings": "مغلقة"
+    },
+    "table": {
+      "position": "المسمى الوظيفي",
+      "department": "القسم",
+      "location": "الموقع",
+      "applicants": "المتقدمون",
+      "posted": "تاريخ النشر",
+      "status": "الحالة",
+      "employmentType": "النوع",
+      "actions": "الإجراءات"
+    },
+    "status": {
+      "open": "مفتوح",
+      "closed": "مغلق",
+      "draft": "مسودة"
+    },
+    "deleteConfirm": {
+      "title": "حذف الوظيفة",
+      "description": "هل أنت متأكد من حذف \"{{title}}\"؟ لا يمكن التراجع عن هذا الإجراء."
+    },
+    "form": {
+      "addJobPosting": "إضافة وظيفة",
+      "editJobPosting": "تعديل الوظيفة",
+      "title": "المسمى الوظيفي",
+      "department": "القسم (الطلب الوظيفي)",
+      "description": "الوصف الوظيفي",
+      "requirements": "المتطلبات",
+      "skills": "المهارات المطلوبة",
+      "skillsPlaceholder": "مثال: TypeScript، React، Node.js",
+      "location": "الموقع",
+      "employmentType": "نوع التوظيف",
+      "experienceMin": "الحد الأدنى للخبرة (سنوات)",
+      "experienceMax": "الحد الأقصى للخبرة (سنوات)",
+      "salaryMin": "الحد الأدنى للراتب",
+      "salaryMax": "الحد الأقصى للراتب",
+      "educationLevel": "المستوى التعليمي",
+      "publishedAt": "تاريخ النشر",
+      "expiresAt": "تاريخ الإغلاق",
+      "isInternal": "داخلي فقط",
+      "isPublished": "منشور",
+      "yes": "نعم",
+      "no": "لا",
+      "employmentTypeOptions": {
+        "full_time": "دوام كامل",
+        "part_time": "دوام جزئي",
+        "contract": "عقد",
+        "intern": "تدريب"
+      }
+    },
+    "view": "عرض"
+  },
+  "onboarding": {
+    "title": "التهيئة",
+    "newOnboardingPlan": "خطة تهيئة جديدة",
+    "stat": {
+      "inProgress": "قيد التنفيذ",
+      "completedThisMonth": "مكتمل هذا الشهر",
+      "overdueTasks": "مهام متأخرة"
+    },
+    "activeOnboarding": "التهيئة النشطة",
+    "employeesCount": "{{count}} موظف",
+    "status": {
+      "in_progress": "قيد التنفيذ",
+      "completed": "مكتمل",
+      "overdue": "متأخر",
+      "cancelled": "ملغى"
+    },
+    "tasksOf": "من",
+    "tasks": "مهمة",
+    "startDate": "تاريخ البدء",
+    "instanceStatusOptions": {
+      "in_progress": "قيد التنفيذ",
+      "completed": "مكتمل",
+      "cancelled": "ملغى"
+    },
+    "typeOptions": {
+      "onboarding": "تهيئة",
+      "offboarding": "إنهاء خدمة"
+    },
+    "taskStatusOptions": {
+      "pending": "معلق",
+      "in_progress": "قيد التنفيذ",
+      "completed": "مكتمل",
+      "skipped": "تم التخطي"
+    },
+    "form": {
+      "addTitle": "نموذج تهيئة جديد",
+      "editTitle": "تعديل نموذج التهيئة",
+      "employee": "الموظف",
+      "template": "القالب",
+      "type": "النوع",
+      "status": "الحالة",
+      "startedAt": "تاريخ البدء",
+      "completedAt": "تاريخ الاكتمال"
+    },
+    "task": {
+      "tasks": "المهام",
+      "dueDate": "الاستحقاق",
+      "markDone": "تعليم كمنجز"
+    },
+    "filter": {
+      "all": "جميع الأنواع",
+      "allStatuses": "جميع الحالات"
+    },
+    "editAction": "تعديل النموذج",
+    "deleteAction": "حذف النموذج",
+    "searchPlaceholder": "البحث باسم الموظف…",
+    "loadFailed": "فشل تحميل سجلات التهيئة.",
+    "emptySearch": "لا توجد سجلات تهيئة تطابق بحثك.",
+    "deleteConfirm": {
+      "title": "حذف نموذج التهيئة",
+      "description": "هل أنت متأكد من حذف سجل التهيئة لـ {{name}}؟ لا يمكن التراجع عن هذا الإجراء."
+    },
+    "templateTask": {
+      "sectionTitle": "قائمة مهام القالب",
+      "add": "إضافة مهمة",
+      "addTitle": "مهمة جديدة",
+      "editTitle": "تعديل المهمة",
+      "selectTemplateHint": "اختر قالباً لعرض مهامه",
+      "empty": "لا توجد مهام في هذا القالب بعد.",
+      "loadFailed": "فشل تحميل مهام القالب.",
+      "editAction": "تعديل المهمة",
+      "deleteAction": "حذف المهمة",
+      "deleteTitle": "حذف مهمة القائمة",
+      "deleteDescription": "هل أنت متأكد أنك تريد حذف المهمة \"{{title}}\"؟ لا يمكن التراجع عن هذا الإجراء.",
+      "table": {
+        "title": "العنوان",
+        "owner": "المسؤول",
+        "dueOffset": "الاستحقاق (أيام)",
+        "required": "إلزامي",
+        "sortOrder": "الترتيب",
+        "actions": "إجراءات"
+      },
+      "form": {
+        "title": "العنوان",
+        "description": "الوصف",
+        "ownerType": "المسؤول",
+        "dueDaysOffset": "عدد أيام الاستحقاق",
+        "isRequired": "إلزامي",
+        "sortOrder": "ترتيب العرض"
+      },
+      "ownerTypeOptions": {
+        "hr": "الموارد البشرية",
+        "it": "تقنية المعلومات",
+        "manager": "المدير",
+        "employee": "الموظف",
+        "admin": "الإدارة",
+        "finance": "المالية"
+      }
+    }
+  },
+  "performance": {
+    "title": "الأداء",
+    "addCycle": "إضافة دورة",
+    "addReview": "إضافة تقييم",
+    "activeCycleLabel": "الدورة النشطة",
+    "deadline": "الموعد النهائي لمراجعة المدير",
+    "completion": "الإنجاز",
+    "allCyclesTitle": "جميع الدورات",
+    "reviewsTitle": "التقييمات",
+    "noCycles": "لا توجد دورات أداء حتى الآن.",
+    "noReviews": "لا توجد تقييمات لهذه الدورة.",
+    "allReviewTypes": "جميع أنواع التقييم",
+    "allReviewStatuses": "جميع الحالات",
+    "editCycleAction": "تعديل الدورة",
+    "deleteCycleAction": "حذف الدورة",
+    "editReviewAction": "تعديل التقييم",
+    "deleteReviewAction": "حذف التقييم",
+    "deleteCycleTitle": "حذف الدورة",
+    "deleteCycleDesc": "هل أنت متأكد من حذف الدورة \"{{name}}\"؟ سيتم حذف جميع التقييمات المرتبطة بها أيضاً.",
+    "deleteReviewTitle": "حذف التقييم",
+    "deleteReviewDesc": "هل أنت متأكد من حذف تقييم {{employee}}؟",
+    "stat": {
+      "totalCycles": "إجمالي الدورات",
+      "activeCycles": "الدورات النشطة",
+      "totalReviews": "إجمالي التقييمات",
+      "pendingReviews": "تقييمات معلقة"
+    },
+    "table": {
+      "employee": "الموظف",
+      "reviewer": "المقيِّم",
+      "reviewType": "نوع التقييم",
+      "rating": "التقييم",
+      "status": "الحالة"
+    },
+    "form": {
+      "addCycleTitle": "إضافة دورة أداء",
+      "editCycleTitle": "تعديل دورة الأداء",
+      "cycleName": "اسم الدورة",
+      "cycleType": "النوع",
+      "startDate": "تاريخ البداية",
+      "endDate": "تاريخ النهاية",
+      "selfReviewDeadline": "الموعد النهائي للتقييم الذاتي",
+      "managerReviewDeadline": "الموعد النهائي لمراجعة المدير",
+      "cycleStatus": "الحالة",
+      "addReviewTitle": "إضافة تقييم أداء",
+      "editReviewTitle": "تعديل تقييم الأداء",
+      "employee": "الموظف",
+      "reviewer": "المقيِّم",
+      "reviewType": "نوع التقييم",
+      "reviewStatus": "الحالة",
+      "overallRating": "التقييم الإجمالي",
+      "submittedAt": "تاريخ التقديم",
+      "strengths": "نقاط القوة",
+      "improvements": "مجالات التحسين",
+      "comments": "ملاحظات"
+    },
+    "cycleTypeOptions": {
+      "quarterly": "ربع سنوي",
+      "semi_annual": "نصف سنوي",
+      "annual": "سنوي"
+    },
+    "cycleStatusOptions": {
+      "draft": "مسودة",
+      "active": "نشط",
+      "in_review": "قيد المراجعة",
+      "completed": "مكتمل"
+    },
+    "reviewTypeOptions": {
+      "self": "ذاتي",
+      "manager": "مدير",
+      "peer": "زميل",
+      "direct_report": "تابع مباشر"
+    },
+    "reviewStatusOptions": {
+      "pending": "معلق",
+      "in_progress": "جارٍ",
+      "submitted": "مُقدَّم",
+      "acknowledged": "مُستلَم"
+    }
+  },
+  "learning": {
+    "title": "التعلّم والتطوير",
+    "createProgram": "إنشاء برنامج",
+    "addProgram": "إضافة برنامج",
+    "editProgram": "تعديل البرنامج",
+    "loadFailed": "فشل تحميل برامج التدريب.",
+    "emptySearch": "لا توجد برامج تدريب تطابق بحثك.",
+    "searchPlaceholder": "البحث في البرامج…",
+    "editAction": "تعديل البرنامج",
+    "deleteAction": "حذف البرنامج",
+    "stat": {
+      "activePrograms": "برامج نشطة",
+      "enrolled": "المسجلون",
+      "completionRate": "نسبة الإنجاز",
+      "budgetUsed": "الميزانية المستخدمة",
+      "total": "إجمالي البرامج",
+      "planned": "مخطط له",
+      "ongoing": "جارٍ",
+      "completed": "مكتمل"
+    },
+    "table": {
+      "program": "البرنامج",
+      "category": "التصنيف",
+      "type": "النوع",
+      "trainer": "المدرب",
+      "date": "التاريخ",
+      "enrolled": "المسجلون",
+      "status": "الحالة",
+      "startDate": "تاريخ البدء",
+      "endDate": "تاريخ الانتهاء",
+      "actions": "الإجراءات",
+      "seats": "المقاعد",
+      "maxParticipants": "{{count}} مقعد"
+    },
+    "type": {
+      "internal": "داخلي",
+      "external": "خارجي",
+      "online": "عبر الإنترنت"
+    },
+    "typeOptions": {
+      "internal": "داخلي",
+      "external": "خارجي",
+      "online": "عبر الإنترنت"
+    },
+    "status": {
+      "active": "نشط",
+      "scheduled": "مجدول",
+      "completed": "مكتمل",
+      "draft": "مسودة"
+    },
+    "statusOptions": {
+      "planned": "مخطط له",
+      "ongoing": "جارٍ",
+      "completed": "مكتمل",
+      "cancelled": "ملغى"
+    },
+    "filter": {
+      "all": "الكل",
+      "allTypes": "جميع الأنواع"
+    },
+    "form": {
+      "title": "العنوان",
+      "description": "الوصف",
+      "category": "التصنيف",
+      "type": "النوع",
+      "trainerName": "اسم المدرب",
+      "durationHours": "المدة (بالساعات)",
+      "cost": "التكلفة",
+      "maxParticipants": "الحد الأقصى للمشاركين",
+      "startDate": "تاريخ البدء",
+      "endDate": "تاريخ الانتهاء",
+      "location": "الموقع",
+      "status": "الحالة",
+      "endDateAfterStart": "يجب أن يكون تاريخ الانتهاء مساويًا لتاريخ البدء أو بعده."
+    },
+    "deleteConfirm": {
+      "title": "حذف البرنامج",
+      "description": "هل أنت متأكد من حذف \"{{name}}\"؟ لا يمكن التراجع عن هذا الإجراء."
+    }
+  },
+  "career": {
+    "title": "المسار الوظيفي والتعاقب",
+    "careerPaths": "المسارات الوظيفية",
+    "successionPlans": "خطط التعاقب",
+    "addPath": "إضافة مسار",
+    "newPlan": "خطة جديدة",
+    "editPath": "تعديل المسار الوظيفي",
+    "editPathAction": "تعديل المسار الوظيفي",
+    "deletePathAction": "حذف المسار الوظيفي",
+    "editPlan": "تعديل خطة التعاقب",
+    "editPlanAction": "تعديل خطة التعاقب",
+    "deletePlanAction": "حذف خطة التعاقب",
+    "loadFailedPaths": "فشل تحميل المسارات الوظيفية",
+    "loadFailedPlans": "فشل تحميل خطط التعاقب",
+    "emptyPaths": "لا توجد مسارات وظيفية بعد. أضف أول مسار.",
+    "emptyPlans": "لا توجد خطط تعاقب بعد. أضف أول خطة.",
+    "stat": {
+      "careerPaths": "المسارات الوظيفية",
+      "successionPlans": "خطط التعاقب",
+      "readyNow": "جاهز الآن"
+    },
+    "levels": "المستويات",
+    "table": {
+      "position": "المسمى الوظيفي",
+      "currentHolder": "الشاغل الحالي",
+      "topSuccessor": "أفضل خلف",
+      "successor": "الخلف",
+      "readiness": "الجاهزية",
+      "score": "الدرجة",
+      "actions": "الإجراءات"
+    },
+    "readiness": {
+      "Ready Now": "جاهز الآن",
+      "1-2 Years": "1-2 سنة",
+      "3+ Years": "+3 سنوات"
+    },
+    "readinessOptions": {
+      "ready_now": "جاهز الآن",
+      "ready_1_year": "جاهز خلال سنة",
+      "ready_2_years": "جاهز خلال سنتين",
+      "development_needed": "يحتاج تطويراً"
+    },
+    "form": {
+      "name": "اسم المسار",
+      "jobFamily": "عائلة الوظائف",
+      "jobPositionId": "معرّف المسمى الوظيفي",
+      "currentHolder": "الشاغل الحالي",
+      "successor": "الخلف",
+      "readiness": "مستوى الجاهزية",
+      "readinessScore": "درجة الجاهزية (0-100)",
+      "developmentPlan": "خطة التطوير",
+      "notes": "ملاحظات",
+      "vacant": "— شاغر —"
+    },
+    "deletePathConfirm": {
+      "title": "حذف المسار الوظيفي",
+      "description": "هل تريد حذف \"{{name}}\"؟ لا يمكن التراجع عن هذا الإجراء."
+    },
+    "deletePlanConfirm": {
+      "title": "حذف خطة التعاقب",
+      "description": "هل تريد حذف خطة التعاقب لـ \"{{position}}\"؟ لا يمكن التراجع عن هذا الإجراء."
+    },
+    "addLevel": "إضافة مستوى",
+    "editLevel": "تعديل مستوى المسار الوظيفي",
+    "editLevelAction": "تعديل المستوى",
+    "deleteLevelAction": "حذف المستوى",
+    "loadFailedLevels": "فشل تحميل مستويات المسار الوظيفي",
+    "emptyLevels": "لا توجد مستويات بعد. أضف أول مستوى.",
+    "levelFilter": {
+      "allPaths": "جميع المسارات الوظيفية"
+    },
+    "levelTable": {
+      "careerPath": "المسار الوظيفي",
+      "jobPosition": "المسمى الوظيفي",
+      "order": "الترتيب",
+      "minExp": "الخبرة الدنيا",
+      "competencies": "الكفاءات",
+      "certifications": "الشهادات"
+    },
+    "levelForm": {
+      "careerPathId": "معرّف المسار الوظيفي",
+      "jobPositionId": "معرّف المسمى الوظيفي",
+      "levelOrder": "ترتيب المستوى",
+      "minExperienceYears": "الخبرة الدنيا (بالسنوات)",
+      "requiredCompetencies": "الكفاءات المطلوبة",
+      "requiredCertifications": "الشهادات المطلوبة",
+      "tagsPlaceholder": "مثال: React، TypeScript، Node.js"
+    },
+    "deleteLevelConfirm": {
+      "title": "حذف مستوى المسار الوظيفي",
+      "description": "هل تريد حذف المستوى {{order}} من \"{{path}}\"؟ لا يمكن التراجع عن هذا الإجراء."
+    }
+  },
+  "analytics": {
+    "title": "تحليلات الموارد البشرية",
+    "exportReport": "تصدير التقرير",
+    "kpi": {
+      "totalEmployees": "إجمالي الموظفين",
+      "openPositions": "الوظائف المفتوحة",
+      "allTimeAttrition": "معدل التسرب الإجمالي",
+      "payrollCost": "تكلفة الرواتب"
+    },
+    "sub": {
+      "asOfToday": "حتى اليوم",
+      "openListings": "إعلانات نشطة",
+      "latestRun": "آخر مسير رواتب",
+      "allTimeAttritionNote": "المنتهية خدماتهم والمستقيلون — إجمالي"
+    },
+    "byDepartment": "حسب القسم",
+    "headcountDistribution": "توزيع الموظفين",
+    "noDepartments": "لا توجد أقسام."
+  },
+  "copilot": {
+    "title": "مساعد الذكاء الاصطناعي",
+    "heroTitle": "اسألني أي شيء عن بيانات الموارد البشرية",
+    "heroDescription": "استعلم عن سجلات الموظفين، حلّل الاتجاهات، اكتشف رؤى، أو احصل على ملخص سريع لأي قسم — بلغة بسيطة. لا حاجة لـ SQL.",
+    "inputPlaceholder": "مثلاً: أرني الموظفين الذين لديهم أعلى ساعات عمل إضافي هذا الشهر…",
+    "suggestedQueries": "استعلامات مقترحة",
+    "exampleResponse": "مثال على الاستجابة",
+    "submitQuery": "إرسال الاستعلام"
+  },
+  "organization": {
+    "title": "الهيكل التنظيمي",
+    "addDepartment": "إضافة قسم",
+    "searchPlaceholder": "بحث في الأقسام…",
+    "loadFailed": "فشل تحميل الأقسام.",
+    "emptySearch": "لا توجد أقسام.",
+    "companiesSectionTitle": "الشركات",
+    "branchesSectionTitle": "الفروع",
+    "departmentsSectionTitle": "الأقسام",
+    "jobPositionsSectionTitle": "المسمّيات الوظيفية",
+    "addCompany": "إضافة شركة",
+    "addBranch": "إضافة فرع",
+    "addJobPosition": "إضافة مسمّى وظيفي",
+    "allCompanies": "جميع الشركات",
+    "allDepartments": "جميع الأقسام",
+    "stat": {
+      "companies": "الشركات",
+      "branches": "الفروع",
+      "departments": "الأقسام",
+      "positions": "المسمّيات الوظيفية"
+    },
+    "table": {
+      "department": "القسم",
+      "head": "المسؤول",
+      "status": "الحالة",
+      "actions": "إجراءات"
+    },
+    "department": {
+      "active": "نشط",
+      "inactive": "غير نشط",
+      "vacant": "— شاغر —",
+      "addTitle": "إضافة قسم",
+      "editTitle": "تعديل القسم",
+      "editAction": "تعديل القسم",
+      "deleteAction": "حذف القسم",
+      "deleteConfirm": {
+        "title": "حذف القسم",
+        "description": "هل أنت متأكد من حذف \"{{name}}\"؟ لا يمكن التراجع عن هذا الإجراء."
+      },
+      "form": {
+        "name": "اسم القسم",
+        "code": "الرمز",
+        "parent": "القسم الأب",
+        "noParent": "— بدون قسم أب —",
+        "head": "مسؤول القسم",
+        "vacant": "— شاغر —",
+        "level": "المستوى",
+        "sortOrder": "ترتيب العرض",
+        "isActive": "الحالة",
+        "activeOption": "نشط",
+        "inactiveOption": "غير نشط"
+      }
+    },
+    "company": {
+      "addTitle": "إضافة شركة",
+      "editTitle": "تعديل الشركة",
+      "editAction": "تعديل الشركة",
+      "deleteAction": "حذف الشركة",
+      "deleteConfirm": {
+        "title": "حذف الشركة",
+        "description": "هل أنت متأكد من حذف \"{{name}}\"؟ لا يمكن التراجع عن هذا الإجراء."
+      },
+      "table": {
+        "name": "الشركة",
+        "registration": "رقم السجل",
+        "country": "الدولة / العملة",
+        "status": "الحالة",
+        "actions": "إجراءات"
+      },
+      "form": {
+        "name": "اسم الشركة",
+        "nameAr": "اسم الشركة (عربي)",
+        "legalName": "الاسم القانوني",
+        "registrationNumber": "رقم السجل التجاري",
+        "taxNumber": "الرقم الضريبي",
+        "logo": "رابط الشعار",
+        "email": "البريد الإلكتروني",
+        "phone": "الهاتف",
+        "website": "الموقع الإلكتروني",
+        "address": "العنوان",
+        "city": "المدينة",
+        "countryCode": "رمز الدولة (حرفان)",
+        "currencyCode": "رمز العملة (3 أحرف)",
+        "fiscalYearStart": "بداية السنة المالية (شهر 1–12)",
+        "timezone": "المنطقة الزمنية",
+        "isActive": "الحالة",
+        "activeOption": "نشط",
+        "inactiveOption": "غير نشط"
+      }
+    },
+    "branch": {
+      "addTitle": "إضافة فرع",
+      "editTitle": "تعديل الفرع",
+      "editAction": "تعديل الفرع",
+      "deleteAction": "حذف الفرع",
+      "hq": "المقر الرئيسي",
+      "deleteConfirm": {
+        "title": "حذف الفرع",
+        "description": "هل أنت متأكد من حذف \"{{name}}\"؟ لا يمكن التراجع عن هذا الإجراء."
+      },
+      "table": {
+        "name": "الفرع",
+        "company": "الشركة",
+        "city": "المدينة",
+        "hq": "المقر",
+        "status": "الحالة",
+        "actions": "إجراءات"
+      },
+      "form": {
+        "company": "الشركة",
+        "selectCompany": "— اختر الشركة —",
+        "name": "اسم الفرع",
+        "code": "الرمز",
+        "address": "العنوان",
+        "city": "المدينة",
+        "countryCode": "رمز الدولة (حرفان)",
+        "phone": "الهاتف",
+        "latitude": "خط العرض",
+        "longitude": "خط الطول",
+        "geofenceRadius": "نطاق السياج الجغرافي (م)",
+        "isHeadquarters": "مقر رئيسي",
+        "isActive": "الحالة",
+        "activeOption": "نشط",
+        "inactiveOption": "غير نشط"
+      }
+    },
+    "jobPosition": {
+      "addTitle": "إضافة مسمّى وظيفي",
+      "editTitle": "تعديل المسمّى الوظيفي",
+      "editAction": "تعديل المسمّى الوظيفي",
+      "deleteAction": "حذف المسمّى الوظيفي",
+      "unassigned": "— غير محدد —",
+      "deleteConfirm": {
+        "title": "حذف المسمّى الوظيفي",
+        "description": "هل أنت متأكد من حذف \"{{name}}\"؟ لا يمكن التراجع عن هذا الإجراء."
+      },
+      "table": {
+        "title": "المسمّى الوظيفي",
+        "company": "الشركة",
+        "department": "القسم",
+        "headcount": "العدد المستهدف",
+        "status": "الحالة",
+        "actions": "إجراءات"
+      },
+      "form": {
+        "company": "الشركة",
+        "selectCompany": "— اختر الشركة —",
+        "department": "القسم",
+        "noDepartment": "— بدون قسم —",
+        "title": "المسمّى الوظيفي",
+        "titleAr": "المسمّى الوظيفي (عربي)",
+        "code": "الرمز",
+        "headcount": "العدد المستهدف",
+        "description": "الوصف",
+        "requirements": "المتطلبات",
+        "isActive": "الحالة",
+        "activeOption": "نشط",
+        "inactiveOption": "غير نشط"
+      }
+    }
+  },
+  "settings": {
+    "title": "الإعدادات",
+    "editSettings": "تعديل الإعدادات",
+    "enabled": "مُفعَّل",
+    "disabled": "مُعطَّل"
+  }
+}

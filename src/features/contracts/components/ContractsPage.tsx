@@ -1,0 +1,427 @@
+import { useEffect, useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
+import { Pencil, Plus, Search, Trash2 } from 'lucide-react';
+import { cn } from '@/lib/cn';
+import { Card } from '@/components/ui/Card';
+import { PageHeader } from '@/components/ui/PageHeader';
+import { Avatar } from '@/components/ui/Avatar';
+import { Button } from '@/components/ui/Button';
+import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
+import { Pagination } from '@/components/ui/Pagination';
+import { userFacingMessage } from '@/lib/api/errors';
+import { useContractList, useDeleteContract } from '../api/queries';
+import type { ContractListParams, ContractStatus } from '../api/resource';
+import type { ContractWire } from '../api/schema';
+import { ContractFormDialog } from './ContractFormDialog';
+
+/**
+ * The Contracts module's live-data page, built in the same pattern as
+ * `EmployeesPage`: `useContractList`, Add/Edit via `ContractFormDialog`,
+ * delete via `ConfirmDialog` + optimistic `useDeleteContract`, and page
+ * controls via the shared `Pagination`.
+ */
+
+const PER_PAGE = 10;
+
+const STATUS_CLASSES: Record<ContractStatus, string> = {
+  draft: 'bg-gray-100 text-gray-600',
+  active: 'bg-emerald-50 text-emerald-700',
+  expired: 'bg-red-50 text-red-700',
+  terminated: 'bg-slate-100 text-slate-600',
+};
+
+const TYPE_CLASSES: Record<string, string> = {
+  initial: 'bg-gray-100 text-gray-600',
+  renewal: 'bg-sky-50 text-sky-700',
+  amendment: 'bg-violet-50 text-violet-700',
+};
+
+function initialsOf(firstName: string, lastName: string): string {
+  return `${firstName.charAt(0)}${lastName.charAt(0)}`.toUpperCase();
+}
+
+function formatDate(isoDate: string): string {
+  return new Date(isoDate).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+}
+
+// ─── Stat Card ────────────────────────────────────────────────────────────────
+
+function StatCard({ label, value, accent, warning }: { label: string; value: number | undefined; accent?: boolean; warning?: boolean }) {
+  return (
+    <Card className="flex flex-col gap-1 px-5 pb-4 pt-4">
+      <span className="text-caption text-ink-muted">{label}</span>
+      <span
+        className={cn(
+          'nums font-mono text-[32px] font-bold leading-[1.1] tracking-[-0.04em]',
+          accent ? 'text-coral' : warning ? 'text-orange-600' : 'text-navy',
+        )}
+      >
+        {value !== undefined ? value.toLocaleString() : '—'}
+      </span>
+    </Card>
+  );
+}
+
+// ─── Status Badge ─────────────────────────────────────────────────────────────
+
+function StatusBadge({ status }: { status: ContractStatus }) {
+  const { t } = useTranslation();
+  return (
+    <span className={cn('rounded-full px-2.5 py-0.5 text-[11px] font-semibold', STATUS_CLASSES[status])}>
+      {t(`contracts.status.${status}`)}
+    </span>
+  );
+}
+
+// ─── Row actions ──────────────────────────────────────────────────────────────
+
+function RowActions({ onEdit, onDelete }: { onEdit: () => void; onDelete: () => void }) {
+  const { t } = useTranslation();
+  return (
+    <div className="flex items-center gap-1">
+      <Button variant="ghost" className="h-7 w-7 px-0" aria-label={t('contracts.editAction')} onClick={onEdit}>
+        <Pencil className="h-3.5 w-3.5" strokeWidth={1.75} aria-hidden="true" />
+      </Button>
+      <Button
+        variant="ghost"
+        className="h-7 w-7 px-0 hover:!text-coral"
+        aria-label={t('contracts.deleteAction')}
+        onClick={onDelete}
+      >
+        <Trash2 className="h-3.5 w-3.5" strokeWidth={1.75} aria-hidden="true" />
+      </Button>
+    </div>
+  );
+}
+
+// ─── Filter Chips ─────────────────────────────────────────────────────────────
+
+const FILTER_OPTIONS: Array<{ key: string; value: ContractStatus | 'all' }> = [
+  { key: 'all', value: 'all' },
+  { key: 'active', value: 'active' },
+  { key: 'expired', value: 'expired' },
+  { key: 'draft', value: 'draft' },
+  { key: 'terminated', value: 'terminated' },
+];
+
+// ─── Page ─────────────────────────────────────────────────────────────────────
+
+export function ContractsPage() {
+  const { t } = useTranslation();
+
+  const [searchInput, setSearchInput] = useState('');
+  const [search, setSearch] = useState('');
+  const [statusFilter, setStatusFilter] = useState<ContractStatus | 'all'>('all');
+  const [page, setPage] = useState(1);
+
+  const [formOpen, setFormOpen] = useState(false);
+  const [editTarget, setEditTarget] = useState<ContractWire | undefined>(undefined);
+  const [deleteTarget, setDeleteTarget] = useState<ContractWire | undefined>(undefined);
+
+  // Debounce the free-text search so every keystroke doesn't fire a request.
+  useEffect(() => {
+    const timer = window.setTimeout(() => setSearch(searchInput.trim()), 300);
+    return () => window.clearTimeout(timer);
+  }, [searchInput]);
+
+  // A new search/filter invalidates the current page number.
+  useEffect(() => {
+    setPage(1);
+  }, [search, statusFilter]);
+
+  const params = useMemo<ContractListParams>(
+    () => ({
+      page,
+      perPage: PER_PAGE,
+      search: search || undefined,
+      status: statusFilter === 'all' ? undefined : statusFilter,
+    }),
+    [page, search, statusFilter],
+  );
+
+  const { state, refetch } = useContractList(params);
+  // Stat cards — each is a cheap perPage:1 call reading only meta.total.
+  const { state: totalState } = useContractList({ page: 1, perPage: 1 });
+  const { state: activeState } = useContractList({ page: 1, perPage: 1, status: 'active' });
+  const { state: expiredState } = useContractList({ page: 1, perPage: 1, status: 'expired' });
+  const { state: draftState } = useContractList({ page: 1, perPage: 1, status: 'draft' });
+
+  const deleteMutation = useDeleteContract(params);
+
+  const contracts = state.data?.data ?? [];
+  const meta = state.data?.meta;
+
+  function openAddForm() {
+    setEditTarget(undefined);
+    setFormOpen(true);
+  }
+
+  function openEditForm(contract: ContractWire) {
+    setEditTarget(contract);
+    setFormOpen(true);
+  }
+
+  async function confirmDelete() {
+    if (!deleteTarget) return;
+    const result = await deleteMutation.mutate(deleteTarget.id);
+    if (result !== undefined || deleteMutation.error === undefined) setDeleteTarget(undefined);
+  }
+
+  return (
+    <div className="flex flex-col">
+      <PageHeader
+        title={t('contracts.title')}
+        actions={
+          <Button variant="primary" onClick={openAddForm}>
+            <Plus className="h-3.5 w-3.5" strokeWidth={2} aria-hidden="true" />
+            {t('contracts.addContract')}
+          </Button>
+        }
+      />
+
+      {/* Stat strip */}
+      <div className="mb-8 grid grid-cols-2 gap-3 sm:grid-cols-4">
+        <StatCard label={t('contracts.stat.total')} value={totalState.data?.meta.total} />
+        <StatCard label={t('contracts.stat.active')} value={activeState.data?.meta.total} accent />
+        <StatCard label={t('contracts.stat.expired')} value={expiredState.data?.meta.total} warning />
+        <StatCard label={t('contracts.stat.draft')} value={draftState.data?.meta.total} />
+      </div>
+
+      {/* Toolbar: search + filters */}
+      <div className="mb-4 flex flex-wrap items-center gap-3">
+        {/* Search */}
+        <label className="relative flex items-center">
+          <span className="pointer-events-none absolute left-3 text-ink-faint">
+            <Search className="h-3.5 w-3.5" strokeWidth={1.75} aria-hidden="true" />
+          </span>
+          <input
+            type="search"
+            placeholder={t('contracts.searchPlaceholder')}
+            value={searchInput}
+            onChange={(e) => setSearchInput(e.target.value)}
+            className={cn(
+              'h-9 rounded-full border border-hairline bg-surface pl-8 pr-4 text-[13px] text-ink placeholder:text-ink-faint',
+              'focus:outline-none focus:ring-1 focus:ring-navy/40',
+              'w-52',
+            )}
+          />
+        </label>
+
+        {/* Status filters */}
+        <div className="flex items-center gap-1.5">
+          {FILTER_OPTIONS.map((opt) => (
+            <button
+              key={opt.value}
+              type="button"
+              onClick={() => setStatusFilter(opt.value)}
+              className={cn(
+                'rounded-full border px-3 py-1 text-[12px] font-semibold transition-colors',
+                statusFilter === opt.value
+                  ? 'border-navy bg-navy text-on-navy'
+                  : 'border-hairline bg-surface text-ink-muted hover:border-navy/40 hover:text-ink',
+              )}
+            >
+              {t(`contracts.filter.${opt.key}`)}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Load failure */}
+      {state.error ? (
+        <Card className="mb-4 flex items-center justify-between gap-3 px-5 py-3 text-body-sm text-coral">
+          <span>{state.error ? userFacingMessage(state.error) || t('contracts.loadFailed') : t('contracts.loadFailed')}</span>
+          <Button variant="secondary" onClick={() => void refetch()}>
+            {t('common.retry')}
+          </Button>
+        </Card>
+      ) : null}
+
+      {/* Initial load */}
+      {state.status === 'pending' && contracts.length === 0 ? (
+        <Card className="px-5 py-10 text-center text-body-sm text-ink-muted">{t('common.loading')}</Card>
+      ) : null}
+
+      {/* Empty state */}
+      {state.status !== 'pending' && contracts.length === 0 && (
+        <Card className="px-5 py-10 text-center text-body-sm text-ink-muted">{t('contracts.emptySearch')}</Card>
+      )}
+
+      {contracts.length > 0 && (
+        <>
+          {/* Contracts table — desktop/tablet-landscape */}
+          <Card className="hidden lg:block">
+            {/* Header */}
+            <div className="border-b border-divider px-5 py-3">
+              <div className="grid grid-cols-[2.5fr_1fr_1fr_1fr_1.5fr_1fr_auto] gap-4">
+                {(['employee', 'type', 'startDate', 'endDate', 'salary', 'status'] as const).map((col) => (
+                  <span key={col} className="text-caption font-semibold uppercase tracking-wide text-ink-faint">
+                    {t(`contracts.table.${col}`)}
+                  </span>
+                ))}
+                <span className="text-caption font-semibold uppercase tracking-wide text-ink-faint">
+                  {t('contracts.table.actions')}
+                </span>
+              </div>
+            </div>
+
+            {contracts.map((contract, idx) => {
+              const emp = contract.employee;
+              const firstName = emp?.first_name ?? '';
+              const lastName = emp?.last_name ?? '';
+              const initials = initialsOf(firstName, lastName);
+
+              return (
+                <div
+                  key={contract.id}
+                  className={cn(
+                    'grid grid-cols-[2.5fr_1fr_1fr_1fr_1.5fr_1fr_auto] items-center gap-4 px-5 py-3',
+                    idx < contracts.length - 1 && 'border-b border-divider',
+                    'hover:bg-surface/60 transition-colors',
+                  )}
+                >
+                  {/* Employee */}
+                  <div className="flex min-w-0 items-center gap-3">
+                    <Avatar initials={initials} photo={emp?.photo} size={32} />
+                    <div className="min-w-0">
+                      <p className="truncate text-body-sm font-semibold text-ink">
+                        {firstName} {lastName}
+                      </p>
+                      <p className="truncate text-caption text-ink-muted">
+                        {emp?.employee_number ?? '—'}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Type */}
+                  <span
+                    className={cn(
+                      'self-start rounded-full px-2.5 py-0.5 text-[11px] font-semibold',
+                      TYPE_CLASSES[contract.type] ?? 'bg-gray-100 text-gray-600',
+                    )}
+                  >
+                    {t(`contracts.type.${contract.type}`)}
+                  </span>
+
+                  {/* Start date */}
+                  <span className="nums font-mono text-[12px] text-ink-muted">
+                    {formatDate(contract.start_date)}
+                  </span>
+
+                  {/* End date */}
+                  <span className="nums font-mono text-[12px] text-ink-muted">
+                    {contract.end_date ? formatDate(contract.end_date) : '—'}
+                  </span>
+
+                  {/* Basic salary */}
+                  <span className="nums font-mono text-[12px] text-ink-muted">
+                    {contract.basic_salary.toLocaleString()}
+                  </span>
+
+                  {/* Status */}
+                  <StatusBadge status={contract.status} />
+
+                  {/* Actions */}
+                  <RowActions onEdit={() => openEditForm(contract)} onDelete={() => setDeleteTarget(contract)} />
+                </div>
+              );
+            })}
+          </Card>
+
+          {/* Contract cards — mobile/tablet-portrait */}
+          <div className="flex flex-col gap-3 lg:hidden">
+            {contracts.map((contract) => {
+              const emp = contract.employee;
+              const firstName = emp?.first_name ?? '';
+              const lastName = emp?.last_name ?? '';
+              const initials = initialsOf(firstName, lastName);
+
+              return (
+                <Card key={contract.id} className="flex flex-col gap-3 p-4">
+                  {/* Identity + status */}
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex min-w-0 items-center gap-3">
+                      <Avatar initials={initials} photo={emp?.photo} size={32} />
+                      <div className="min-w-0">
+                        <p className="truncate text-body-sm font-semibold text-ink">
+                          {firstName} {lastName}
+                        </p>
+                        <p className="truncate text-caption text-ink-muted">
+                          {emp?.employee_number ?? '—'}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex shrink-0 flex-col items-end gap-2">
+                      <StatusBadge status={contract.status} />
+                      <RowActions onEdit={() => openEditForm(contract)} onDelete={() => setDeleteTarget(contract)} />
+                    </div>
+                  </div>
+
+                  {/* Details grid */}
+                  <div className="grid grid-cols-2 gap-3 border-t border-divider pt-3">
+                    <div className="flex flex-col gap-0.5">
+                      <span className="text-caption text-ink-faint">{t('contracts.table.type')}</span>
+                      <span
+                        className={cn(
+                          'self-start rounded-full px-2.5 py-0.5 text-[11px] font-semibold',
+                          TYPE_CLASSES[contract.type] ?? 'bg-gray-100 text-gray-600',
+                        )}
+                      >
+                        {t(`contracts.type.${contract.type}`)}
+                      </span>
+                    </div>
+                    <div className="flex flex-col gap-0.5">
+                      <span className="text-caption text-ink-faint">{t('contracts.table.salary')}</span>
+                      <span className="nums font-mono text-[12px] text-ink">
+                        {contract.basic_salary.toLocaleString()}
+                      </span>
+                    </div>
+                    <div className="flex flex-col gap-0.5">
+                      <span className="text-caption text-ink-faint">{t('contracts.table.startDate')}</span>
+                      <span className="nums font-mono text-[12px] text-ink">
+                        {formatDate(contract.start_date)}
+                      </span>
+                    </div>
+                    <div className="flex flex-col gap-0.5">
+                      <span className="text-caption text-ink-faint">{t('contracts.table.endDate')}</span>
+                      <span className="nums font-mono text-[12px] text-ink">
+                        {contract.end_date ? formatDate(contract.end_date) : '—'}
+                      </span>
+                    </div>
+                  </div>
+                </Card>
+              );
+            })}
+          </div>
+
+          {meta ? (
+            <Pagination
+              currentPage={meta.current_page}
+              lastPage={meta.last_page}
+              total={meta.total}
+              perPage={meta.per_page}
+              onPageChange={setPage}
+            />
+          ) : null}
+        </>
+      )}
+
+      <ContractFormDialog open={formOpen} onOpenChange={setFormOpen} contract={editTarget} />
+
+      <ConfirmDialog
+        open={deleteTarget !== undefined}
+        onOpenChange={(open) => !open && setDeleteTarget(undefined)}
+        title={t('contracts.deleteConfirm.title')}
+        description={
+          deleteTarget
+            ? t('contracts.deleteConfirm.description', {
+                name: `${deleteTarget.employee?.first_name ?? ''} ${deleteTarget.employee?.last_name ?? ''}`.trim() || `#${deleteTarget.id}`,
+              })
+            : undefined
+        }
+        isLoading={deleteMutation.isPending}
+        onConfirm={() => void confirmDelete()}
+      />
+    </div>
+  );
+}

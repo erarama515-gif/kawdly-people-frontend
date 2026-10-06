@@ -1,0 +1,1527 @@
+{
+  "brand": {
+    "name": "Kawdly",
+    "suffix": "People"
+  },
+  "nav": {
+    "dashboard": "Dashboard",
+    "people": "People",
+    "workforce": "Workforce",
+    "finance": "Finance",
+    "talent": "Talent",
+    "intelligence": "AI",
+    "settings": "Settings",
+    "organization": "Organization",
+    "employees": "Employees",
+    "contracts": "Contracts",
+    "documents": "Documents",
+    "attendance": "Attendance",
+    "leave": "Leave",
+    "payroll": "Payroll",
+    "compensation": "Compensation",
+    "loans": "Loans",
+    "recruitment": "Recruitment",
+    "onboarding": "Onboarding",
+    "performance": "Performance",
+    "learning": "Learning & Development",
+    "career": "Career Path",
+    "analytics": "Analytics",
+    "copilot": "AI Copilot"
+  },
+  "page": {
+    "dashboard": {
+      "description": "An overview of what needs your attention today."
+    },
+    "organization": {
+      "description": "Company structure, departments, and branches."
+    },
+    "employees": {
+      "description": "Employee records and employment data."
+    },
+    "contracts": {
+      "description": "Employment contracts, status, and renewal dates."
+    },
+    "documents": {
+      "description": "Employee documents and official files."
+    },
+    "attendance": {
+      "description": "Daily attendance and departure records."
+    },
+    "leave": {
+      "description": "Leave requests and remaining balances."
+    },
+    "payroll": {
+      "description": "Payroll runs and pay cycles."
+    },
+    "compensation": {
+      "description": "Base pay, bonuses, and benefits."
+    },
+    "loans": {
+      "description": "Loan and advance requests and their status."
+    },
+    "recruitment": {
+      "description": "Open roles and hiring pipelines."
+    },
+    "onboarding": {
+      "description": "Onboarding plans for new hires."
+    },
+    "performance": {
+      "description": "Performance reviews and periodic assessments."
+    },
+    "learning": {
+      "description": "Learning and development programs."
+    },
+    "career": {
+      "description": "Career paths and promotions."
+    },
+    "analytics": {
+      "description": "People metrics and analytics."
+    },
+    "copilot": {
+      "description": "An AI assistant that answers your questions."
+    },
+    "settings": {
+      "description": "Company settings and user preferences."
+    }
+  },
+  "dashboard": {
+    "greeting": "Good morning,\n{{name}}",
+    "role": {
+      "admin": "HR Manager",
+      "manager": "Department Manager"
+    },
+    "roleSwitch": {
+      "label": "Role (temporary, for review)",
+      "admin": "HR Manager",
+      "manager": "Department Manager"
+    },
+    "decisions": {
+      "prefix": "You have",
+      "suffix": "— items awaiting your decision today.",
+      "allClear": "Nothing needs your decision today — everything is on track.",
+      "chip": {
+        "leave": "Leave requests",
+        "payroll": "Payroll payment",
+        "contracts": "Contract renewals",
+        "leaveFromTeam": "Team leave",
+        "performanceReview": "Reviews"
+      }
+    },
+    "quickActions": {
+      "label": "Quick actions",
+      "addEmployee": "Add employee",
+      "runPayroll": "Run payroll",
+      "publishJob": "Post a job",
+      "requestLeave": "Request leave for a member",
+      "manualAttendance": "Log attendance",
+      "startReview": "Start a review"
+    },
+    "queue": {
+      "title": "Awaiting your decision",
+      "urgent": "Urgent",
+      "footerCount": "items awaiting your decision today",
+      "viewAll": "View all",
+      "empty": {
+        "headline": "Nothing is waiting on your decision right now",
+        "detail": "Every request has been actioned — clean slate."
+      },
+      "leave": {
+        "caption": "Leave requests",
+        "description": "Pending your approval · oldest from 24 Sep",
+        "action": "Review"
+      },
+      "payroll": {
+        "caption": "Payroll payment",
+        "description": "{{total}}M · {{employees}} employees",
+        "action": "Run payroll"
+      },
+      "contracts": {
+        "caption": "Contract renewals",
+        "description": "Next expiry in 3 days · awaiting your decision",
+        "action": "Renew"
+      },
+      "leaveFromTeam": {
+        "caption": "Team leave requests",
+        "description": "Awaiting your approval",
+        "action": "Approve"
+      },
+      "performanceReview": {
+        "caption": "Performance review due",
+        "description": "One member awaiting review",
+        "action": "Start review"
+      }
+    },
+    "kpi": {
+      "employees": {
+        "caption": "Employees",
+        "delta": "+12",
+        "deltaSuffix": "this month"
+      },
+      "attendanceToday": {
+        "caption": "Attendance today",
+        "delta": "-0.4%",
+        "deltaSuffix": "vs. yesterday"
+      },
+      "payrollCostMTD": {
+        "caption": "Payroll MTD",
+        "delta": "+0.5M",
+        "deltaSuffix": "vs last week"
+      },
+      "openPositions": {
+        "caption": "Open positions",
+        "delta": "+3",
+        "deltaSuffix": "this week"
+      },
+      "teamMembers": {
+        "caption": "Team members",
+        "delta": "+1",
+        "deltaSuffix": "this month"
+      },
+      "teamAttendanceToday": {
+        "caption": "Team attendance",
+        "delta": "+1.1%",
+        "deltaSuffix": "vs. yesterday"
+      },
+      "pendingLeave": {
+        "caption": "Pending leave",
+        "delta": "no change"
+      },
+      "reviewsDue": {
+        "caption": "Reviews due",
+        "delta": "within 7 days"
+      },
+      "updated": "Updated · just now",
+      "updatedAt": "Updated · {{time}}",
+      "refresh": "Refresh dashboard"
+    },
+    "trends": {
+      "title": "Last 7 days",
+      "headcount": "Headcount",
+      "attendance": "Attendance %",
+      "payroll": "Payroll MTD",
+      "openRoles": "Open roles"
+    },
+    "alerts": {
+      "payrollBefore": "Payroll closes Friday 17:00 — approve the remaining ",
+      "payrollItem": " item.",
+      "reviewCycle": "Performance review cycle opens next week.",
+      "dismiss": "Dismiss alert",
+      "loadFailed": "Alerts could not be loaded."
+    },
+    "error": {
+      "title": "Dashboard data failed to load",
+      "description": "We couldn't load the latest numbers right now. Check your connection and try again.",
+      "retry": "Retry"
+    },
+    "stale": {
+      "retry": "Refresh failed — retry"
+    },
+    "attendanceCard": {
+      "title": "Attendance today",
+      "present": "Present",
+      "absent": "Absent",
+      "late": "Late",
+      "today": "Today",
+      "earlierDays": "Earlier days",
+      "ofTotal": "of {{count}}"
+    },
+    "upcomingCard": {
+      "title": "Upcoming",
+      "contract": "Contract",
+      "birthday": "Birthday",
+      "contractRenewals": "Contract renewals",
+      "birthdays": "Birthdays"
+    },
+    "departmentsCard": {
+      "title": "By department",
+      "share": "Share of {{total}} employees in the four largest departments",
+      "viewAll": "View all departments"
+    },
+    "footer": {
+      "copyright": "© 2026 Kawdly People",
+      "privacy": "Privacy",
+      "support": "Support"
+    },
+    "rosterCard": {
+      "title": "Your team",
+      "active": "Active",
+      "onLeave": "On leave"
+    }
+  },
+  "topbar": {
+    "search": "Search",
+    "searchPlaceholder": "Search or jump to…",
+    "notifications": "Notifications",
+    "openMenu": "Open menu",
+    "closeMenu": "Close menu"
+  },
+  "notifications": {
+    "title": "Notifications",
+    "viewAll": "View all",
+    "count": "3",
+    "items": [
+      {
+        "title": "Leave request awaiting approval",
+        "description": "Ahmed Ali submitted a 5 day annual leave request.",
+        "time": "2h ago"
+      },
+      {
+        "title": "Contracts expiring soon",
+        "description": "3 employee contracts expire within 30 days.",
+        "time": "5h ago"
+      },
+      {
+        "title": "Payroll run is ready",
+        "description": "The September payroll run is ready for review.",
+        "time": "Yesterday"
+      }
+    ]
+  },
+  "userMenu": {
+    "profile": "Profile",
+    "language": "Language",
+    "languageArabic": "العربية",
+    "languageEnglish": "English",
+    "logout": "Log out"
+  },
+  "sidebar": {
+    "collapse": "Collapse sidebar",
+    "expand": "Expand sidebar",
+    "openGroup": "Open {{group}} menu",
+    "primaryNav": "Primary navigation",
+    "groupNav": "System sections"
+  },
+  "palette": {
+    "title": "Quick search",
+    "placeholder": "Search for a page or employee…",
+    "groups": {
+      "pages": "Pages",
+      "employees": "Employees"
+    },
+    "empty": "No results",
+    "hint": "Use the arrow keys to navigate and Enter to open"
+  },
+  "emptyState": {
+    "comingSoonTitle": "Coming soon",
+    "comingSoonDescription": "This page is still being built. It will be available in a later phase."
+  },
+  "notFound": {
+    "title": "Page not found",
+    "description": "The link you requested is not available or has moved.",
+    "backToDashboard": "Back to dashboard"
+  },
+  "breadcrumb": {
+    "label": "Breadcrumb"
+  },
+  "common": {
+    "save": "Save",
+    "saving": "Saving…",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "deleting": "Deleting…",
+    "edit": "Edit",
+    "add": "Add",
+    "confirm": "Confirm",
+    "loading": "Loading…",
+    "error": "Something went wrong.",
+    "retry": "Retry",
+    "actions": "Actions",
+    "selectPlaceholder": "— None —",
+    "requiredField": "This field is required.",
+    "yes": "Yes",
+    "no": "No",
+    "invalidEmail": "Enter a valid email address.",
+    "pagination": {
+      "previous": "Previous page",
+      "next": "Next page",
+      "page": "Page {{page}} of {{lastPage}}",
+      "range": "Showing {{from}}–{{to}} of {{total}}"
+    }
+  },
+  "employees": {
+    "title": "Employees",
+    "addEmployee": "Add Employee",
+    "editEmployee": "Edit Employee",
+    "searchPlaceholder": "Search employees…",
+    "emptySearch": "No employees match your search.",
+    "stat": {
+      "totalEmployees": "Total Employees",
+      "active": "Active",
+      "onLeave": "On Leave",
+      "newThisMonth": "New This Month"
+    },
+    "filter": {
+      "all": "All",
+      "active": "Active",
+      "onLeave": "On Leave",
+      "suspended": "Suspended",
+      "terminated": "Terminated",
+      "resigned": "Resigned"
+    },
+    "table": {
+      "employee": "Employee",
+      "id": "ID",
+      "department": "Department",
+      "position": "Position",
+      "status": "Status",
+      "joined": "Joined",
+      "actions": "Actions"
+    },
+    "status": {
+      "active": "Active",
+      "on_leave": "On Leave",
+      "suspended": "Suspended",
+      "terminated": "Terminated",
+      "resigned": "Resigned"
+    },
+    "form": {
+      "firstName": "First Name",
+      "lastName": "Last Name",
+      "firstNameAr": "First Name (Arabic)",
+      "lastNameAr": "Last Name (Arabic)",
+      "employeeNumber": "Employee Number",
+      "email": "Email",
+      "phone": "Phone",
+      "branch": "Branch",
+      "department": "Department",
+      "jobPosition": "Job Position",
+      "jobGrade": "Job Grade",
+      "jobLevel": "Job Level",
+      "employmentType": "Employment Type",
+      "workLocation": "Work Location",
+      "gender": "Gender",
+      "maritalStatus": "Marital Status",
+      "joiningDate": "Joining Date",
+      "status": "Status",
+      "employmentType.full_time": "Full Time",
+      "employmentType.part_time": "Part Time",
+      "employmentType.contract": "Contract",
+      "employmentType.intern": "Intern",
+      "workLocation.office": "Office",
+      "workLocation.remote": "Remote",
+      "workLocation.hybrid": "Hybrid",
+      "gender.male": "Male",
+      "gender.female": "Female",
+      "maritalStatus.single": "Single",
+      "maritalStatus.married": "Married",
+      "maritalStatus.divorced": "Divorced",
+      "maritalStatus.widowed": "Widowed"
+    },
+    "deleteConfirm": {
+      "title": "Delete employee?",
+      "description": "This will permanently remove {{name}} from the employee records. This action cannot be undone."
+    },
+    "editAction": "Edit employee",
+    "deleteAction": "Delete employee",
+    "loadFailed": "Employees could not be loaded.",
+    "createFailed": "The employee could not be created.",
+    "updateFailed": "The employee could not be updated.",
+    "deleteFailed": "The employee could not be deleted."
+  },
+  "contracts": {
+    "title": "Contracts",
+    "newContract": "New Contract",
+    "addContract": "Add Contract",
+    "editContract": "Edit Contract",
+    "searchPlaceholder": "Search contracts…",
+    "emptySearch": "No contracts match your search.",
+    "loadFailed": "Failed to load contracts.",
+    "editAction": "Edit contract",
+    "deleteAction": "Delete contract",
+    "stat": {
+      "total": "Total Contracts",
+      "active": "Active",
+      "expiringSoon": "Expiring Soon",
+      "expired": "Expired",
+      "draft": "Draft"
+    },
+    "filter": {
+      "all": "All",
+      "active": "Active",
+      "expired": "Expired",
+      "draft": "Draft",
+      "terminated": "Terminated"
+    },
+    "type": {
+      "initial": "Initial",
+      "renewal": "Renewal",
+      "amendment": "Amendment"
+    },
+    "status": {
+      "draft": "Draft",
+      "active": "Active",
+      "expired": "Expired",
+      "terminated": "Terminated"
+    },
+    "table": {
+      "employee": "Employee",
+      "type": "Type",
+      "startDate": "Start Date",
+      "endDate": "End Date",
+      "status": "Status",
+      "daysLeft": "Days Left",
+      "salary": "Basic Salary",
+      "actions": "Actions"
+    },
+    "form": {
+      "employee": "Employee",
+      "type": "Contract Type",
+      "status": "Status",
+      "startDate": "Start Date",
+      "endDate": "End Date",
+      "basicSalary": "Basic Salary",
+      "probationMonths": "Probation Months",
+      "signedAt": "Signed Date",
+      "terms": "Terms & Conditions"
+    },
+    "deleteConfirm": {
+      "title": "Delete Contract",
+      "description": "Are you sure you want to delete the contract for {{name}}? This action cannot be undone."
+    },
+    "alert": {
+      "expiringSoon_one": "{{count}} contract expiring soon",
+      "expiringSoon_other": "{{count}} contracts expiring soon",
+      "urgentAttention_one": "{{count}} requires immediate attention — expiring within 7 days.",
+      "urgentAttention_other": "{{count}} require immediate attention — expiring within 7 days.",
+      "reviewAndRenew": "Review and renew contracts before they expire."
+    },
+    "view": "View",
+    "renew": "Renew"
+  },
+  "documents": {
+    "title": "Documents",
+    "uploadDocument": "Upload Document",
+    "addDocument": "Add Document",
+    "editDocument": "Edit Document",
+    "searchPlaceholder": "Search documents...",
+    "loadFailed": "Failed to load documents.",
+    "emptySearch": "No documents found.",
+    "editAction": "Edit document",
+    "deleteAction": "Delete document",
+    "stat": {
+      "totalDocuments": "Total Documents",
+      "valid": "Valid",
+      "expiringSoon": "Expiring Soon",
+      "expired": "Expired",
+      "pendingRenewal": "Pending Renewal",
+      "templates": "Templates"
+    },
+    "table": {
+      "employee": "Employee",
+      "documentType": "Document Type",
+      "documentNumber": "Document #",
+      "issueDate": "Issue Date",
+      "expiryDate": "Expiry Date",
+      "status": "Status",
+      "actions": "Actions"
+    },
+    "statusOptions": {
+      "valid": "Valid",
+      "expired": "Expired",
+      "pending_renewal": "Pending Renewal",
+      "expiring_soon": "Expiring Soon"
+    },
+    "filter": {
+      "all": "All"
+    },
+    "form": {
+      "employee": "Employee",
+      "documentType": "Document Type",
+      "title": "Title",
+      "filePath": "File Path",
+      "fileName": "File Name",
+      "mimeType": "MIME Type",
+      "fileSize": "File Size (bytes)",
+      "issueDate": "Issue Date",
+      "expiryDate": "Expiry Date",
+      "documentNumber": "Document Number",
+      "notes": "Notes",
+      "statusLabel": "Status"
+    },
+    "deleteConfirm": {
+      "title": "Delete Document",
+      "description": "Delete \"{{title}}\" for {{name}}? This cannot be undone."
+    }
+  },
+  "attendance": {
+    "title": "Attendance",
+    "manualCheckIn": "Manual Check-in",
+    "addRecord": "Add Record",
+    "editRecord": "Edit Record",
+    "searchPlaceholder": "Search employee…",
+    "emptySearch": "No attendance records match your search.",
+    "loadFailed": "Failed to load attendance records.",
+    "editAction": "Edit record",
+    "deleteAction": "Delete record",
+    "filter": {
+      "all": "All"
+    },
+    "stat": {
+      "total": "Total Records",
+      "present": "Present",
+      "absent": "Absent",
+      "late": "Late",
+      "onLeave": "On Leave"
+    },
+    "table": {
+      "employee": "Employee",
+      "department": "Department",
+      "date": "Date",
+      "checkIn": "Check In",
+      "checkOut": "Check Out",
+      "hours": "Hours",
+      "late": "Late",
+      "status": "Status",
+      "actions": "Actions"
+    },
+    "status": {
+      "present": "Present",
+      "absent": "Absent",
+      "late": "Late",
+      "leave": "On Leave",
+      "holiday": "Holiday",
+      "weekend": "Weekend",
+      "half_day": "Half Day"
+    },
+    "form": {
+      "employee": "Employee",
+      "date": "Date",
+      "status": "Status",
+      "checkIn": "Check In",
+      "checkOut": "Check Out",
+      "lateMinutes": "Late Minutes",
+      "workScheduleId": "Work Schedule ID",
+      "notes": "Notes"
+    },
+    "deleteConfirm": {
+      "title": "Delete Attendance Record",
+      "description": "Are you sure you want to delete the attendance record for \"{{name}}\" on {{date}}? This action cannot be undone."
+    }
+  },
+  "leave": {
+    "title": "Leave Management",
+    "newLeaveRequest": "New Leave Request",
+    "addLeaveRequest": "Add Leave Request",
+    "showing": "Showing {{count}} requests",
+    "searchPlaceholder": "Search by name…",
+    "emptySearch": "No leave requests match your search.",
+    "loadFailed": "Failed to load leave requests.",
+    "editAction": "Edit leave request",
+    "deleteAction": "Delete leave request",
+    "filter": {
+      "all": "All",
+      "pending": "Pending",
+      "approved": "Approved",
+      "rejected": "Rejected"
+    },
+    "stat": {
+      "total": "Total Requests",
+      "pending": "Pending",
+      "approved": "Approved",
+      "pendingRequests": "Pending Requests",
+      "approvedToday": "Approved Today",
+      "onLeaveNow": "On Leave Now",
+      "balanceUsed": "Balance Used"
+    },
+    "table": {
+      "employee": "Employee",
+      "leaveType": "Leave Type",
+      "from": "From",
+      "to": "To",
+      "days": "Days",
+      "status": "Status",
+      "actions": "Actions"
+    },
+    "type": {
+      "annual": "Annual",
+      "sick": "Sick",
+      "emergency": "Emergency",
+      "unpaid": "Unpaid",
+      "maternity": "Maternity"
+    },
+    "status": {
+      "pending": "Pending",
+      "approved": "Approved",
+      "rejected": "Rejected",
+      "cancelled": "Cancelled"
+    },
+    "form": {
+      "addTitle": "Add Leave Request",
+      "editTitle": "Edit Leave Request",
+      "employee": "Employee",
+      "leaveType": "Leave Type",
+      "startDate": "Start Date",
+      "endDate": "End Date",
+      "days": "Days",
+      "reason": "Reason",
+      "status": "Status"
+    },
+    "deleteConfirm": {
+      "title": "Delete Leave Request",
+      "description": "Are you sure you want to delete the leave request for \"{{name}}\"? This action cannot be undone."
+    },
+    "approve": "Approve",
+    "reject": "Reject"
+  },
+  "payroll": {
+    "title": "Payroll",
+    "run": {
+      "sectionTitle": "Payroll Runs",
+      "add": "New Payroll Run",
+      "addTitle": "Add Payroll Run",
+      "editTitle": "Edit Payroll Run",
+      "allStatuses": "All Statuses",
+      "filterByStatus": "Filter by status",
+      "selectRun": "Select payroll run",
+      "empty": "No payroll runs found.",
+      "loadFailed": "Failed to load payroll runs.",
+      "editAction": "Edit payroll run",
+      "deleteAction": "Delete payroll run",
+      "deleteTitle": "Delete Payroll Run",
+      "deleteDescription": "Are you sure you want to delete the payroll run for \"{{period}}\"? This action cannot be undone.",
+      "stat": {
+        "total": "Total Runs",
+        "draft": "Draft",
+        "reviewing": "Under Review"
+      },
+      "table": {
+        "period": "Period",
+        "status": "Status",
+        "gross": "Gross",
+        "deductions": "Deductions",
+        "net": "Net",
+        "employees": "Employees",
+        "locked": "Locked"
+      },
+      "form": {
+        "periodMonth": "Period Month",
+        "periodYear": "Period Year",
+        "status": "Status",
+        "totalGross": "Total Gross",
+        "totalDeductions": "Total Deductions",
+        "totalNet": "Total Net",
+        "employeeCount": "Employee Count",
+        "notes": "Notes",
+        "isLocked": "Locked"
+      }
+    },
+    "runStatusOptions": {
+      "draft": "Draft",
+      "calculating": "Calculating",
+      "calculated": "Calculated",
+      "reviewing": "Reviewing",
+      "approved": "Approved",
+      "posted": "Posted",
+      "paid": "Paid"
+    },
+    "payslip": {
+      "sectionTitle": "Payslips",
+      "add": "Add Payslip",
+      "addTitle": "Add Payslip",
+      "editTitle": "Edit Payslip",
+      "allStatuses": "All Statuses",
+      "filterByStatus": "Filter by status",
+      "selectRunHint": "Select a payroll run above to view its payslips.",
+      "empty": "No payslips found for this run.",
+      "loadFailed": "Failed to load payslips.",
+      "editAction": "Edit payslip",
+      "deleteAction": "Delete payslip",
+      "deleteTitle": "Delete Payslip",
+      "deleteDescription": "Are you sure you want to delete the payslip for \"{{name}}\"? This action cannot be undone.",
+      "table": {
+        "employee": "Employee",
+        "basic": "Basic",
+        "gross": "Gross",
+        "earnings": "Earnings",
+        "deductions": "Deductions",
+        "net": "Net",
+        "status": "Status"
+      },
+      "form": {
+        "employee": "Employee",
+        "status": "Status",
+        "basicSalary": "Basic Salary",
+        "grossSalary": "Gross Salary",
+        "totalEarnings": "Total Earnings",
+        "totalDeductions": "Total Deductions",
+        "netSalary": "Net Salary",
+        "workingDays": "Working Days",
+        "presentDays": "Present Days",
+        "absentDays": "Absent Days",
+        "overtimeHours": "Overtime Hours",
+        "overtimeAmount": "Overtime Amount"
+      }
+    },
+    "payslipStatusOptions": {
+      "draft": "Draft",
+      "finalized": "Finalized",
+      "paid": "Paid"
+    }
+  },
+  "compensation": {
+    "title": "Compensation & Benefits",
+    "loadFailed": "Failed to load data.",
+    "stat": {
+      "totalStructures": "Total Structures",
+      "activeStructures": "Active Structures",
+      "totalComponents": "Total Components"
+    },
+    "form": {
+      "name": "Name",
+      "description": "Description",
+      "isDefault": "Default",
+      "isActive": "Active",
+      "structure": "Salary Structure",
+      "code": "Code",
+      "type": "Type",
+      "calculationType": "Calculation Type",
+      "percentageOf": "Percentage Of",
+      "percentageOfNone": "— None (absolute) —",
+      "defaultAmount": "Default Amount",
+      "sortOrder": "Sort Order",
+      "isTaxable": "Taxable",
+      "isVariable": "Variable"
+    },
+    "typeOptions": {
+      "earning": "Earning",
+      "deduction": "Deduction"
+    },
+    "calculationTypeOptions": {
+      "fixed": "Fixed",
+      "percentage": "Percentage",
+      "formula": "Formula"
+    },
+    "structure": {
+      "title": "Salary Structures",
+      "add": "Add Structure",
+      "addTitle": "Add Salary Structure",
+      "editTitle": "Edit Salary Structure",
+      "searchPlaceholder": "Search structures…",
+      "empty": "No salary structures found.",
+      "col": {
+        "name": "Name",
+        "description": "Description",
+        "isDefault": "Default",
+        "isActive": "Active",
+        "actions": "Actions"
+      },
+      "deleteConfirm": {
+        "title": "Delete Salary Structure",
+        "description": "Delete \"{{name}}\"? All components in this structure will also be removed."
+      }
+    },
+    "component": {
+      "title": "Salary Components",
+      "add": "Add Component",
+      "addTitle": "Add Salary Component",
+      "editTitle": "Edit Salary Component",
+      "searchPlaceholder": "Search components…",
+      "empty": "No salary components found.",
+      "filterAll": "All Types",
+      "filterAllStructures": "All Structures",
+      "col": {
+        "name": "Name",
+        "structure": "Structure",
+        "type": "Type",
+        "code": "Code",
+        "calcType": "Calc. Type",
+        "amount": "Default Amt",
+        "taxable": "Taxable",
+        "variable": "Variable",
+        "actions": "Actions"
+      },
+      "deleteConfirm": {
+        "title": "Delete Salary Component",
+        "description": "Delete \"{{name}}\"? This action cannot be undone."
+      }
+    }
+  },
+  "loans": {
+    "title": "Loans & Advances",
+    "newLoanRequest": "New Loan Request",
+    "addLoan": "Add Loan",
+    "editLoan": "Edit Loan",
+    "showing": "Showing {{count}} records",
+    "searchPlaceholder": "Search employee…",
+    "loadFailed": "Failed to load loans.",
+    "emptySearch": "No loans match your search.",
+    "editAction": "Edit loan",
+    "deleteAction": "Delete loan",
+    "stat": {
+      "activeLoans": "Active Loans",
+      "totalDisbursed": "Total Disbursed",
+      "monthlyCollection": "Monthly Collection",
+      "pendingRequests": "Pending Requests",
+      "totalLoans": "Total Loans",
+      "pendingLoans": "Pending Loans"
+    },
+    "status": {
+      "pending": "Pending",
+      "active": "Active",
+      "completed": "Completed",
+      "cancelled": "Cancelled"
+    },
+    "filter": {
+      "all": "All",
+      "pending": "Pending",
+      "active": "Active",
+      "completed": "Completed",
+      "cancelled": "Cancelled"
+    },
+    "form": {
+      "employee": "Employee",
+      "type": "Loan Type",
+      "typeOptions": {
+        "loan": "Loan",
+        "advance": "Advance"
+      },
+      "status": "Status",
+      "amount": "Amount",
+      "startDate": "Start Date",
+      "installmentAmount": "Installment Amount",
+      "totalInstallments": "Total Installments",
+      "paidInstallments": "Paid Installments",
+      "remainingAmount": "Remaining Amount",
+      "reason": "Reason"
+    },
+    "table": {
+      "employee": "Employee",
+      "type": "Type",
+      "amount": "Amount",
+      "installment": "Installment",
+      "progress": "Progress",
+      "remaining": "Remaining",
+      "status": "Status",
+      "actions": "Actions"
+    },
+    "deleteConfirm": {
+      "title": "Delete Loan",
+      "description": "Are you sure you want to delete the loan for {{name}}? This action cannot be undone."
+    },
+    "perMonth": "/ mo",
+    "installments": "{{paid}} / {{total}} installments"
+  },
+  "recruitment": {
+    "title": "Recruitment",
+    "postNewJob": "Post New Job",
+    "hiringPipeline": "Hiring Pipeline",
+    "addJobPosting": "Add Job Posting",
+    "searchPlaceholder": "Search job postings…",
+    "emptySearch": "No job postings match your search.",
+    "loadFailed": "Failed to load job postings.",
+    "editAction": "Edit job posting",
+    "deleteAction": "Delete job posting",
+    "filter": {
+      "all": "All",
+      "open": "Open",
+      "closed": "Closed",
+      "draft": "Draft"
+    },
+    "stat": {
+      "openPositions": "Open Positions",
+      "totalApplicants": "Total Applicants",
+      "inInterview": "In Interview",
+      "offersSent": "Offers Sent",
+      "totalPostings": "Total Postings",
+      "openPostings": "Open",
+      "closedPostings": "Closed"
+    },
+    "table": {
+      "position": "Position",
+      "department": "Department",
+      "location": "Location",
+      "applicants": "Applicants",
+      "posted": "Published",
+      "status": "Status",
+      "employmentType": "Type",
+      "actions": "Actions"
+    },
+    "status": {
+      "open": "Open",
+      "closed": "Closed",
+      "draft": "Draft"
+    },
+    "deleteConfirm": {
+      "title": "Delete Job Posting",
+      "description": "Are you sure you want to delete \"{{title}}\"? This action cannot be undone."
+    },
+    "form": {
+      "addJobPosting": "Add Job Posting",
+      "editJobPosting": "Edit Job Posting",
+      "title": "Job Title",
+      "department": "Department (Requisition)",
+      "description": "Description",
+      "requirements": "Requirements",
+      "skills": "Required Skills",
+      "skillsPlaceholder": "e.g. TypeScript, React, Node.js",
+      "location": "Location",
+      "employmentType": "Employment Type",
+      "experienceMin": "Min Experience (yrs)",
+      "experienceMax": "Max Experience (yrs)",
+      "salaryMin": "Min Salary",
+      "salaryMax": "Max Salary",
+      "educationLevel": "Education Level",
+      "publishedAt": "Published Date",
+      "expiresAt": "Closing Date",
+      "isInternal": "Internal Only",
+      "isPublished": "Published",
+      "yes": "Yes",
+      "no": "No",
+      "employmentTypeOptions": {
+        "full_time": "Full-time",
+        "part_time": "Part-time",
+        "contract": "Contract",
+        "intern": "Internship"
+      }
+    },
+    "view": "View"
+  },
+  "onboarding": {
+    "title": "Onboarding",
+    "newOnboardingPlan": "New Onboarding Plan",
+    "stat": {
+      "inProgress": "In Progress",
+      "completedThisMonth": "Completed This Month",
+      "overdueTasks": "Overdue Tasks"
+    },
+    "activeOnboarding": "Active Onboarding",
+    "employeesCount": "{{count}} employees",
+    "status": {
+      "in_progress": "In Progress",
+      "completed": "Completed",
+      "overdue": "Overdue",
+      "cancelled": "Cancelled"
+    },
+    "tasksOf": "of",
+    "tasks": "tasks",
+    "startDate": "Start date",
+    "instanceStatusOptions": {
+      "in_progress": "In Progress",
+      "completed": "Completed",
+      "cancelled": "Cancelled"
+    },
+    "typeOptions": {
+      "onboarding": "Onboarding",
+      "offboarding": "Offboarding"
+    },
+    "taskStatusOptions": {
+      "pending": "Pending",
+      "in_progress": "In Progress",
+      "completed": "Completed",
+      "skipped": "Skipped"
+    },
+    "form": {
+      "addTitle": "New Onboarding Instance",
+      "editTitle": "Edit Onboarding Instance",
+      "employee": "Employee",
+      "template": "Template",
+      "type": "Type",
+      "status": "Status",
+      "startedAt": "Start Date",
+      "completedAt": "Completion Date"
+    },
+    "task": {
+      "tasks": "Tasks",
+      "dueDate": "Due",
+      "markDone": "Mark done"
+    },
+    "filter": {
+      "all": "All Types",
+      "allStatuses": "All Statuses"
+    },
+    "editAction": "Edit instance",
+    "deleteAction": "Delete instance",
+    "searchPlaceholder": "Search by employee…",
+    "loadFailed": "Failed to load onboarding records.",
+    "emptySearch": "No onboarding records match your search.",
+    "deleteConfirm": {
+      "title": "Delete Onboarding Instance",
+      "description": "Are you sure you want to delete the onboarding record for {{name}}? This action cannot be undone."
+    },
+    "templateTask": {
+      "sectionTitle": "Template Checklist",
+      "add": "Add Task",
+      "addTitle": "New Checklist Task",
+      "editTitle": "Edit Checklist Task",
+      "selectTemplateHint": "Select a template to view its tasks",
+      "empty": "No tasks in this template yet.",
+      "loadFailed": "Failed to load template tasks.",
+      "editAction": "Edit task",
+      "deleteAction": "Delete task",
+      "deleteTitle": "Delete Checklist Task",
+      "deleteDescription": "Are you sure you want to delete the task \"{{title}}\"? This action cannot be undone.",
+      "table": {
+        "title": "Title",
+        "owner": "Owner",
+        "dueOffset": "Due (days)",
+        "required": "Required",
+        "sortOrder": "Order",
+        "actions": "Actions"
+      },
+      "form": {
+        "title": "Title",
+        "description": "Description",
+        "ownerType": "Owner",
+        "dueDaysOffset": "Due Days Offset",
+        "isRequired": "Required",
+        "sortOrder": "Sort Order"
+      },
+      "ownerTypeOptions": {
+        "hr": "HR",
+        "it": "IT",
+        "manager": "Manager",
+        "employee": "Employee",
+        "admin": "Admin",
+        "finance": "Finance"
+      }
+    }
+  },
+  "performance": {
+    "title": "Performance",
+    "addCycle": "Add Cycle",
+    "addReview": "Add Review",
+    "activeCycleLabel": "Active Cycle",
+    "deadline": "Manager Review Deadline",
+    "completion": "Completion",
+    "allCyclesTitle": "All Cycles",
+    "reviewsTitle": "Reviews",
+    "noCycles": "No performance cycles yet.",
+    "noReviews": "No reviews for this cycle.",
+    "allReviewTypes": "All Review Types",
+    "allReviewStatuses": "All Statuses",
+    "editCycleAction": "Edit cycle",
+    "deleteCycleAction": "Delete cycle",
+    "editReviewAction": "Edit review",
+    "deleteReviewAction": "Delete review",
+    "deleteCycleTitle": "Delete Cycle",
+    "deleteCycleDesc": "Are you sure you want to delete the cycle \"{{name}}\"? All associated reviews will also be deleted.",
+    "deleteReviewTitle": "Delete Review",
+    "deleteReviewDesc": "Are you sure you want to delete the review for {{employee}}?",
+    "stat": {
+      "totalCycles": "Total Cycles",
+      "activeCycles": "Active Cycles",
+      "totalReviews": "Total Reviews",
+      "pendingReviews": "Pending Reviews"
+    },
+    "table": {
+      "employee": "Employee",
+      "reviewer": "Reviewer",
+      "reviewType": "Review Type",
+      "rating": "Rating",
+      "status": "Status"
+    },
+    "form": {
+      "addCycleTitle": "Add Performance Cycle",
+      "editCycleTitle": "Edit Performance Cycle",
+      "cycleName": "Cycle Name",
+      "cycleType": "Type",
+      "startDate": "Start Date",
+      "endDate": "End Date",
+      "selfReviewDeadline": "Self-Review Deadline",
+      "managerReviewDeadline": "Manager Review Deadline",
+      "cycleStatus": "Status",
+      "addReviewTitle": "Add Performance Review",
+      "editReviewTitle": "Edit Performance Review",
+      "employee": "Employee",
+      "reviewer": "Reviewer",
+      "reviewType": "Review Type",
+      "reviewStatus": "Status",
+      "overallRating": "Overall Rating",
+      "submittedAt": "Submitted At",
+      "strengths": "Strengths",
+      "improvements": "Areas for Improvement",
+      "comments": "Comments"
+    },
+    "cycleTypeOptions": {
+      "quarterly": "Quarterly",
+      "semi_annual": "Semi-Annual",
+      "annual": "Annual"
+    },
+    "cycleStatusOptions": {
+      "draft": "Draft",
+      "active": "Active",
+      "in_review": "In Review",
+      "completed": "Completed"
+    },
+    "reviewTypeOptions": {
+      "self": "Self",
+      "manager": "Manager",
+      "peer": "Peer",
+      "direct_report": "Direct Report"
+    },
+    "reviewStatusOptions": {
+      "pending": "Pending",
+      "in_progress": "In Progress",
+      "submitted": "Submitted",
+      "acknowledged": "Acknowledged"
+    }
+  },
+  "learning": {
+    "title": "Learning & Development",
+    "createProgram": "Create Program",
+    "addProgram": "Add Program",
+    "editProgram": "Edit Program",
+    "loadFailed": "Failed to load training programs.",
+    "emptySearch": "No training programs match your search.",
+    "searchPlaceholder": "Search programs…",
+    "editAction": "Edit program",
+    "deleteAction": "Delete program",
+    "stat": {
+      "activePrograms": "Active Programs",
+      "enrolled": "Enrolled",
+      "completionRate": "Completion Rate",
+      "budgetUsed": "Budget Used",
+      "total": "Total Programs",
+      "planned": "Planned",
+      "ongoing": "Ongoing",
+      "completed": "Completed"
+    },
+    "table": {
+      "program": "Program",
+      "category": "Category",
+      "type": "Type",
+      "trainer": "Trainer",
+      "date": "Date",
+      "enrolled": "Enrolled",
+      "status": "Status",
+      "startDate": "Start Date",
+      "endDate": "End Date",
+      "actions": "Actions",
+      "seats": "Seats",
+      "maxParticipants": "{{count}} seats"
+    },
+    "type": {
+      "internal": "Internal",
+      "external": "External",
+      "online": "Online"
+    },
+    "typeOptions": {
+      "internal": "Internal",
+      "external": "External",
+      "online": "Online"
+    },
+    "status": {
+      "active": "Active",
+      "scheduled": "Scheduled",
+      "completed": "Completed",
+      "draft": "Draft"
+    },
+    "statusOptions": {
+      "planned": "Planned",
+      "ongoing": "Ongoing",
+      "completed": "Completed",
+      "cancelled": "Cancelled"
+    },
+    "filter": {
+      "all": "All",
+      "allTypes": "All Types"
+    },
+    "form": {
+      "title": "Title",
+      "description": "Description",
+      "category": "Category",
+      "type": "Type",
+      "trainerName": "Trainer Name",
+      "durationHours": "Duration (hours)",
+      "cost": "Cost",
+      "maxParticipants": "Max Participants",
+      "startDate": "Start Date",
+      "endDate": "End Date",
+      "location": "Location",
+      "status": "Status",
+      "endDateAfterStart": "End date must be on or after the start date."
+    },
+    "deleteConfirm": {
+      "title": "Delete Program",
+      "description": "Are you sure you want to delete \"{{name}}\"? This action cannot be undone."
+    }
+  },
+  "career": {
+    "title": "Career & Succession",
+    "careerPaths": "Career Paths",
+    "successionPlans": "Succession Plans",
+    "addPath": "Add Path",
+    "newPlan": "New Plan",
+    "editPath": "Edit Career Path",
+    "editPathAction": "Edit career path",
+    "deletePathAction": "Delete career path",
+    "editPlan": "Edit Succession Plan",
+    "editPlanAction": "Edit succession plan",
+    "deletePlanAction": "Delete succession plan",
+    "loadFailedPaths": "Failed to load career paths",
+    "loadFailedPlans": "Failed to load succession plans",
+    "emptyPaths": "No career paths yet. Add the first one.",
+    "emptyPlans": "No succession plans yet. Add the first one.",
+    "stat": {
+      "careerPaths": "Career Paths",
+      "successionPlans": "Succession Plans",
+      "readyNow": "Ready Now"
+    },
+    "levels": "Levels",
+    "table": {
+      "position": "Position",
+      "currentHolder": "Current Holder",
+      "topSuccessor": "Top Successor",
+      "successor": "Successor",
+      "readiness": "Readiness",
+      "score": "Score",
+      "actions": "Actions"
+    },
+    "readiness": {
+      "Ready Now": "Ready Now",
+      "1-2 Years": "1-2 Years",
+      "3+ Years": "3+ Years"
+    },
+    "readinessOptions": {
+      "ready_now": "Ready Now",
+      "ready_1_year": "Ready in 1 Year",
+      "ready_2_years": "Ready in 2 Years",
+      "development_needed": "Development Needed"
+    },
+    "form": {
+      "name": "Path Name",
+      "jobFamily": "Job Family",
+      "jobPositionId": "Job Position ID",
+      "currentHolder": "Current Holder",
+      "successor": "Successor",
+      "readiness": "Readiness",
+      "readinessScore": "Readiness Score (0-100)",
+      "developmentPlan": "Development Plan",
+      "notes": "Notes",
+      "vacant": "— Vacant —"
+    },
+    "deletePathConfirm": {
+      "title": "Delete Career Path",
+      "description": "Delete \"{{name}}\"? This cannot be undone."
+    },
+    "deletePlanConfirm": {
+      "title": "Delete Succession Plan",
+      "description": "Delete the succession plan for \"{{position}}\"? This cannot be undone."
+    },
+    "addLevel": "Add Level",
+    "editLevel": "Edit Career Path Level",
+    "editLevelAction": "Edit level",
+    "deleteLevelAction": "Delete level",
+    "loadFailedLevels": "Failed to load career path levels",
+    "emptyLevels": "No levels yet. Add the first one.",
+    "levelFilter": {
+      "allPaths": "All Career Paths"
+    },
+    "levelTable": {
+      "careerPath": "Career Path",
+      "jobPosition": "Job Position",
+      "order": "Order",
+      "minExp": "Min Exp.",
+      "competencies": "Competencies",
+      "certifications": "Certifications"
+    },
+    "levelForm": {
+      "careerPathId": "Career Path ID",
+      "jobPositionId": "Job Position ID",
+      "levelOrder": "Level Order",
+      "minExperienceYears": "Min. Experience (years)",
+      "requiredCompetencies": "Required Competencies",
+      "requiredCertifications": "Required Certifications",
+      "tagsPlaceholder": "e.g. React, TypeScript, Node.js"
+    },
+    "deleteLevelConfirm": {
+      "title": "Delete Career Path Level",
+      "description": "Delete level {{order}} from \"{{path}}\"? This cannot be undone."
+    }
+  },
+  "analytics": {
+    "title": "HR Analytics",
+    "exportReport": "Export Report",
+    "kpi": {
+      "totalEmployees": "Total Employees",
+      "openPositions": "Open Positions",
+      "allTimeAttrition": "All-time Attrition",
+      "payrollCost": "Payroll Cost"
+    },
+    "sub": {
+      "asOfToday": "as of today",
+      "openListings": "active listings",
+      "latestRun": "Latest Payroll Run",
+      "allTimeAttritionNote": "terminated + resigned, all-time"
+    },
+    "byDepartment": "By Department",
+    "headcountDistribution": "Headcount distribution",
+    "noDepartments": "No departments found."
+  },
+  "copilot": {
+    "title": "AI Copilot",
+    "heroTitle": "Ask me anything about your HR data",
+    "heroDescription": "Query employee records, analyse trends, surface insights, or get a quick summary of any department — all in plain English. No SQL required.",
+    "inputPlaceholder": "e.g. Show me employees with the highest overtime hours this month…",
+    "suggestedQueries": "Suggested queries",
+    "exampleResponse": "Example response",
+    "submitQuery": "Submit query"
+  },
+  "organization": {
+    "title": "Organization",
+    "addDepartment": "Add Department",
+    "searchPlaceholder": "Search departments…",
+    "loadFailed": "Failed to load departments.",
+    "emptySearch": "No departments found.",
+    "companiesSectionTitle": "Companies",
+    "branchesSectionTitle": "Branches",
+    "departmentsSectionTitle": "Departments",
+    "jobPositionsSectionTitle": "Job Positions",
+    "addCompany": "Add Company",
+    "addBranch": "Add Branch",
+    "addJobPosition": "Add Job Position",
+    "allCompanies": "All Companies",
+    "allDepartments": "All Departments",
+    "stat": {
+      "companies": "Companies",
+      "branches": "Branches",
+      "departments": "Departments",
+      "positions": "Positions"
+    },
+    "table": {
+      "department": "Department",
+      "head": "Head",
+      "status": "Status",
+      "actions": "Actions"
+    },
+    "department": {
+      "active": "Active",
+      "inactive": "Inactive",
+      "vacant": "— Vacant —",
+      "addTitle": "Add Department",
+      "editTitle": "Edit Department",
+      "editAction": "Edit department",
+      "deleteAction": "Delete department",
+      "deleteConfirm": {
+        "title": "Delete Department",
+        "description": "Are you sure you want to delete \"{{name}}\"? This action cannot be undone."
+      },
+      "form": {
+        "name": "Department Name",
+        "code": "Code",
+        "parent": "Parent Department",
+        "noParent": "— No parent —",
+        "head": "Head of Department",
+        "vacant": "— Vacant —",
+        "level": "Level",
+        "sortOrder": "Sort Order",
+        "isActive": "Status",
+        "activeOption": "Active",
+        "inactiveOption": "Inactive"
+      }
+    },
+    "company": {
+      "addTitle": "Add Company",
+      "editTitle": "Edit Company",
+      "editAction": "Edit company",
+      "deleteAction": "Delete company",
+      "deleteConfirm": {
+        "title": "Delete Company",
+        "description": "Are you sure you want to delete \"{{name}}\"? This action cannot be undone."
+      },
+      "table": {
+        "name": "Company",
+        "registration": "Registration No.",
+        "country": "Country / Currency",
+        "status": "Status",
+        "actions": "Actions"
+      },
+      "form": {
+        "name": "Company Name",
+        "nameAr": "Company Name (Arabic)",
+        "legalName": "Legal Name",
+        "registrationNumber": "Registration No.",
+        "taxNumber": "Tax No.",
+        "logo": "Logo URL",
+        "email": "Email",
+        "phone": "Phone",
+        "website": "Website",
+        "address": "Address",
+        "city": "City",
+        "countryCode": "Country Code (2-letter)",
+        "currencyCode": "Currency Code (3-letter)",
+        "fiscalYearStart": "Fiscal Year Start (month 1–12)",
+        "timezone": "Timezone",
+        "isActive": "Status",
+        "activeOption": "Active",
+        "inactiveOption": "Inactive"
+      }
+    },
+    "branch": {
+      "addTitle": "Add Branch",
+      "editTitle": "Edit Branch",
+      "editAction": "Edit branch",
+      "deleteAction": "Delete branch",
+      "hq": "HQ",
+      "deleteConfirm": {
+        "title": "Delete Branch",
+        "description": "Are you sure you want to delete \"{{name}}\"? This action cannot be undone."
+      },
+      "table": {
+        "name": "Branch",
+        "company": "Company",
+        "city": "City",
+        "hq": "HQ",
+        "status": "Status",
+        "actions": "Actions"
+      },
+      "form": {
+        "company": "Company",
+        "selectCompany": "— Select company —",
+        "name": "Branch Name",
+        "code": "Code",
+        "address": "Address",
+        "city": "City",
+        "countryCode": "Country Code (2-letter)",
+        "phone": "Phone",
+        "latitude": "Latitude",
+        "longitude": "Longitude",
+        "geofenceRadius": "Geofence Radius (m)",
+        "isHeadquarters": "Headquarters",
+        "isActive": "Status",
+        "activeOption": "Active",
+        "inactiveOption": "Inactive"
+      }
+    },
+    "jobPosition": {
+      "addTitle": "Add Job Position",
+      "editTitle": "Edit Job Position",
+      "editAction": "Edit job position",
+      "deleteAction": "Delete job position",
+      "unassigned": "— Unassigned —",
+      "deleteConfirm": {
+        "title": "Delete Job Position",
+        "description": "Are you sure you want to delete \"{{name}}\"? This action cannot be undone."
+      },
+      "table": {
+        "title": "Job Position",
+        "company": "Company",
+        "department": "Department",
+        "headcount": "Headcount",
+        "status": "Status",
+        "actions": "Actions"
+      },
+      "form": {
+        "company": "Company",
+        "selectCompany": "— Select company —",
+        "department": "Department",
+        "noDepartment": "— No department —",
+        "title": "Position Title",
+        "titleAr": "Position Title (Arabic)",
+        "code": "Code",
+        "headcount": "Headcount",
+        "description": "Description",
+        "requirements": "Requirements",
+        "isActive": "Status",
+        "activeOption": "Active",
+        "inactiveOption": "Inactive"
+      }
+    }
+  },
+  "settings": {
+    "title": "Settings",
+    "editSettings": "Edit Settings",
+    "enabled": "Enabled",
+    "disabled": "Disabled"
+  }
+}

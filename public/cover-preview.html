@@ -1,0 +1,41 @@
+<!-- @dsCard height=288 -->
+<!doctype html>
+<html data-theme="light">
+<body style="margin:0">
+<style>
+  .navy   { fill: #0C4874; }
+  .navydp { fill: #072D4A; }
+  .coral  { fill: #E4714E; }
+  .ink    { fill: #0A1F31; }
+  .muted  { fill: #5B6B7A; }
+  .ground { fill: #F4F5F7; }
+  .rule   { stroke: rgba(255,255,255,.18); stroke-width: 1; }
+  .rsm    { rx: 3; }        /* radius-sm */
+  .rpill  { rx: 26; }       /* radius-pill, halved to the short side (52px tall) */
+</style>
+<svg viewBox="0 0 960 288" width="960" height="288" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Kawdly People — Bold Editorial, Ledger direction">
+<!--
+  blocks: navy tall slab 280×288 (navy) + navy-deep block 200×120 (navy-deep) + one coral pill 150×52 rx=26 (coral, radius-pill) — bleeding off the right edge, per principle: sharp-and-pill mixed on purpose
+  arrangement: one dominant sharp slab anchors the right half, a smaller deep block sits low-right for depth, a single soft pill breaks the sharpness once — never more than once
+  pattern: 4 hairline rules (on-navy-border-18, the exact header-border token) crossing the slab at a fixed 56px pitch — this system's own "hairline structure, no shadows" principle, literally reusing the product's real hairline token rather than an invented motif
+  scales: pill rx=26 (half of 52px height, a radius-pill token); block widths 280/200 and rule pitch 56 are multiples of space-7(32)/space-1(4) from the spacing scale, not arbitrary
+-->
+<rect class="ground" x="0" y="0" width="960" height="288"/>
+
+<rect class="navy rsm" x="480" y="0" width="280" height="288"/>
+<rect class="navydp rsm" x="760" y="168" width="200" height="120"/>
+<rect class="coral" x="790" y="36" width="150" height="52" rx="26"/>
+
+<g class="rule">
+  <line x1="480" y1="56"  x2="960" y2="56"/>
+  <line x1="480" y1="112" x2="960" y2="112"/>
+  <line x1="480" y1="168" x2="960" y2="168"/>
+  <line x1="480" y1="224" x2="960" y2="224"/>
+</g>
+
+<text x="40" y="128" class="ink" style="font:700 112px/0.95 'IBM Plex Sans',system-ui,sans-serif;letter-spacing:-0.045em">Kawdly</text>
+<text x="40" y="234" class="ink" style="font:700 112px/0.95 'IBM Plex Sans',system-ui,sans-serif;letter-spacing:-0.045em">People</text>
+<text x="40" y="262" class="muted" style="font:400 14px 'IBM Plex Sans',system-ui,sans-serif">Precision instrument, not another soft dashboard.</text>
+</svg>
+</body>
+</html>

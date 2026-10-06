@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet><link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet"><style>body{margin:0;background:#F4F5F7}a{color:#0C4874}a:hover{color:#E4714E}</style></helmet>
+<div dir="ltr" style="min-height:100vh;background:#F4F5F7;font-family:'IBM Plex Sans',system-ui,sans-serif;color:#0A1F31;line-height:1.45">
+
+<div style="background:#0C4874;color:#fff;background-image:radial-gradient(900px 500px at 88% -10%,#1F7BB8 0%,transparent 60%),radial-gradient(700px 500px at 5% 110%,#072D4A 0%,transparent 65%),radial-gradient(400px 300px at 40% 40%,rgba(228,113,78,.28) 0%,transparent 70%)">
+<div style="display:flex;align-items:center;gap:20px;padding:10px 32px;flex-wrap:wrap;border-bottom:1px solid rgba(255,255,255,.18)">
+<div style="display:flex;align-items:center;gap:8px;font-weight:700;font-size:16px;letter-spacing:-.02em;white-space:nowrap"><div style="width:28px;height:28px;background:#fff;color:#0C4874;display:grid;place-items:center;font-weight:700;border-radius:3px">K</div>Kawdly People</div>
+<div style="display:flex;gap:2px;flex:1 1 0;min-width:0;flex-wrap:nowrap;overflow:hidden">
+<sc-for list="{{ nav }}" as="n" hint-placeholder-count="6"><div style="padding:6px 12px;font-size:13px;cursor:pointer;white-space:nowrap;font-weight:{{ n.w }};color:{{ n.fg }};border-bottom:2px solid {{ n.bd }}" style-hover="color:#fff">{{ n.t }}</div></sc-for></div>
+<div style="display:flex;align-items:center;gap:10px;background:rgba(255,255,255,.12);border-radius:99px;padding:6px 14px;flex:0 1 220px;min-width:140px;font-size:12px;color:rgba(255,255,255,.8);white-space:nowrap"><span style="flex:1">Search or jump to…</span><span style="font:10px 'JetBrains Mono',monospace;border:1px solid rgba(255,255,255,.4);padding:0 6px;border-radius:99px">Ctrl K</span></div>
+<div style="width:30px;height:30px;border-radius:50%;background:#8FA3B5 center/cover url(https://i.pravatar.cc/80?img=47);filter:grayscale(1);border:2px solid #fff"></div>
+</div>
+
+<div style="max-width:1160px;margin:0 auto;padding:40px 32px 28px;display:flex;flex-direction:column;gap:18px">
+<div style="display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap">
+<div style="font-size:12px;letter-spacing:.04em;color:rgba(255,255,255,.75);white-space:nowrap">HR Manager · Wednesday, 30 September 2026</div>
+<div style="display:flex;background:rgba(255,255,255,.12);border-radius:99px;padding:3px;font-size:12px;white-space:nowrap"><div style="padding:5px 14px;border-radius:99px;background:#fff;color:#0C4874;font-weight:600">HR Manager</div><div style="padding:5px 14px;color:rgba(255,255,255,.85)">Department Manager</div></div></div>
+<div style="display:flex;align-items:center;gap:28px;flex-wrap:wrap;padding:16px 0 12px">
+<img src="https://i.pravatar.cc/200?img=12" style="width:112px;height:112px;object-fit:cover;filter:grayscale(1) contrast(1.05);border-radius:4px;flex:none" alt="">
+<div style="font-size:clamp(40px,7vw,80px);font-weight:700;letter-spacing:-.045em;line-height:1.02;min-width:0">Good morning,<br>Islam Ramadan</div></div>
+<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;font-size:15px">
+<span style="white-space:nowrap">You have <b style="font:700 26px 'JetBrains Mono',monospace;letter-spacing:-.04em;color:#E4714E;background:#fff;padding:0 10px;border-radius:3px;margin:0 4px">22</b> items awaiting your decision today:</span>
+<span style="border:1px solid rgba(255,255,255,.5);padding:3px 12px;border-radius:99px;font-size:13px;white-space:nowrap"><b style="font-family:'JetBrains Mono',monospace">17</b> leave requests</span>
+<span style="border:1px solid rgba(255,255,255,.5);padding:3px 12px;border-radius:99px;font-size:13px;white-space:nowrap"><b style="font-family:'JetBrains Mono',monospace">1</b> payroll run</span>
+<span style="border:1px solid rgba(255,255,255,.5);padding:3px 12px;border-radius:99px;font-size:13px;white-space:nowrap"><b style="font-family:'JetBrains Mono',monospace">4</b> contracts</span></div>
+<div style="display:flex;gap:8px;flex-wrap:wrap">
+<div style="padding:10px 20px;background:#E4714E;color:#fff;font-weight:600;font-size:13px;border-radius:99px;cursor:pointer;white-space:nowrap" style-hover="background:#D0603F">+ Add employee</div>
+<div style="padding:10px 20px;background:#fff;color:#0C4874;font-weight:600;font-size:13px;border-radius:3px;cursor:pointer;white-space:nowrap" style-hover="background:#E9EFF5">Run payroll</div>
+<div style="padding:10px 20px;border:1px solid rgba(255,255,255,.6);color:#fff;font-weight:600;font-size:13px;border-radius:3px;cursor:pointer;white-space:nowrap" style-hover="background:rgba(255,255,255,.12)">Post a job</div></div>
+</div></div>
+
+<div style="max-width:1160px;margin:0 auto;border-top:1px solid #072D4A;border-inline:1px solid #C9D2DA;background:#C9D2DA;display:flex;flex-direction:column;gap:1px">
+
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:1px;background:#C9D2DA">
+<sc-for list="{{ kpis }}" as="k" hint-placeholder-count="4"><div style="background:#fff;padding:14px 20px 12px;display:flex;flex-direction:column;gap:2px">
+<div style="font-size:12px;font-weight:500;color:#5B6B7A;white-space:nowrap">{{ k.l }}</div>
+<div style="font:700 clamp(34px,3.6vw,44px)/1.05 'JetBrains Mono',monospace;letter-spacing:-.05em;color:#0C4874;font-variant-numeric:tabular-nums">{{ k.v }}</div>
+<div style="display:flex;flex-wrap:wrap;gap:0 8px;font-size:11px"><span style="font:700 11px 'JetBrains Mono',monospace;color:{{ k.c }}">{{ k.d }}</span><span style="color:#5B6B7A">{{ k.s }}</span></div></div></sc-for>
+</div>
+
+<div style="display:flex;flex-wrap:wrap;gap:1px;background:#C9D2DA">
+<div style="flex:2 1 520px;min-width:0;display:flex;flex-direction:column;gap:1px;background:#C9D2DA">
+
+<div style="background:#fff">
+<div style="display:flex;align-items:center;gap:12px;padding:14px 20px;border-bottom:1px solid #0A1F31"><span style="font-size:clamp(24px,3vw,30px);font-weight:700;letter-spacing:-.04em;line-height:1.1">Awaiting your decision</span><span style="background:#E4714E;color:#fff;font:700 13px 'JetBrains Mono',monospace;padding:1px 10px;border-radius:99px">22</span></div>
+<sc-for list="{{ queue }}" as="q" hint-placeholder-count="3"><div style="display:flex;align-items:center;gap:16px;padding:12px 20px;border-bottom:1px solid #E3E7EC;flex-wrap:wrap">
+<div style="font:600 13px 'JetBrains Mono',monospace;color:#9AA7B3;width:26px">{{ q.i }}</div>
+<div style="flex:1 1 180px;min-width:0"><div style="display:flex;align-items:center;gap:8px;font-size:18px;font-weight:600;letter-spacing:-.02em">{{ q.t }}<sc-if value="{{ q.urgent }}" hint-placeholder-val="{{ false }}"><span style="font-size:11px;background:#E4714E;color:#fff;padding:1px 10px;border-radius:99px;letter-spacing:0">Urgent</span></sc-if></div><div style="font-size:12px;color:#5B6B7A">{{ q.s }}</div></div>
+<sc-if value="{{ q.hasPeople }}" hint-placeholder-val="{{ true }}"><div style="display:flex;align-items:center"><sc-for list="{{ q.people }}" as="p" hint-placeholder-count="3"><div style="width:32px;height:32px;border-radius:50%;filter:grayscale(1);border:2px solid #fff;margin-inline-end:-8px;background:#C9D2DA center/cover url({{ p.src }})"></div></sc-for><span style="margin-inline-start:14px;font:700 12px 'JetBrains Mono',monospace;color:#0C4874">{{ q.more }}</span></div></sc-if>
+<div style="padding:8px 18px;font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap;border-radius:{{ q.br }};background:{{ q.bbg }};color:{{ q.bfg }};border:1.5px solid {{ q.bd }}">{{ q.b }}</div></div></sc-for>
+</div>
+
+<div style="background:#fff">
+<div style="padding:14px 20px;border-bottom:1px solid #0A1F31;font-size:clamp(20px,2.6vw,26px);font-weight:700;letter-spacing:-.04em;line-height:1.1">Headcount by department</div>
+<sc-for list="{{ depts }}" as="d" hint-placeholder-count="4"><div style="display:flex;align-items:center;gap:14px;padding:9px 20px;border-bottom:1px solid #E3E7EC"><div style="width:120px;font-size:14px;font-weight:500;flex:none">{{ d.n }}</div><div style="flex:1;height:14px;background:repeating-linear-gradient(to right,#E3E7EC 0,#E3E7EC 1px,#F4F5F7 1px,#F4F5F7 10%)"><div style="height:14px;background:{{ d.col }};width:{{ d.w }}"></div></div><b style="font:700 17px 'JetBrains Mono',monospace;letter-spacing:-.04em;width:44px;text-align:end">{{ d.c }}</b></div></sc-for>
+</div>
+</div>
+
+<div style="flex:1 1 300px;min-width:0;display:flex;flex-direction:column;gap:1px;background:#C9D2DA">
+<div style="background:#0C4874;color:#fff;padding:16px 20px 18px;display:flex;flex-direction:column;gap:12px;background-image:radial-gradient(300px 220px at 100% 0%,rgba(31,123,184,.6),transparent 70%)">
+<div style="display:flex;justify-content:space-between;align-items:baseline"><span style="font-size:22px;font-weight:700;letter-spacing:-.035em">Today's attendance</span><span style="font:12px 'JetBrains Mono',monospace;color:rgba(255,255,255,.7)">1284</span></div>
+<div><div style="font:700 60px/1 'JetBrains Mono',monospace;letter-spacing:-.06em">96.2<span style="font-size:26px">%</span></div>
+<div style="font-size:12px;display:flex;gap:14px;margin-top:6px"><span><span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:#fff;margin-inline-end:5px"></span>Present</span><span style="color:rgba(255,255,255,.7)"><span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:rgba(255,255,255,.3);margin-inline-end:5px"></span>Absent</span></div></div>
+<div style="display:flex;gap:4px;align-items:flex-end;height:72px;border-bottom:1px solid rgba(255,255,255,.35)">
+<sc-for list="{{ days }}" as="d" hint-placeholder-count="7"><div style="flex:1;height:{{ d.h }};background:{{ d.c }}"></div></sc-for></div>
+<div style="display:flex;gap:4px;margin-top:-6px"><sc-for list="{{ days }}" as="d" hint-placeholder-count="7"><span style="flex:1;text-align:center;font:10px 'JetBrains Mono',monospace;color:rgba(255,255,255,.75)">{{ d.n }}</span></sc-for></div>
+</div>
+<div style="background:#fff;flex:1">
+<div style="padding:14px 20px;border-bottom:1px solid #0A1F31;font-size:clamp(20px,2.6vw,26px);font-weight:700;letter-spacing:-.04em;line-height:1.1">Coming up</div>
+<sc-for list="{{ upcoming }}" as="u" hint-placeholder-count="3"><div style="display:flex;align-items:center;gap:12px;padding:10px 20px;border-bottom:1px solid #E3E7EC"><div style="width:40px;height:40px;filter:grayscale(1);border-radius:50%;background:#C9D2DA center/cover url({{ u.img }});flex:none"></div><div style="flex:1;font-size:15px;font-weight:600;letter-spacing:-.015em">{{ u.n }}</div><span style="font-size:11px;font-weight:600;white-space:nowrap;padding:2px 10px;border-radius:99px;background:{{ u.bg }};color:{{ u.fg }}">{{ u.w }}</span></div></sc-for>
+</div>
+</div>
+</div>
+</div>
+<div style="height:40px;border-top:1px solid #C9D2DA"></div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  renderVals() {
+    const navy = '#0C4874', coral = '#E4714E';
+    const nav = ['Dashboard','People','Time','Finance','Talent','Intelligence'].map((t, i) => ({ t, w: i ? 400 : 600, fg: i ? 'rgba(255,255,255,.7)' : '#fff', bd: i ? 'transparent' : coral }));
+    const kpis = [
+      { l: 'Employees', v: '1284', d: '+12', s: 'this month', c: navy },
+      { l: "Today's attendance", v: '96.2%', d: '-0.4%', s: 'vs. yesterday', c: coral },
+      { l: 'Payroll (MTD)', v: '14.8M', d: '+8.2%', s: 'vs. August', c: navy },
+      { l: 'Open positions', v: '73', d: '+6', s: 'this week', c: navy }
+    ];
+    const im = n => ({ src: 'https://i.pravatar.cc/100?img=' + n });
+    const queue = [
+      { i: '01', t: 'Leave requests', s: 'Awaiting your approval', hasPeople: true, people: [im(5), im(32), im(15)], more: '14+', b: 'Approve', br: '3px', bbg: 'transparent', bfg: navy, bd: navy },
+      { i: '02', t: 'Run payroll', s: 'Total SAR 14.8M · 214 employees', b: 'Run payroll', br: '3px', bbg: navy, bfg: '#fff', bd: navy },
+      { i: '03', t: 'Contracts expiring soon', s: 'Awaiting renewal decision', urgent: true, hasPeople: true, people: [im(44), im(26), im(60)], more: '1+', b: 'Renew contract', br: '99px', bbg: coral, bfg: '#fff', bd: coral }
+    ];
+    const depts = [['Sales', 312, navy], ['Operations', 268, navy], ['IT', 191, navy], ['Finance', 97, coral]].map(([n, c, col]) => ({ n, c, col, w: (c / 312 * 100) + '%' }));
+    const days = ['Sat','Sun','Mon','Tue','Wed','Thu','Fri'].map((n, i) => ({ n, h: [70,62,74,66,72,64,100][i] + '%', c: i === 6 ? '#fff' : 'rgba(255,255,255,.28)' }));
+    const upcoming = [
+      { n: 'Ahmed Sami', w: 'In 3 days', img: im(53).src, bg: '#E3E7EC', fg: navy },
+      { n: 'Marwa Hassan', w: 'In 6 days', img: im(9).src, bg: '#E3E7EC', fg: navy },
+      { n: 'Youssef Tarek', w: 'Tomorrow', img: im(68).src, bg: coral, fg: '#fff' }
+    ];
+    return { nav, kpis, queue, depts, days, upcoming };
+  }
+}
+</script>
+</body>
+</html>
