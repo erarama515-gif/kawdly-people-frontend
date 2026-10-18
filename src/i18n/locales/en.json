@@ -3,6 +3,20 @@
     "name": "Kawdly",
     "suffix": "People"
   },
+  "auth": {
+    "login": {
+      "title": "Sign in",
+      "subtitle": "Enter your credentials to access your account",
+      "email": "Email",
+      "password": "Password",
+      "submit": "Sign in",
+      "forgotPassword": "Forgot password?",
+      "showPassword": "Show password",
+      "hidePassword": "Hide password",
+      "tooManyAttempts": "Too many login attempts. Please wait a moment and try again.",
+      "youAreHere": "You are here · Workspace"
+    }
+  },
   "nav": {
     "dashboard": "Dashboard",
     "people": "People",
@@ -196,10 +210,42 @@
     },
     "trends": {
       "title": "Last 7 days",
+      "sectionTitle": "Where the organization is heading",
+      "sectionSubtitle": "Last 6 months · Last 7 days",
       "headcount": "Headcount",
       "attendance": "Attendance %",
       "payroll": "Payroll MTD",
-      "openRoles": "Open roles"
+      "openRoles": "Open roles",
+      "questions": {
+        "employees": "Is the team growing?",
+        "attendanceToday": "Is attendance stable?",
+        "payrollCostMTD": "Are we on budget?",
+        "openPositions": "Is hiring keeping up?",
+        "teamMembers": "Is the team growing?",
+        "teamAttendanceToday": "Is attendance stable?",
+        "pendingLeave": "How many pending requests?",
+        "reviewsDue": "Are there reviews due?"
+      }
+    },
+    "openActions": {
+      "label": "Open actions",
+      "requiresDecision": "Requires your decision",
+      "ofWhich": "of which",
+      "urgent": "urgent",
+      "leave": "leave",
+      "payroll": "payroll",
+      "contracts": "contract"
+    },
+    "whatChanged": {
+      "title": "What changed",
+      "mtd": "MTD",
+      "yesterday": "yesterday"
+    },
+    "orgTreemap": {
+      "title": "Organizational structure",
+      "subtitle": "Each area = department headcount",
+      "employee": "employee",
+      "viewAll": "View all departments"
     },
     "alerts": {
       "payrollBefore": "Payroll closes Friday 17:00 — approve the remaining ",
@@ -248,6 +294,13 @@
       "onLeave": "On leave"
     }
   },
+  "clockWidget": {
+    "clockIn": "Clock In",
+    "clockOut": "Clock Out",
+    "clockedInAt": "Clocked in at",
+    "notClockedIn": "Not clocked in yet today",
+    "doneForToday": "Done for today"
+  },
   "topbar": {
     "search": "Search",
     "searchPlaceholder": "Search or jump to…",
@@ -257,8 +310,18 @@
   },
   "notifications": {
     "title": "Notifications",
+    "markAllRead": "Mark all as read",
+    "empty": "No notifications",
+    "unread": "Unread",
     "viewAll": "View all",
     "count": "3",
+    "types": {
+      "leave_approved": "Leave Approved",
+      "leave_rejected": "Leave Rejected",
+      "document_expiring": "Document Expiring",
+      "contract_expiring": "Contract Expiring",
+      "general": "General"
+    },
     "items": [
       {
         "title": "Leave request awaiting approval",
@@ -280,7 +343,7 @@
   "userMenu": {
     "profile": "Profile",
     "language": "Language",
-    "languageArabic": "العربية",
+    "languageArabic": "Ø§Ù„Ø¹Ø±Ø¨ÙŠØ©",
     "languageEnglish": "English",
     "logout": "Log out"
   },
@@ -317,6 +380,7 @@
     "save": "Save",
     "saving": "Saving…",
     "cancel": "Cancel",
+    "close": "Close",
     "delete": "Delete",
     "deleting": "Deleting…",
     "edit": "Edit",
@@ -331,11 +395,33 @@
     "yes": "Yes",
     "no": "No",
     "invalidEmail": "Enter a valid email address.",
+    "from": "From",
+    "to": "To",
+    "clear": "Clear",
+    "clearFilter": "Clear filter",
+    "export": "Export",
+    "exportExcel": "Export to Excel",
+    "exportPdf": "Export to PDF",
+    "exporting": "Exporting…",
     "pagination": {
       "previous": "Previous page",
       "next": "Next page",
       "page": "Page {{page}} of {{lastPage}}",
-      "range": "Showing {{from}}–{{to}} of {{total}}"
+      "range": "Showing {{from}}—{{to}} of {{total}}"
+    },
+    "switchToArabic": "العربية",
+    "switchToEnglish": "English",
+    "language": "Language",
+    "saved": "Saved successfully",
+    "deleted": "Deleted successfully",
+    "operationFailed": "Operation failed",
+    "selected": "{{count}} selected",
+    "deselectAll": "Deselect all",
+    "exportSelected": "Export Selected",
+    "deleteSelected": "Delete Selected",
+    "bulkDeleteConfirm": {
+      "title": "Delete Selected Items",
+      "description": "Are you sure you want to delete {{count}} items? This action cannot be undone."
     }
   },
   "employees": {
@@ -405,18 +491,59 @@
       "maritalStatus.single": "Single",
       "maritalStatus.married": "Married",
       "maritalStatus.divorced": "Divorced",
-      "maritalStatus.widowed": "Widowed"
+      "maritalStatus.widowed": "Widowed",
+      "photo": "Profile Photo",
+      "effectiveDate": "Effective Date",
+      "reason": "Reason",
+      "suspendedUntil": "Suspended Until",
+      "terminationDate": "Termination Date",
+      "terminationReason": "Termination Reason",
+      "lastWorkingDay": "Last Working Day",
+      "noticePeriodDays": "Notice Period (Days)",
+      "newJobPosition": "New Job Position",
+      "newJobGrade": "New Job Grade",
+      "newJobLevel": "New Job Level",
+      "newBranch": "New Branch",
+      "newDepartment": "New Department",
+      "newDirectManager": "New Direct Manager"
     },
     "deleteConfirm": {
       "title": "Delete employee?",
       "description": "This will permanently remove {{name}} from the employee records. This action cannot be undone."
     },
+    "suspendConfirm": {
+      "title": "Suspend Employee",
+      "description": "Suspend {{name}}? They will be marked suspended until reinstated."
+    },
+    "terminateConfirm": {
+      "title": "Terminate Employee",
+      "description": "Terminate {{name}}'s employment? This action cannot be undone."
+    },
+    "reinstateConfirm": {
+      "title": "Reinstate Employee",
+      "description": "Reinstate {{name}} to active status?"
+    },
     "editAction": "Edit employee",
     "deleteAction": "Delete employee",
+    "promoteAction": "Promote",
+    "transferAction": "Transfer",
+    "suspendAction": "Suspend",
+    "terminateAction": "Terminate",
+    "reinstateAction": "Reinstate",
     "loadFailed": "Employees could not be loaded.",
     "createFailed": "The employee could not be created.",
     "updateFailed": "The employee could not be updated.",
-    "deleteFailed": "The employee could not be deleted."
+    "deleteFailed": "The employee could not be deleted.",
+    "promoteSuccess": "Employee promoted successfully.",
+    "promoteFailed": "Failed to promote the employee.",
+    "transferSuccess": "Employee transferred successfully.",
+    "transferFailed": "Failed to transfer the employee.",
+    "suspendSuccess": "Employee suspended successfully.",
+    "suspendFailed": "Failed to suspend the employee.",
+    "terminateSuccess": "Employee terminated successfully.",
+    "terminateFailed": "Failed to terminate the employee.",
+    "reinstateSuccess": "Employee reinstated successfully.",
+    "reinstateFailed": "Failed to reinstate the employee."
   },
   "contracts": {
     "title": "Contracts",
@@ -428,6 +555,9 @@
     "loadFailed": "Failed to load contracts.",
     "editAction": "Edit contract",
     "deleteAction": "Delete contract",
+    "terminateAction": "Terminate contract",
+    "terminateSuccess": "Contract terminated successfully.",
+    "terminateFailed": "Failed to terminate the contract.",
     "stat": {
       "total": "Total Contracts",
       "active": "Active",
@@ -477,6 +607,10 @@
     "deleteConfirm": {
       "title": "Delete Contract",
       "description": "Are you sure you want to delete the contract for {{name}}? This action cannot be undone."
+    },
+    "terminateConfirm": {
+      "title": "Terminate Contract",
+      "description": "Are you sure you want to terminate the contract for {{name}}? This action cannot be undone."
     },
     "alert": {
       "expiringSoon_one": "{{count}} contract expiring soon",
@@ -536,11 +670,23 @@
       "expiryDate": "Expiry Date",
       "documentNumber": "Document Number",
       "notes": "Notes",
-      "statusLabel": "Status"
+      "statusLabel": "Status",
+      "uploadFile": "Upload File"
     },
     "deleteConfirm": {
       "title": "Delete Document",
       "description": "Delete \"{{title}}\" for {{name}}? This cannot be undone."
+    },
+    "generateLetter": "Generate Letter",
+    "letterGenerator": {
+      "title": "Generate HR Letter",
+      "selectTemplate": "Select Template",
+      "selectEmployee": "Select Employee",
+      "preview": "Preview",
+      "download": "Download PDF",
+      "employmentCert": "Employment Certificate",
+      "salaryCert": "Salary Certificate",
+      "experienceLetter": "Experience Letter"
     }
   },
   "attendance": {
@@ -661,7 +807,17 @@
       "description": "Are you sure you want to delete the leave request for \"{{name}}\"? This action cannot be undone."
     },
     "approve": "Approve",
-    "reject": "Reject"
+    "reject": "Reject",
+    "balance": {
+      "title": "Leave Balance",
+      "allocated": "Allocated",
+      "used": "Used",
+      "remaining": "Remaining",
+      "annual": "Annual Leave",
+      "sick": "Sick Leave",
+      "personal": "Personal Leave",
+      "unpaid": "Unpaid Leave"
+    }
   },
   "payroll": {
     "title": "Payroll",
@@ -679,6 +835,16 @@
       "deleteAction": "Delete payroll run",
       "deleteTitle": "Delete Payroll Run",
       "deleteDescription": "Are you sure you want to delete the payroll run for \"{{period}}\"? This action cannot be undone.",
+      "calculateAction": "Calculate payroll run",
+      "calculateTitle": "Calculate Payroll Run",
+      "calculateDescription": "Calculate the payroll run for \"{{period}}\"? Totals and employee count will be recomputed from payslips.",
+      "calculateSuccess": "Payroll run calculated.",
+      "calculateFailed": "Failed to calculate payroll run.",
+      "approveAction": "Approve payroll run",
+      "approveTitle": "Approve Payroll Run",
+      "approveDescription": "Approve the payroll run for \"{{period}}\"? It will be locked and cannot be recalculated.",
+      "approveSuccess": "Payroll run approved.",
+      "approveFailed": "Failed to approve payroll run.",
       "stat": {
         "total": "Total Runs",
         "draft": "Draft",
@@ -726,6 +892,7 @@
       "loadFailed": "Failed to load payslips.",
       "editAction": "Edit payslip",
       "deleteAction": "Delete payslip",
+      "breakdownAction": "View breakdown",
       "deleteTitle": "Delete Payslip",
       "deleteDescription": "Are you sure you want to delete the payslip for \"{{name}}\"? This action cannot be undone.",
       "table": {
@@ -756,6 +923,29 @@
       "draft": "Draft",
       "finalized": "Finalized",
       "paid": "Paid"
+    },
+    "payslipItem": {
+      "dialogTitle": "Payslip Breakdown — {{name}}",
+      "add": "Add Item",
+      "addTitle": "Add Line Item",
+      "editTitle": "Edit Line Item",
+      "empty": "No line items yet.",
+      "loadFailed": "Failed to load line items.",
+      "editAction": "Edit item",
+      "deleteAction": "Delete item",
+      "deleteConfirm": {
+        "title": "Delete Line Item",
+        "description": "Delete \"{{description}}\"? This action cannot be undone."
+      },
+      "form": {
+        "description": "Description",
+        "type": "Type",
+        "amount": "Amount",
+        "taxable": "Taxable",
+        "sortOrder": "Sort Order",
+        "salaryComponent": "Salary Component",
+        "noSalaryComponent": "— None —"
+      }
     }
   },
   "compensation": {
@@ -764,7 +954,8 @@
     "stat": {
       "totalStructures": "Total Structures",
       "activeStructures": "Active Structures",
-      "totalComponents": "Total Components"
+      "totalComponents": "Total Components",
+      "totalAssignments": "Salary Assignments"
     },
     "form": {
       "name": "Name",
@@ -834,6 +1025,41 @@
         "title": "Delete Salary Component",
         "description": "Delete \"{{name}}\"? This action cannot be undone."
       }
+    },
+    "employeeSalary": {
+      "title": "Employee Salary Assignments",
+      "add": "Add Assignment",
+      "addTitle": "Add Salary Assignment",
+      "editTitle": "Edit Salary Assignment",
+      "empty": "No salary assignments found.",
+      "filterAllEmployees": "All Employees",
+      "filterAllStructures": "All Structures",
+      "filterAll": "All",
+      "filterCurrent": "Current",
+      "filterHistorical": "Historical",
+      "col": {
+        "employee": "Employee",
+        "structure": "Structure",
+        "effectiveDate": "Effective Date",
+        "gross": "Gross Salary",
+        "net": "Net Salary",
+        "current": "Current",
+        "actions": "Actions"
+      },
+      "deleteConfirm": {
+        "title": "Delete Salary Assignment",
+        "description": "Delete this salary assignment for {{name}}? This action cannot be undone."
+      },
+      "form": {
+        "employee": "Employee",
+        "structure": "Salary Structure",
+        "effectiveDate": "Effective Date",
+        "grossSalary": "Gross Salary",
+        "netSalary": "Net Salary",
+        "isCurrent": "Status",
+        "currentOption": "Current",
+        "historicalOption": "Historical"
+      }
     }
   },
   "loans": {
@@ -847,6 +1073,13 @@
     "emptySearch": "No loans match your search.",
     "editAction": "Edit loan",
     "deleteAction": "Delete loan",
+    "approveAction": "Approve loan",
+    "approveConfirm": {
+      "title": "Approve Loan",
+      "description": "Approve this loan for {{name}}? Its status will change to Active and cannot be reverted here."
+    },
+    "approveSuccess": "Loan approved.",
+    "approveFailed": "Failed to approve loan.",
     "stat": {
       "activeLoans": "Active Loans",
       "totalDisbursed": "Total Disbursed",
@@ -1234,6 +1467,108 @@
     "deleteConfirm": {
       "title": "Delete Program",
       "description": "Are you sure you want to delete \"{{name}}\"? This action cannot be undone."
+    },
+    "tabs": {
+      "programs": "Programs",
+      "paths": "Learning Paths"
+    },
+    "enrollment": {
+      "actionsLabel": "Enrollments",
+      "dialogTitle": "Enrollments — {{name}}",
+      "add": "Add Enrollment",
+      "empty": "No enrollments for this program yet.",
+      "loadFailed": "Failed to load enrollments.",
+      "editAction": "Edit enrollment",
+      "deleteAction": "Delete enrollment",
+      "scoreShort": "Score {{score}}",
+      "form": {
+        "employee": "Employee",
+        "status": "Status",
+        "score": "Score",
+        "feedbackRating": "Feedback Rating",
+        "certificatePath": "Certificate Path",
+        "feedback": "Feedback"
+      },
+      "deleteConfirm": {
+        "title": "Delete Enrollment",
+        "description": "Are you sure you want to delete the enrollment for \"{{name}}\"? This action cannot be undone."
+      }
+    },
+    "enrollmentStatusOptions": {
+      "enrolled": "Enrolled",
+      "attended": "Attended",
+      "completed": "Completed",
+      "no_show": "No Show",
+      "cancelled": "Cancelled"
+    },
+    "path": {
+      "add": "Add Learning Path",
+      "edit": "Edit Learning Path",
+      "loadFailed": "Failed to load learning paths.",
+      "empty": "No learning paths match your filter.",
+      "editAction": "Edit learning path",
+      "deleteAction": "Delete learning path",
+      "stepsAction": "Manage steps",
+      "filterByFromPosition": "Filter by current position",
+      "allPositions": "All positions",
+      "stat": {
+        "total": "Total Paths",
+        "steps": "Total Steps",
+        "required": "Required Steps"
+      },
+      "table": {
+        "name": "Path",
+        "from": "From Position",
+        "to": "To Position",
+        "description": "Description",
+        "actions": "Actions"
+      },
+      "form": {
+        "name": "Name",
+        "description": "Description",
+        "fromPosition": "From Position",
+        "toPosition": "To Position",
+        "noPosition": "None"
+      },
+      "deleteConfirm": {
+        "title": "Delete Learning Path",
+        "description": "Are you sure you want to delete \"{{name}}\"? All of its steps will be removed too. This action cannot be undone."
+      }
+    },
+    "pathStep": {
+      "dialogTitle": "Steps — {{name}}",
+      "add": "Add Step",
+      "empty": "No steps for this path yet.",
+      "loadFailed": "Failed to load steps.",
+      "editAction": "Edit step",
+      "deleteAction": "Delete step",
+      "filterByType": "Filter by type",
+      "filterByRequired": "Filter by requirement",
+      "allTypes": "All types",
+      "allSteps": "All steps",
+      "requiredOnly": "Required only",
+      "optionalOnly": "Optional only",
+      "required": "Required",
+      "optional": "Optional",
+      "orderShort": "Step {{order}}",
+      "typeOptions": {
+        "training": "Training",
+        "certification": "Certification",
+        "experience": "Experience",
+        "competency": "Competency"
+      },
+      "form": {
+        "title": "Title",
+        "type": "Type",
+        "description": "Description",
+        "referenceId": "Reference ID",
+        "sortOrder": "Sort Order",
+        "isRequired": "Required"
+      },
+      "deleteConfirm": {
+        "title": "Delete Step",
+        "description": "Are you sure you want to delete \"{{title}}\"? This action cannot be undone."
+      }
     }
   },
   "career": {
@@ -1346,7 +1681,28 @@
     },
     "byDepartment": "By Department",
     "headcountDistribution": "Headcount distribution",
-    "noDepartments": "No departments found."
+    "noDepartments": "No departments found.",
+    "export": {
+      "metric": "Metric",
+      "value": "Value",
+      "departmentHeadcount": "{{department}} — headcount"
+    },
+    "charts": {
+      "headcountTrend": "Headcount Trend",
+      "headcountTrendSub": "Monthly headcount over the past 12 months",
+      "deptDistribution": "Department Distribution",
+      "deptDistributionSub": "Active employees per department",
+      "turnoverTrend": "Turnover Rate",
+      "turnoverTrendSub": "Monthly departure rate over the past 12 months",
+      "leaveUtilization": "Leave Utilization",
+      "leaveUtilizationSub": "Approved leave days by type",
+      "employees": "employees",
+      "days": "days",
+      "departures": "departures",
+      "turnoverRate": "Turnover rate",
+      "noData": "No data available.",
+      "noTurnover": "No departures recorded in this period."
+    }
   },
   "copilot": {
     "title": "AI Copilot",
@@ -1355,10 +1711,25 @@
     "inputPlaceholder": "e.g. Show me employees with the highest overtime hours this month…",
     "suggestedQueries": "Suggested queries",
     "exampleResponse": "Example response",
-    "submitQuery": "Submit query"
+    "submitQuery": "Submit query",
+    "placeholder": "Ask me about your HR data...",
+    "send": "Send",
+    "thinking": "Thinking...",
+    "welcome": "Hi! I can help you with HR data insights. Try asking:",
+    "suggestion": {
+      "employeeCount": "How many employees do we have?",
+      "newHires": "New hires this year",
+      "departments": "Department distribution",
+      "avgSalary": "Average salary"
+    }
   },
   "organization": {
     "title": "Organization",
+    "orgChart": "Organization Chart",
+    "listView": "List View",
+    "chartView": "Chart View",
+    "employees": "employees",
+    "head": "Head",
     "addDepartment": "Add Department",
     "searchPlaceholder": "Search departments…",
     "loadFailed": "Failed to load departments.",
@@ -1367,16 +1738,25 @@
     "branchesSectionTitle": "Branches",
     "departmentsSectionTitle": "Departments",
     "jobPositionsSectionTitle": "Job Positions",
+    "jobGradesSectionTitle": "Job Grades",
+    "jobLevelsSectionTitle": "Job Levels",
+    "costCentersSectionTitle": "Cost Centers",
     "addCompany": "Add Company",
     "addBranch": "Add Branch",
     "addJobPosition": "Add Job Position",
+    "addJobGrade": "Add Job Grade",
+    "addJobLevel": "Add Job Level",
+    "addCostCenter": "Add Cost Center",
     "allCompanies": "All Companies",
     "allDepartments": "All Departments",
     "stat": {
       "companies": "Companies",
       "branches": "Branches",
       "departments": "Departments",
-      "positions": "Positions"
+      "positions": "Positions",
+      "jobGrades": "Job Grades",
+      "jobLevels": "Job Levels",
+      "costCenters": "Cost Centers"
     },
     "table": {
       "department": "Department",
@@ -1403,6 +1783,8 @@
         "noParent": "— No parent —",
         "head": "Head of Department",
         "vacant": "— Vacant —",
+        "costCenter": "Cost Center",
+        "noCostCenter": "— No cost center —",
         "level": "Level",
         "sortOrder": "Sort Order",
         "isActive": "Status",
@@ -1440,7 +1822,7 @@
         "city": "City",
         "countryCode": "Country Code (2-letter)",
         "currencyCode": "Currency Code (3-letter)",
-        "fiscalYearStart": "Fiscal Year Start (month 1–12)",
+        "fiscalYearStart": "Fiscal Year Start (month 1—12)",
         "timezone": "Timezone",
         "isActive": "Status",
         "activeOption": "Active",
@@ -1510,8 +1892,79 @@
         "titleAr": "Position Title (Arabic)",
         "code": "Code",
         "headcount": "Headcount",
+        "jobGrade": "Job Grade",
+        "noJobGrade": "— No job grade —",
+        "jobLevel": "Job Level",
+        "noJobLevel": "— No job level —",
         "description": "Description",
         "requirements": "Requirements",
+        "isActive": "Status",
+        "activeOption": "Active",
+        "inactiveOption": "Inactive"
+      }
+    },
+    "jobGrade": {
+      "addTitle": "Add Job Grade",
+      "editTitle": "Edit Job Grade",
+      "editAction": "Edit job grade",
+      "deleteAction": "Delete job grade",
+      "deleteConfirm": {
+        "title": "Delete Job Grade",
+        "description": "Are you sure you want to delete \"{{name}}\"? This action cannot be undone."
+      },
+      "table": {
+        "name": "Job Grade",
+        "code": "Code",
+        "salaryRange": "Salary Range (Min / Mid / Max)",
+        "sortOrder": "Sort Order",
+        "actions": "Actions"
+      },
+      "form": {
+        "name": "Name",
+        "code": "Code",
+        "minSalary": "Min Salary",
+        "midSalary": "Mid Salary",
+        "maxSalary": "Max Salary",
+        "sortOrder": "Sort Order"
+      }
+    },
+    "jobLevel": {
+      "addTitle": "Add Job Level",
+      "editTitle": "Edit Job Level",
+      "editAction": "Edit job level",
+      "deleteAction": "Delete job level",
+      "deleteConfirm": {
+        "title": "Delete Job Level",
+        "description": "Are you sure you want to delete \"{{name}}\"? This action cannot be undone."
+      },
+      "table": {
+        "name": "Job Level",
+        "sortOrder": "Sort Order",
+        "actions": "Actions"
+      },
+      "form": {
+        "name": "Name",
+        "sortOrder": "Sort Order"
+      }
+    },
+    "costCenter": {
+      "addTitle": "Add Cost Center",
+      "editTitle": "Edit Cost Center",
+      "editAction": "Edit cost center",
+      "deleteAction": "Delete cost center",
+      "deleteConfirm": {
+        "title": "Delete Cost Center",
+        "description": "Are you sure you want to delete \"{{name}}\"? This action cannot be undone."
+      },
+      "table": {
+        "name": "Cost Center",
+        "code": "Code",
+        "status": "Status",
+        "actions": "Actions"
+      },
+      "form": {
+        "name": "Name",
+        "code": "Code",
         "isActive": "Status",
         "activeOption": "Active",
         "inactiveOption": "Inactive"
@@ -1522,6 +1975,223 @@
     "title": "Settings",
     "editSettings": "Edit Settings",
     "enabled": "Enabled",
-    "disabled": "Disabled"
+    "disabled": "Disabled",
+    "tabs": {
+      "general": "General Settings",
+      "users": "User Management",
+      "roles": "Roles & Permissions"
+    },
+    "users": {
+      "title": "Users",
+      "subtitle": "Manage user accounts and permissions for your organization.",
+      "addUser": "Add User",
+      "columns": {
+        "name": "Name",
+        "email": "Email",
+        "role": "Role",
+        "status": "Status",
+        "lastLogin": "Last Login",
+        "actions": "Actions"
+      },
+      "empty": "No users found. Click \"Add User\" to get started.",
+      "showing": "Showing {{count}} of {{total}} users.",
+      "active": "Active",
+      "inactive": "Inactive",
+      "selectRole": "Select a role…",
+      "fields": {
+        "name": "Name",
+        "email": "Email",
+        "password": "Password",
+        "role": "Role",
+        "status": "Status",
+        "newPassword": "New Password",
+        "confirmPassword": "Confirm Password"
+      },
+      "validation": {
+        "nameRequired": "Name is required",
+        "emailRequired": "Email is required",
+        "emailInvalid": "Invalid email address",
+        "passwordMin": "Password must be at least 8 characters",
+        "roleRequired": "Role is required",
+        "confirmRequired": "Please confirm the password",
+        "passwordsMismatch": "Passwords do not match"
+      },
+      "addDialog": {
+        "title": "Add User",
+        "description": "Create a new user account and assign a role.",
+        "submit": "Create User"
+      },
+      "editDialog": {
+        "title": "Edit User",
+        "description": "Update user details and role.",
+        "submit": "Save Changes"
+      },
+      "resetDialog": {
+        "title": "Reset Password",
+        "description": "Set a new password for {{name}}.",
+        "submit": "Reset Password"
+      },
+      "deactivateDialog": {
+        "title": "Deactivate User",
+        "description": "Are you sure you want to deactivate {{name}}? Their account will be disabled immediately.",
+        "submit": "Deactivate"
+      },
+      "actions": {
+        "edit": "Edit user",
+        "resetPassword": "Reset password",
+        "deactivate": "Deactivate user"
+      }
+    },
+    "roles": {
+      "title": "Roles & Permissions",
+      "subtitle": "Define custom roles and control exactly what each one can access.",
+      "addRole": "Add Role",
+      "columns": {
+        "name": "Name",
+        "type": "Type",
+        "permissions": "Permissions",
+        "users": "Users",
+        "actions": "Actions"
+      },
+      "empty": "No roles found. Click \"Add Role\" to get started.",
+      "system": "System",
+      "custom": "Custom",
+      "loadingPermissions": "Loading permissions…",
+      "fields": {
+        "name": "Role Name",
+        "permissions": "Permissions"
+      },
+      "validation": {
+        "nameRequired": "Role name is required"
+      },
+      "addDialog": {
+        "title": "Add Role",
+        "description": "Create a custom role and choose which permissions it grants.",
+        "submit": "Create Role"
+      },
+      "editDialog": {
+        "title": "Edit Role",
+        "description": "Update the role name and its permissions.",
+        "descriptionSystem": "System role — the name is protected, but permissions can still be changed.",
+        "submit": "Save Changes"
+      },
+      "deleteDialog": {
+        "title": "Delete Role",
+        "description": "Are you sure you want to delete \"{{name}}\"? This cannot be undone.",
+        "submit": "Delete"
+      },
+      "actions": {
+        "edit": "Edit permissions",
+        "delete": "Delete role",
+        "deleteProtected": "System roles cannot be deleted"
+      }
+    },
+    "groups": {
+      "general": "General",
+      "attendance": "Attendance",
+      "leave": "Leave",
+      "payroll": "Payroll",
+      "notifications": "Notifications"
+    },
+    "rows": {
+      "general_companyName": "Company Name",
+      "general_logo": "Logo",
+      "general_timezone": "Timezone",
+      "general_language": "Default Language",
+      "general_fiscalYearStart": "Fiscal Year Start",
+      "attendance_gracePeriod": "Grace Period",
+      "attendance_gracePeriod_desc": "Lateness deducted only beyond this window",
+      "attendance_overtimeThreshold": "Overtime Threshold",
+      "attendance_overtimeThreshold_desc": "Hours after which overtime rate applies",
+      "attendance_checkInMethods": "Check-in Methods",
+      "attendance_weekendDays": "Weekend Days",
+      "leave_annualEntitlement": "Annual Entitlement",
+      "leave_annualEntitlement_desc": "Per employee per year",
+      "leave_carryForwardMax": "Carry Forward Maximum",
+      "leave_carryForwardMax_desc": "Unused leave allowed into next year",
+      "leave_accrualMethod": "Accrual Method",
+      "leave_approvalLevels": "Approval Levels",
+      "payroll_payCycle": "Pay Cycle",
+      "payroll_currency": "Currency",
+      "payroll_taxEnabled": "VAT / Tax Deduction",
+      "payroll_taxEnabled_desc": "Enabled — 15% VAT applied to payslips",
+      "payroll_payDay": "Pay Day",
+      "payroll_overtimeMultiplier": "Overtime Multiplier",
+      "notifications_emailNotifs": "Email Notifications",
+      "notifications_emailNotifs_desc": "Leave approvals, payslips, contract alerts",
+      "notifications_smsNotifs": "SMS Notifications",
+      "notifications_smsNotifs_desc": "Urgent alerts only",
+      "notifications_inAppNotifs": "In-App Notifications",
+      "notifications_inAppNotifs_desc": "Real-time bell icon alerts",
+      "notifications_digestFrequency": "Digest Frequency"
+    },
+    "users": {
+      "title": "Users",
+      "addUser": "Add User",
+      "editUser": "Edit User",
+      "resetPassword": "Reset Password",
+      "deactivateUser": "Deactivate User",
+      "name": "Name",
+      "email": "Email",
+      "role": "Role",
+      "status": "Status",
+      "lastLogin": "Last Login",
+      "actions": "Actions",
+      "active": "Active",
+      "inactive": "Inactive",
+      "confirmDeactivate": "Are you sure you want to deactivate this user?",
+      "newPassword": "New Password",
+      "confirmPassword": "Confirm Password",
+      "passwordResetSuccess": "Password has been reset successfully.",
+      "noUsers": "No users found."
+    }
+  },
+  "fileUpload": {
+    "dragOrClick": "Drag & drop a file here, or click to select",
+    "uploading": "Uploading…",
+    "changeFile": "Change file",
+    "uploadError": "Upload failed. Please try again.",
+    "fileTooLarge": "File exceeds the {{maxSizeMB}} MB limit.",
+    "invalidType": "File type not allowed."
+  },
+  "forgotPassword": {
+    "title": "Forgot password?",
+    "subtitle": "Enter your email and we'll send you a reset link.",
+    "emailLabel": "Email address",
+    "submit": "Send reset link",
+    "successTitle": "Check your email",
+    "successMessage": "If that email address is registered, you will receive a link to reset your password within a few minutes.",
+    "backToLogin": "Back to sign in"
+  },
+  "employeeProfile": {
+    "title": "Employee Profile",
+    "backToList": "Back to Employees",
+    "loadFailed": "Employee profile could not be loaded.",
+    "section": {
+      "personal": "Personal Information",
+      "employment": "Employment Details"
+    },
+    "field": {
+      "dateOfBirth": "Date of Birth",
+      "nationality": "Nationality",
+      "personalEmail": "Personal Email",
+      "address": "Address",
+      "jobGrade": "Job Grade",
+      "directManager": "Direct Manager",
+      "probationEnd": "Probation End Date",
+      "terminationDate": "Termination Date"
+    },
+    "tabs": {
+      "contracts": "Contracts",
+      "documents": "Documents",
+      "leave": "Leave",
+      "attendance": "Attendance"
+    },
+    "empty": {
+      "contracts": "No contracts found for this employee.",
+      "documents": "No documents found for this employee.",
+      "leave": "No leave requests found for this employee.",
+      "attendance": "No attendance records found for this employee."
+    }
   }
 }

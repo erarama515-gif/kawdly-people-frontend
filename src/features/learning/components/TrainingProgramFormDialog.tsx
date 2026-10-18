@@ -39,9 +39,6 @@ import type { TrainingProgramWire } from '../api/schema';
 
 const REQUIRED = 'common.requiredField';
 
-// company_id hardcoded to 1 as placeholder (same as Employees/Contracts)
-const COMPANY_ID = 1;
-
 const PROGRAM_TYPES: readonly TrainingProgramType[] = ['internal', 'external', 'online'];
 const PROGRAM_STATUSES: readonly TrainingProgramStatus[] = [
   'planned',
@@ -115,7 +112,6 @@ function buildDefaultValues(program: TrainingProgramWire | undefined): TrainingP
 
 function toTrainingProgramInput(values: TrainingProgramFormValues): TrainingProgramInput {
   return {
-    company_id: COMPANY_ID,
     title: values.title.trim(),
     description: values.description.trim() || null,
     category: values.category.trim() || null,
