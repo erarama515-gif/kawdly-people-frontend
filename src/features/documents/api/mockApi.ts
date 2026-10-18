@@ -31,7 +31,12 @@ import type {
  *  - `documentType` is resolved from the DocumentType table via FK.
  */
 
-// ─── Mock document types ──────────────────────────────────────────────────────
+// ─── Mock document types (DEV-ONLY transport seed) ────────────────────────────
+//
+// Used exclusively by `mockEmployeeDocumentApi` when `env.useMockApi` is true
+// (the zero-config dev default). Production builds either point at the real
+// `/document-types` endpoint or refuse to boot — see the guard in
+// `src/config/env.ts`. Nothing outside this file consumes these rows.
 
 export const MOCK_DOCUMENT_TYPES: DocumentTypeWire[] = [
   { id: 1, name: 'National ID',          category: 'identification', has_expiry: true,  is_required: true,  sort_order: 1 },
@@ -344,7 +349,7 @@ function toWire(row: StoredEmployeeDocument): EmployeeDocumentWire {
   return {
     ...row,
     employee: emp ? { ...emp } : undefined,
-    documentType: docType
+    document_type: docType
       ? { id: docType.id, name: docType.name, category: docType.category }
       : undefined,
   } as unknown as EmployeeDocumentWire;

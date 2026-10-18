@@ -1,6 +1,5 @@
 import { env } from '@/config/env';
-import { createHttpClient } from '@/lib/api/http';
-import type { HttpClient } from '@/lib/api/http';
+import { appHttpClient as http } from '@/lib/api/appHttpClient';
 import {
   mockEmployeeDocumentApi,
   resetMockEmployeeDocuments,
@@ -31,13 +30,6 @@ import type { DocumentTypeWire } from './schema';
  * becomes a typed `decode` error at the boundary instead of a silent
  * `undefined` three components deep.
  */
-
-const http: HttpClient = createHttpClient({
-  baseUrl: env.apiBaseUrl || '/api/v1',
-  timeoutMs: env.requestTimeoutMs,
-  retries: env.requestRetries,
-  backoffMs: env.requestBackoffMs,
-});
 
 const BASE = '/employee-documents';
 const DOC_TYPES_BASE = '/document-types';
@@ -88,8 +80,12 @@ export const httpEmployeeDocumentApi: EmployeeDocumentApi = {
   },
 
   async listDocumentTypes({ signal }) {
+    // Real Laravel endpoint: `Route::apiResource('document-types', ...)` in
+    // `backend/routes/api/document.php` (index → `{ data, meta }`, permission
+    // `document.document_type.view`). Sorting by `sort_order` preserves the
+    // intended dropdown order — the backend defaults to `id DESC`.
     const { data } = await http(DOC_TYPES_BASE, {
-      query: { per_page: 100 },
+      query: { per_page: 100, sort: 'sort_order', direction: 'asc' },
       signal,
       schema: documentTypeListDecoder,
     });

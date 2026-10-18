@@ -5,8 +5,11 @@ import { array, bool, isoDate, literalUnion, num, object, optional, str } from '
  * exactly: field names are DB columns verbatim (snake_case) and the `index`
  * envelope is the app's custom `{ data, meta }` pager.
  *
- * `employee` and `documentType` relations are optional — only present when
+ * `employee` and `document_type` relations are optional — only present when
  * `include=employee,documentType` is passed (which the list endpoint does).
+ * Eloquent's `relationsToArray()` always snake_cases the relation method
+ * name for the JSON key, so the `documentType()` relation shows up on the
+ * wire as `document_type`, never `documentType`.
  */
 
 export const employeeDocumentStatusDecoder = literalUnion([
@@ -54,12 +57,12 @@ export const employeeDocumentDecoder = object({
   created_at: optional(str()),
   updated_at: optional(str()),
   employee: optional(employeeRefDecoder),
-  documentType: optional(documentTypeRefDecoder),
+  document_type: optional(documentTypeRefDecoder),
 });
 
 export type EmployeeDocumentWire = ReturnType<typeof employeeDocumentDecoder.decode>;
 export type EmployeeDocumentEmployeeRef = NonNullable<EmployeeDocumentWire['employee']>;
-export type EmployeeDocumentTypeRef = NonNullable<EmployeeDocumentWire['documentType']>;
+export type EmployeeDocumentTypeRef = NonNullable<EmployeeDocumentWire['document_type']>;
 
 export const pageMetaDecoder = object({
   current_page: num(),
@@ -90,6 +93,8 @@ export const documentTypeDecoder = object({
   has_expiry: optional(bool()),
   is_required: optional(bool()),
   sort_order: optional(num()),
+  created_at: optional(str()),
+  updated_at: optional(str()),
 });
 
 export type DocumentTypeWire = ReturnType<typeof documentTypeDecoder.decode>;
