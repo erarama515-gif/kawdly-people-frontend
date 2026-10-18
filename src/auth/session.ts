@@ -211,12 +211,17 @@ export function useAuthStatus(): AuthStatus {
  * builders, module-level helpers) that cannot call `useSession()`.
  *
  * Feature forms only render inside `<RequireAuth>`, so `user` is populated in
- * practice. Falls back to `0` for callers outside an authenticated session
- * (e.g. unit tests); the Laravel controllers overwrite `created_by` /
- * `updated_by` with `$request->user()->id` regardless of what the client sends.
+ * practice. Throwing here makes a call from outside an authenticated session
+ * fail loudly instead of silently writing `created_by: 0` / `updated_by: 0`.
+ * The Laravel controllers overwrite those fields server-side, but a wrong
+ * client value still hides the real wiring bug.
  */
 export function getCurrentUserId(): number {
-  return useSessionStore.getState().user?.id ?? 0;
+  const user = useSessionStore.getState().user;
+  if (!user) {
+    throw new Error('getCurrentUserId() called without an authenticated session');
+  }
+  return user.id;
 }
 
 /**
