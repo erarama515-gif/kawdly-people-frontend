@@ -9,6 +9,12 @@ import {
   branchListDecoder,
   jobPositionDecoder,
   jobPositionListDecoder,
+  jobGradeDecoder,
+  jobGradeListDecoder,
+  jobLevelDecoder,
+  jobLevelListDecoder,
+  costCenterDecoder,
+  costCenterListDecoder,
 } from './schema';
 import type {
   DepartmentListWire,
@@ -19,26 +25,27 @@ import type {
   BranchWire,
   JobPositionListWire,
   JobPositionWire,
+  JobGradeListWire,
+  JobGradeWire,
+  JobLevelListWire,
+  JobLevelWire,
+  CostCenterListWire,
+  CostCenterWire,
 } from './schema';
 import type {
   DepartmentApi,
-  DepartmentInput,
-  DepartmentListParams,
   CompanyApi,
-  CompanyInput,
-  CompanyListParams,
   BranchApi,
-  BranchInput,
-  BranchListParams,
   JobPositionApi,
-  JobPositionInput,
-  JobPositionListParams,
+  JobGradeApi,
+  JobLevelApi,
+  CostCenterApi,
 } from './resource';
 
 /**
- * In-process implementations of DepartmentApi, CompanyApi, BranchApi, and
- * JobPositionApi — used until the Laravel backend is configured (the default
- * — see `env.useMockApi`).
+ * In-process implementations of DepartmentApi, CompanyApi, BranchApi,
+ * JobPositionApi, JobGradeApi, JobLevelApi, and CostCenterApi — used until
+ * the Laravel backend is configured (the default — see `env.useMockApi`).
  *
  * Mirrors `employees/api/mockApi.ts`: mutable state so writes are observed by
  * later reads, latency + AbortSignal honoured, and every response decoded
@@ -95,6 +102,7 @@ interface StoredDepartment {
   name: string;
   code?: string | undefined;
   head_employee_id?: number | undefined;
+  cost_center_id?: number | undefined;
   level?: number | undefined;
   path?: string | undefined;
   sort_order?: number | undefined;
@@ -124,14 +132,14 @@ export const HEAD_STUBS: HeadStub[] = [
 ];
 
 const SEED_DEPARTMENTS: StoredDepartment[] = [
-  { id: 1, uuid: '00000000-0000-4000-8000-000000000001', company_id: 1, name: 'Sales', code: 'SLS', head_employee_id: 43, level: 1, sort_order: 1, is_active: true, created_at: '2021-01-01T00:00:00.000Z', updated_at: '2021-01-01T00:00:00.000Z' },
-  { id: 2, uuid: '00000000-0000-4000-8000-000000000002', company_id: 1, name: 'Operations', code: 'OPS', head_employee_id: 71, level: 1, sort_order: 2, is_active: true, created_at: '2021-01-01T00:00:00.000Z', updated_at: '2021-01-01T00:00:00.000Z' },
-  { id: 3, uuid: '00000000-0000-4000-8000-000000000003', company_id: 1, name: 'Finance', code: 'FIN', head_employee_id: 89, level: 1, sort_order: 3, is_active: true, created_at: '2021-01-01T00:00:00.000Z', updated_at: '2021-01-01T00:00:00.000Z' },
-  { id: 4, uuid: '00000000-0000-4000-8000-000000000004', company_id: 1, name: 'IT', code: 'IT', head_employee_id: 112, level: 1, sort_order: 4, is_active: true, created_at: '2021-01-01T00:00:00.000Z', updated_at: '2021-01-01T00:00:00.000Z' },
-  { id: 5, uuid: '00000000-0000-4000-8000-000000000005', company_id: 1, name: 'HR', code: 'HR', head_employee_id: 134, level: 1, sort_order: 5, is_active: true, created_at: '2021-01-01T00:00:00.000Z', updated_at: '2021-01-01T00:00:00.000Z' },
-  { id: 6, uuid: '00000000-0000-4000-8000-000000000006', company_id: 1, name: 'Marketing', code: 'MKT', head_employee_id: 158, level: 1, sort_order: 6, is_active: true, created_at: '2021-01-01T00:00:00.000Z', updated_at: '2021-01-01T00:00:00.000Z' },
-  { id: 7, uuid: '00000000-0000-4000-8000-000000000007', company_id: 1, name: 'Legal', code: 'LGL', head_employee_id: 177, level: 1, sort_order: 7, is_active: true, created_at: '2021-01-01T00:00:00.000Z', updated_at: '2021-01-01T00:00:00.000Z' },
-  { id: 8, uuid: '00000000-0000-4000-8000-000000000008', company_id: 1, name: 'Admin', code: 'ADM', head_employee_id: 203, level: 1, sort_order: 8, is_active: true, created_at: '2021-01-01T00:00:00.000Z', updated_at: '2021-01-01T00:00:00.000Z' },
+  { id: 1, uuid: '00000000-0000-4000-8000-000000000001', company_id: 1, name: 'Sales', code: 'SLS', head_employee_id: 43, cost_center_id: 1, level: 1, sort_order: 1, is_active: true, created_at: '2021-01-01T00:00:00.000Z', updated_at: '2021-01-01T00:00:00.000Z' },
+  { id: 2, uuid: '00000000-0000-4000-8000-000000000002', company_id: 1, name: 'Operations', code: 'OPS', head_employee_id: 71, cost_center_id: 2, level: 1, sort_order: 2, is_active: true, created_at: '2021-01-01T00:00:00.000Z', updated_at: '2021-01-01T00:00:00.000Z' },
+  { id: 3, uuid: '00000000-0000-4000-8000-000000000003', company_id: 1, name: 'Finance', code: 'FIN', head_employee_id: 89, cost_center_id: 4, level: 1, sort_order: 3, is_active: true, created_at: '2021-01-01T00:00:00.000Z', updated_at: '2021-01-01T00:00:00.000Z' },
+  { id: 4, uuid: '00000000-0000-4000-8000-000000000004', company_id: 1, name: 'IT', code: 'IT', head_employee_id: 112, cost_center_id: 3, level: 1, sort_order: 4, is_active: true, created_at: '2021-01-01T00:00:00.000Z', updated_at: '2021-01-01T00:00:00.000Z' },
+  { id: 5, uuid: '00000000-0000-4000-8000-000000000005', company_id: 1, name: 'HR', code: 'HR', head_employee_id: 134, cost_center_id: 5, level: 1, sort_order: 5, is_active: true, created_at: '2021-01-01T00:00:00.000Z', updated_at: '2021-01-01T00:00:00.000Z' },
+  { id: 6, uuid: '00000000-0000-4000-8000-000000000006', company_id: 1, name: 'Marketing', code: 'MKT', head_employee_id: 158, cost_center_id: 6, level: 1, sort_order: 6, is_active: true, created_at: '2021-01-01T00:00:00.000Z', updated_at: '2021-01-01T00:00:00.000Z' },
+  { id: 7, uuid: '00000000-0000-4000-8000-000000000007', company_id: 1, name: 'Legal', code: 'LGL', head_employee_id: 177, cost_center_id: 7, level: 1, sort_order: 7, is_active: true, created_at: '2021-01-01T00:00:00.000Z', updated_at: '2021-01-01T00:00:00.000Z' },
+  { id: 8, uuid: '00000000-0000-4000-8000-000000000008', company_id: 1, name: 'Admin', code: 'ADM', head_employee_id: 203, cost_center_id: 8, level: 1, sort_order: 8, is_active: true, created_at: '2021-01-01T00:00:00.000Z', updated_at: '2021-01-01T00:00:00.000Z' },
 ];
 
 let deptStore: StoredDepartment[] = SEED_DEPARTMENTS.map((d) => ({ ...d }));
@@ -152,10 +160,14 @@ function deptToWire(row: StoredDepartment): DepartmentWire {
   const head = row.head_employee_id !== undefined
     ? HEAD_STUBS.find((s) => s.id === row.head_employee_id)
     : undefined;
+  const costCenter = row.cost_center_id !== undefined
+    ? costCenterStore.find((c) => c.id === row.cost_center_id)
+    : undefined;
 
   return departmentDecoder.decode({
     ...row,
     head: head ?? undefined,
+    costCenter: costCenter ? { id: costCenter.id, name: costCenter.name } : undefined,
   });
 }
 
@@ -194,11 +206,12 @@ export const mockDepartmentApi: DepartmentApi = {
     const row: StoredDepartment = {
       id,
       uuid: `00000000-0000-4000-8000-${String(id).padStart(12, '0')}`,
-      company_id: input.company_id,
+      company_id: input.company_id ?? 1,
       parent_id: input.parent_id ?? undefined,
       name: input.name,
       code: input.code ?? undefined,
       head_employee_id: input.head_employee_id ?? undefined,
+      cost_center_id: input.cost_center_id ?? undefined,
       level: input.level ?? undefined,
       path: input.path ?? undefined,
       sort_order: input.sort_order ?? undefined,
@@ -220,6 +233,7 @@ export const mockDepartmentApi: DepartmentApi = {
       ...(input.code !== undefined ? { code: input.code ?? undefined } : {}),
       ...(input.parent_id !== undefined ? { parent_id: input.parent_id ?? undefined } : {}),
       ...(input.head_employee_id !== undefined ? { head_employee_id: input.head_employee_id ?? undefined } : {}),
+      ...(input.cost_center_id !== undefined ? { cost_center_id: input.cost_center_id ?? undefined } : {}),
       ...(input.level !== undefined ? { level: input.level ?? undefined } : {}),
       ...(input.path !== undefined ? { path: input.path ?? undefined } : {}),
       ...(input.sort_order !== undefined ? { sort_order: input.sort_order ?? undefined } : {}),
@@ -533,7 +547,7 @@ export const mockBranchApi: BranchApi = {
     const row: StoredBranch = {
       id,
       uuid: `b0000000-0000-4000-8000-${String(id).padStart(12, '0')}`,
-      company_id: input.company_id,
+      company_id: input.company_id ?? 1,
       name: input.name,
       code: input.code ?? undefined,
       address: input.address ?? undefined,
@@ -583,6 +597,330 @@ export const mockBranchApi: BranchApi = {
   },
 };
 
+// ─── JobGrade ─────────────────────────────────────────────────────────────────
+
+interface StoredJobGrade {
+  id: number;
+  company_id: number;
+  name: string;
+  code?: string | undefined;
+  min_salary?: number | undefined;
+  mid_salary?: number | undefined;
+  max_salary?: number | undefined;
+  sort_order?: number | undefined;
+  created_at: string;
+  updated_at: string;
+}
+
+/** Mirrors `OrganizationSeeder.php`'s `$gradeData` exactly. */
+const SEED_JOB_GRADES: StoredJobGrade[] = [
+  { id: 1, company_id: 1, code: 'G1', name: 'Associate', min_salary: 4000, mid_salary: 5500, max_salary: 7000, sort_order: 1, created_at: '2021-01-01T00:00:00.000Z', updated_at: '2021-01-01T00:00:00.000Z' },
+  { id: 2, company_id: 1, code: 'G2', name: 'Professional', min_salary: 6500, mid_salary: 8500, max_salary: 10500, sort_order: 2, created_at: '2021-01-01T00:00:00.000Z', updated_at: '2021-01-01T00:00:00.000Z' },
+  { id: 3, company_id: 1, code: 'G3', name: 'Senior Professional', min_salary: 9500, mid_salary: 12500, max_salary: 15500, sort_order: 3, created_at: '2021-01-01T00:00:00.000Z', updated_at: '2021-01-01T00:00:00.000Z' },
+  { id: 4, company_id: 1, code: 'G4', name: 'Lead / Manager', min_salary: 14000, mid_salary: 18000, max_salary: 22000, sort_order: 4, created_at: '2021-01-01T00:00:00.000Z', updated_at: '2021-01-01T00:00:00.000Z' },
+  { id: 5, company_id: 1, code: 'G5', name: 'Senior Manager', min_salary: 20000, mid_salary: 26000, max_salary: 32000, sort_order: 5, created_at: '2021-01-01T00:00:00.000Z', updated_at: '2021-01-01T00:00:00.000Z' },
+  { id: 6, company_id: 1, code: 'G6', name: 'Director', min_salary: 30000, mid_salary: 38000, max_salary: 46000, sort_order: 6, created_at: '2021-01-01T00:00:00.000Z', updated_at: '2021-01-01T00:00:00.000Z' },
+];
+
+let jobGradeStore: StoredJobGrade[] = SEED_JOB_GRADES.map((g) => ({ ...g }));
+let jobGradeNextId = 500;
+
+export function resetMockJobGrades(): void {
+  jobGradeStore = SEED_JOB_GRADES.map((g) => ({ ...g }));
+  jobGradeNextId = 500;
+}
+
+function jobGradeFindOrThrow(id: number): StoredJobGrade {
+  const row = jobGradeStore.find((item) => item.id === id);
+  if (!row) throw new ApiError('http', `JobGrade ${id} not found`, { status: 404 });
+  return row;
+}
+
+function jobGradeToWire(row: StoredJobGrade): JobGradeWire {
+  return jobGradeDecoder.decode({ ...row });
+}
+
+export const mockJobGradeApi: JobGradeApi = {
+  async list(context, params) {
+    await simulate(context, READ_LATENCY_MS);
+
+    const filtered = jobGradeStore.filter((row) => {
+      if (params.companyId !== undefined && row.company_id !== params.companyId) return false;
+      return true;
+    });
+
+    const perPage = params.perPage && params.perPage > 0 ? Math.min(params.perPage, 200) : 25;
+    const currentPage = params.page && params.page > 0 ? params.page : 1;
+    const total = filtered.length;
+    const lastPage = Math.max(1, Math.ceil(total / perPage));
+    const safePage = Math.min(currentPage, lastPage);
+    const start = (safePage - 1) * perPage;
+    const pageData = filtered.slice(start, start + perPage);
+
+    const wire: JobGradeListWire = {
+      data: pageData.map(jobGradeToWire),
+      meta: { current_page: safePage, per_page: perPage, total, last_page: lastPage },
+    };
+    return jobGradeListDecoder.decode(structuredClone(wire));
+  },
+
+  async create(context, input) {
+    await simulate(context, WRITE_LATENCY_MS);
+
+    const id = jobGradeNextId;
+    jobGradeNextId += 1;
+    const stamp = new Date().toISOString();
+    const row: StoredJobGrade = {
+      id,
+      company_id: input.company_id ?? 1,
+      name: input.name,
+      code: input.code ?? undefined,
+      min_salary: input.min_salary ?? undefined,
+      mid_salary: input.mid_salary ?? undefined,
+      max_salary: input.max_salary ?? undefined,
+      sort_order: input.sort_order ?? undefined,
+      created_at: stamp,
+      updated_at: stamp,
+    };
+    jobGradeStore = [row, ...jobGradeStore];
+    return jobGradeDecoder.decode(structuredClone(jobGradeToWire(row)));
+  },
+
+  async update(context, id, input) {
+    await simulate(context, WRITE_LATENCY_MS);
+    const row = jobGradeFindOrThrow(id);
+
+    const updated: StoredJobGrade = {
+      ...row,
+      ...(input.name !== undefined ? { name: input.name } : {}),
+      ...(input.code !== undefined ? { code: input.code ?? undefined } : {}),
+      ...(input.min_salary !== undefined ? { min_salary: input.min_salary ?? undefined } : {}),
+      ...(input.mid_salary !== undefined ? { mid_salary: input.mid_salary ?? undefined } : {}),
+      ...(input.max_salary !== undefined ? { max_salary: input.max_salary ?? undefined } : {}),
+      ...(input.sort_order !== undefined ? { sort_order: input.sort_order ?? undefined } : {}),
+      updated_at: new Date().toISOString(),
+    };
+    jobGradeStore = jobGradeStore.map((item) => (item.id === id ? updated : item));
+    return jobGradeDecoder.decode(structuredClone(jobGradeToWire(updated)));
+  },
+
+  async remove(context, id) {
+    await simulate(context, WRITE_LATENCY_MS);
+    jobGradeFindOrThrow(id);
+    jobGradeStore = jobGradeStore.filter((item) => item.id !== id);
+  },
+};
+
+// ─── JobLevel ─────────────────────────────────────────────────────────────────
+
+interface StoredJobLevel {
+  id: number;
+  company_id: number;
+  name: string;
+  sort_order?: number | undefined;
+  created_at: string;
+  updated_at: string;
+}
+
+/** Mirrors `OrganizationSeeder.php`'s `$levelData` exactly. */
+const SEED_JOB_LEVELS: StoredJobLevel[] = [
+  { id: 1, company_id: 1, name: 'Junior', sort_order: 1, created_at: '2021-01-01T00:00:00.000Z', updated_at: '2021-01-01T00:00:00.000Z' },
+  { id: 2, company_id: 1, name: 'Mid-Level', sort_order: 2, created_at: '2021-01-01T00:00:00.000Z', updated_at: '2021-01-01T00:00:00.000Z' },
+  { id: 3, company_id: 1, name: 'Senior', sort_order: 3, created_at: '2021-01-01T00:00:00.000Z', updated_at: '2021-01-01T00:00:00.000Z' },
+  { id: 4, company_id: 1, name: 'Lead', sort_order: 4, created_at: '2021-01-01T00:00:00.000Z', updated_at: '2021-01-01T00:00:00.000Z' },
+  { id: 5, company_id: 1, name: 'Principal', sort_order: 5, created_at: '2021-01-01T00:00:00.000Z', updated_at: '2021-01-01T00:00:00.000Z' },
+  { id: 6, company_id: 1, name: 'Director', sort_order: 6, created_at: '2021-01-01T00:00:00.000Z', updated_at: '2021-01-01T00:00:00.000Z' },
+];
+
+let jobLevelStore: StoredJobLevel[] = SEED_JOB_LEVELS.map((l) => ({ ...l }));
+let jobLevelNextId = 600;
+
+export function resetMockJobLevels(): void {
+  jobLevelStore = SEED_JOB_LEVELS.map((l) => ({ ...l }));
+  jobLevelNextId = 600;
+}
+
+function jobLevelFindOrThrow(id: number): StoredJobLevel {
+  const row = jobLevelStore.find((item) => item.id === id);
+  if (!row) throw new ApiError('http', `JobLevel ${id} not found`, { status: 404 });
+  return row;
+}
+
+function jobLevelToWire(row: StoredJobLevel): JobLevelWire {
+  return jobLevelDecoder.decode({ ...row });
+}
+
+export const mockJobLevelApi: JobLevelApi = {
+  async list(context, params) {
+    await simulate(context, READ_LATENCY_MS);
+
+    const filtered = jobLevelStore.filter((row) => {
+      if (params.companyId !== undefined && row.company_id !== params.companyId) return false;
+      return true;
+    });
+
+    const perPage = params.perPage && params.perPage > 0 ? Math.min(params.perPage, 200) : 25;
+    const currentPage = params.page && params.page > 0 ? params.page : 1;
+    const total = filtered.length;
+    const lastPage = Math.max(1, Math.ceil(total / perPage));
+    const safePage = Math.min(currentPage, lastPage);
+    const start = (safePage - 1) * perPage;
+    const pageData = filtered.slice(start, start + perPage);
+
+    const wire: JobLevelListWire = {
+      data: pageData.map(jobLevelToWire),
+      meta: { current_page: safePage, per_page: perPage, total, last_page: lastPage },
+    };
+    return jobLevelListDecoder.decode(structuredClone(wire));
+  },
+
+  async create(context, input) {
+    await simulate(context, WRITE_LATENCY_MS);
+
+    const id = jobLevelNextId;
+    jobLevelNextId += 1;
+    const stamp = new Date().toISOString();
+    const row: StoredJobLevel = {
+      id,
+      company_id: input.company_id ?? 1,
+      name: input.name,
+      sort_order: input.sort_order ?? undefined,
+      created_at: stamp,
+      updated_at: stamp,
+    };
+    jobLevelStore = [row, ...jobLevelStore];
+    return jobLevelDecoder.decode(structuredClone(jobLevelToWire(row)));
+  },
+
+  async update(context, id, input) {
+    await simulate(context, WRITE_LATENCY_MS);
+    const row = jobLevelFindOrThrow(id);
+
+    const updated: StoredJobLevel = {
+      ...row,
+      ...(input.name !== undefined ? { name: input.name } : {}),
+      ...(input.sort_order !== undefined ? { sort_order: input.sort_order ?? undefined } : {}),
+      updated_at: new Date().toISOString(),
+    };
+    jobLevelStore = jobLevelStore.map((item) => (item.id === id ? updated : item));
+    return jobLevelDecoder.decode(structuredClone(jobLevelToWire(updated)));
+  },
+
+  async remove(context, id) {
+    await simulate(context, WRITE_LATENCY_MS);
+    jobLevelFindOrThrow(id);
+    jobLevelStore = jobLevelStore.filter((item) => item.id !== id);
+  },
+};
+
+// ─── CostCenter ───────────────────────────────────────────────────────────────
+
+interface StoredCostCenter {
+  id: number;
+  company_id: number;
+  name: string;
+  code?: string | undefined;
+  is_active?: boolean | undefined;
+  created_at: string;
+  updated_at: string;
+}
+
+/** Mirrors `OrganizationSeeder.php`'s cost-center rows exactly. */
+const SEED_COST_CENTERS: StoredCostCenter[] = [
+  { id: 1, company_id: 1, name: 'Sales Cost Center', code: 'CC-SALES', is_active: true, created_at: '2021-01-01T00:00:00.000Z', updated_at: '2021-01-01T00:00:00.000Z' },
+  { id: 2, company_id: 1, name: 'Operations Cost Center', code: 'CC-OPS', is_active: true, created_at: '2021-01-01T00:00:00.000Z', updated_at: '2021-01-01T00:00:00.000Z' },
+  { id: 3, company_id: 1, name: 'IT Cost Center', code: 'CC-IT', is_active: true, created_at: '2021-01-01T00:00:00.000Z', updated_at: '2021-01-01T00:00:00.000Z' },
+  { id: 4, company_id: 1, name: 'Finance Cost Center', code: 'CC-FIN', is_active: true, created_at: '2021-01-01T00:00:00.000Z', updated_at: '2021-01-01T00:00:00.000Z' },
+  { id: 5, company_id: 1, name: 'HR Cost Center', code: 'CC-HR', is_active: true, created_at: '2021-01-01T00:00:00.000Z', updated_at: '2021-01-01T00:00:00.000Z' },
+  { id: 6, company_id: 1, name: 'Marketing Cost Center', code: 'CC-MKT', is_active: true, created_at: '2021-01-01T00:00:00.000Z', updated_at: '2021-01-01T00:00:00.000Z' },
+  { id: 7, company_id: 1, name: 'Legal Cost Center', code: 'CC-LEGAL', is_active: true, created_at: '2021-01-01T00:00:00.000Z', updated_at: '2021-01-01T00:00:00.000Z' },
+  { id: 8, company_id: 1, name: 'Admin Cost Center', code: 'CC-ADMIN', is_active: true, created_at: '2021-01-01T00:00:00.000Z', updated_at: '2021-01-01T00:00:00.000Z' },
+];
+
+let costCenterStore: StoredCostCenter[] = SEED_COST_CENTERS.map((c) => ({ ...c }));
+let costCenterNextId = 900;
+
+export function resetMockCostCenters(): void {
+  costCenterStore = SEED_COST_CENTERS.map((c) => ({ ...c }));
+  costCenterNextId = 900;
+}
+
+function costCenterFindOrThrow(id: number): StoredCostCenter {
+  const row = costCenterStore.find((item) => item.id === id);
+  if (!row) throw new ApiError('http', `CostCenter ${id} not found`, { status: 404 });
+  return row;
+}
+
+function costCenterToWire(row: StoredCostCenter): CostCenterWire {
+  return costCenterDecoder.decode({ ...row });
+}
+
+export const mockCostCenterApi: CostCenterApi = {
+  async list(context, params) {
+    await simulate(context, READ_LATENCY_MS);
+
+    const filtered = costCenterStore.filter((row) => {
+      if (params.companyId !== undefined && row.company_id !== params.companyId) return false;
+      if (params.isActive !== undefined && row.is_active !== params.isActive) return false;
+      return true;
+    });
+
+    const perPage = params.perPage && params.perPage > 0 ? Math.min(params.perPage, 200) : 25;
+    const currentPage = params.page && params.page > 0 ? params.page : 1;
+    const total = filtered.length;
+    const lastPage = Math.max(1, Math.ceil(total / perPage));
+    const safePage = Math.min(currentPage, lastPage);
+    const start = (safePage - 1) * perPage;
+    const pageData = filtered.slice(start, start + perPage);
+
+    const wire: CostCenterListWire = {
+      data: pageData.map(costCenterToWire),
+      meta: { current_page: safePage, per_page: perPage, total, last_page: lastPage },
+    };
+    return costCenterListDecoder.decode(structuredClone(wire));
+  },
+
+  async create(context, input) {
+    await simulate(context, WRITE_LATENCY_MS);
+
+    const id = costCenterNextId;
+    costCenterNextId += 1;
+    const stamp = new Date().toISOString();
+    const row: StoredCostCenter = {
+      id,
+      company_id: input.company_id ?? 1,
+      name: input.name,
+      code: input.code ?? undefined,
+      is_active: input.is_active ?? true,
+      created_at: stamp,
+      updated_at: stamp,
+    };
+    costCenterStore = [row, ...costCenterStore];
+    return costCenterDecoder.decode(structuredClone(costCenterToWire(row)));
+  },
+
+  async update(context, id, input) {
+    await simulate(context, WRITE_LATENCY_MS);
+    const row = costCenterFindOrThrow(id);
+
+    const updated: StoredCostCenter = {
+      ...row,
+      ...(input.name !== undefined ? { name: input.name } : {}),
+      ...(input.code !== undefined ? { code: input.code ?? undefined } : {}),
+      ...(input.is_active !== undefined ? { is_active: input.is_active ?? undefined } : {}),
+      updated_at: new Date().toISOString(),
+    };
+    costCenterStore = costCenterStore.map((item) => (item.id === id ? updated : item));
+    return costCenterDecoder.decode(structuredClone(costCenterToWire(updated)));
+  },
+
+  async remove(context, id) {
+    await simulate(context, WRITE_LATENCY_MS);
+    costCenterFindOrThrow(id);
+    costCenterStore = costCenterStore.filter((item) => item.id !== id);
+  },
+};
+
 // ─── JobPosition ──────────────────────────────────────────────────────────────
 
 interface StoredJobPosition {
@@ -593,6 +931,8 @@ interface StoredJobPosition {
   title: string;
   title_ar?: string | undefined;
   code?: string | undefined;
+  job_grade_id?: number | undefined;
+  job_level_id?: number | undefined;
   description?: string | undefined;
   requirements?: string | undefined;
   headcount?: number | undefined;
@@ -636,11 +976,15 @@ function jobPositionFindOrThrow(id: number): StoredJobPosition {
 function jobPositionToWire(row: StoredJobPosition): JobPositionWire {
   const company = companyStore.find((c) => c.id === row.company_id);
   const department = SEED_DEPARTMENTS.find((d) => d.id === row.department_id);
+  const jobGrade = jobGradeStore.find((g) => g.id === row.job_grade_id);
+  const jobLevel = jobLevelStore.find((l) => l.id === row.job_level_id);
 
   return jobPositionDecoder.decode({
     ...row,
     company: company ? { id: company.id, name: company.name } : undefined,
     department: department ? { id: department.id, name: department.name } : undefined,
+    jobGrade: jobGrade ? { id: jobGrade.id, name: jobGrade.name } : undefined,
+    jobLevel: jobLevel ? { id: jobLevel.id, name: jobLevel.name } : undefined,
   });
 }
 
@@ -652,6 +996,8 @@ export const mockJobPositionApi: JobPositionApi = {
     const filtered = jobPositionStore.filter((row) => {
       if (params.companyId !== undefined && row.company_id !== params.companyId) return false;
       if (params.departmentId !== undefined && row.department_id !== params.departmentId) return false;
+      if (params.jobGradeId !== undefined && row.job_grade_id !== params.jobGradeId) return false;
+      if (params.jobLevelId !== undefined && row.job_level_id !== params.jobLevelId) return false;
       if (params.isActive !== undefined && row.is_active !== params.isActive) return false;
       if (!search) return true;
       return (
@@ -685,11 +1031,13 @@ export const mockJobPositionApi: JobPositionApi = {
     const row: StoredJobPosition = {
       id,
       uuid: `jp000000-0000-4000-8000-${String(id).padStart(12, '0')}`,
-      company_id: input.company_id,
+      company_id: input.company_id ?? 1,
       department_id: input.department_id ?? undefined,
       title: input.title,
       title_ar: input.title_ar ?? undefined,
       code: input.code ?? undefined,
+      job_grade_id: input.job_grade_id ?? undefined,
+      job_level_id: input.job_level_id ?? undefined,
       description: input.description ?? undefined,
       requirements: input.requirements ?? undefined,
       headcount: input.headcount ?? undefined,
@@ -712,6 +1060,8 @@ export const mockJobPositionApi: JobPositionApi = {
       ...(input.title !== undefined ? { title: input.title } : {}),
       ...(input.title_ar !== undefined ? { title_ar: input.title_ar ?? undefined } : {}),
       ...(input.code !== undefined ? { code: input.code ?? undefined } : {}),
+      ...(input.job_grade_id !== undefined ? { job_grade_id: input.job_grade_id ?? undefined } : {}),
+      ...(input.job_level_id !== undefined ? { job_level_id: input.job_level_id ?? undefined } : {}),
       ...(input.description !== undefined ? { description: input.description ?? undefined } : {}),
       ...(input.requirements !== undefined ? { requirements: input.requirements ?? undefined } : {}),
       ...(input.headcount !== undefined ? { headcount: input.headcount ?? undefined } : {}),

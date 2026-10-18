@@ -1,15 +1,18 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Pencil, Plus, Search, Trash2 } from 'lucide-react';
+import { CheckCircle2, Pencil, Plus, Search, Trash2 } from 'lucide-react';
 import { cn } from '@/lib/cn';
+import { useHasPermission } from '@/auth/session';
 import { Avatar } from '@/components/ui/Avatar';
 import { Card } from '@/components/ui/Card';
+import { SkeletonTable } from '@/components/ui/SkeletonTable';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { Button } from '@/components/ui/Button';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { Pagination } from '@/components/ui/Pagination';
+import { toast } from '@/components/ui/Toast';
 import { userFacingMessage } from '@/lib/api/errors';
-import { useDeleteLoan, useLoanList } from '../api/queries';
+import { useApproveLoan, useDeleteLoan, useLoanList } from '../api/queries';
 import type { LoanListParams, LoanStatus, LoanType } from '../api/resource';
 import type { LoanWire } from '../api/schema';
 import { LoanFormDialog } from './LoanFormDialog';
@@ -19,22 +22,21 @@ import { LoanFormDialog } from './LoanFormDialog';
  * - `useLoanList` for data
  * - Add/Edit via `LoanFormDialog`
  * - Delete via `ConfirmDialog` + optimistic `useDeleteLoan`
+ * - Approve (pending → active) via `ConfirmDialog` + `useApproveLoan`, gated
+ *   behind `payroll.loan_approval.approve` (the matrix's dedicated "Loan
+ *   Approval" permission, distinct from base loan CRUD)
  * - `Pagination` for page controls
  * - Debounced search (employee name)
  * - Status filter chips (real backend values: pending/active/completed/cancelled —
  *   NO "defaulted", that was a fabricated UI-only status)
  * - Stat cards each backed by a cheap `perPage:1` filtered query (total / active / pending)
- *
- * NOTE: `POST /loans/{id}/approve` exists on the backend but requires auth
- * context that is not available yet — it is skipped here, same as Attendance
- * skipped `/correct`. Wire it up as a follow-up once authentication lands.
  */
 
 const PER_PAGE = 10;
 
 const STATUS_CLASSES: Record<LoanStatus, string> = {
   active:    'bg-emerald-50 text-emerald-700',
-  completed: 'bg-gray-100 text-gray-600',
+  completed: 'bg-surface text-ink-muted border border-divider',
   pending:   'bg-amber-50 text-amber-700',
   cancelled: 'bg-red-50 text-red-700',
 };
@@ -116,10 +118,28 @@ function TypeBadge({ type }: { type: LoanType }) {
 
 // ─── Row Actions ──────────────────────────────────────────────────────────────
 
-function RowActions({ onEdit, onDelete }: { onEdit: () => void; onDelete: () => void }) {
+function RowActions({
+  onEdit,
+  onDelete,
+  onApprove,
+}: {
+  onEdit: () => void;
+  onDelete: () => void;
+  onApprove?: (() => void) | undefined;
+}) {
   const { t } = useTranslation();
   return (
     <div className="flex items-center gap-1">
+      {onApprove ? (
+        <Button
+          variant="ghost"
+          className="h-7 w-7 px-0 hover:!text-emerald-600"
+          aria-label={t('loans.approveAction')}
+          onClick={onApprove}
+        >
+          <CheckCircle2 className="h-3.5 w-3.5" strokeWidth={1.75} aria-hidden="true" />
+        </Button>
+      ) : null}
       <Button variant="ghost" className="h-7 w-7 px-0" aria-label={t('loans.editAction')} onClick={onEdit}>
         <Pencil className="h-3.5 w-3.5" strokeWidth={1.75} aria-hidden="true" />
       </Button>
@@ -158,6 +178,9 @@ export function LoansPage() {
   const [formOpen, setFormOpen] = useState(false);
   const [editTarget, setEditTarget] = useState<LoanWire | undefined>(undefined);
   const [deleteTarget, setDeleteTarget] = useState<LoanWire | undefined>(undefined);
+  const [approveTarget, setApproveTarget] = useState<LoanWire | undefined>(undefined);
+
+  const canApprove = useHasPermission('payroll.loan_approval.approve');
 
   // Debounce the free-text search so every keystroke doesn't fire a request.
   useEffect(() => {
@@ -188,6 +211,7 @@ export function LoansPage() {
   const { state: pendingState }   = useLoanList({ page: 1, perPage: 1, status: 'pending' });
 
   const deleteMutation = useDeleteLoan(params);
+  const approveMutation = useApproveLoan();
 
   const records = state.data?.data ?? [];
   const meta    = state.data?.meta;
@@ -206,6 +230,17 @@ export function LoansPage() {
     if (!deleteTarget) return;
     const result = await deleteMutation.mutate(deleteTarget.id);
     if (result !== undefined || deleteMutation.error === undefined) setDeleteTarget(undefined);
+  }
+
+  async function confirmApprove() {
+    if (!approveTarget) return;
+    const result = await approveMutation.mutate(approveTarget.id);
+    if (result !== undefined) {
+      toast.success('loans.approveSuccess');
+      setApproveTarget(undefined);
+    } else {
+      toast.error(userFacingMessage(approveMutation.error) || 'loans.approveFailed');
+    }
   }
 
   return (
@@ -231,7 +266,7 @@ export function LoansPage() {
       <div className="mb-4 flex flex-wrap items-center gap-3">
         {/* Search */}
         <label className="relative flex items-center">
-          <span className="pointer-events-none absolute left-3 text-ink-faint">
+          <span className="pointer-events-none absolute start-3 text-ink-faint">
             <Search className="h-3.5 w-3.5" strokeWidth={1.75} aria-hidden="true" />
           </span>
           <input
@@ -240,7 +275,7 @@ export function LoansPage() {
             value={searchInput}
             onChange={(e) => setSearchInput(e.target.value)}
             className={cn(
-              'h-9 rounded-full border border-hairline bg-surface pl-8 pr-4 text-[13px] text-ink placeholder:text-ink-faint',
+              'h-9 rounded-full border border-hairline bg-surface ps-8 pe-4 text-[13px] text-ink placeholder:text-ink-faint',
               'focus:outline-none focus:ring-1 focus:ring-navy/40',
               'w-52',
             )}
@@ -286,7 +321,7 @@ export function LoansPage() {
 
       {/* Initial load */}
       {state.status === 'pending' && records.length === 0 ? (
-        <Card className="px-5 py-10 text-center text-body-sm text-ink-muted">{t('common.loading')}</Card>
+        <SkeletonTable />
       ) : null}
 
       {/* Empty state */}
@@ -358,7 +393,7 @@ export function LoansPage() {
                 </span>
 
                 {/* Progress */}
-                <div className="flex flex-col gap-1 pr-4">
+                <div className="flex flex-col gap-1 pe-4">
                   <InstallmentProgress
                     paid={loan.paid_installments ?? 0}
                     total={loan.total_installments}
@@ -385,7 +420,11 @@ export function LoansPage() {
                 <StatusBadge status={loan.status} />
 
                 {/* Actions */}
-                <RowActions onEdit={() => openEditForm(loan)} onDelete={() => setDeleteTarget(loan)} />
+                <RowActions
+                  onEdit={() => openEditForm(loan)}
+                  onDelete={() => setDeleteTarget(loan)}
+                  onApprove={canApprove && loan.status === 'pending' ? () => setApproveTarget(loan) : undefined}
+                />
               </div>
             ))}
           </Card>
@@ -419,7 +458,11 @@ export function LoansPage() {
                   </div>
                   <div className="flex shrink-0 flex-col items-end gap-2">
                     <StatusBadge status={loan.status} />
-                    <RowActions onEdit={() => openEditForm(loan)} onDelete={() => setDeleteTarget(loan)} />
+                    <RowActions
+                      onEdit={() => openEditForm(loan)}
+                      onDelete={() => setDeleteTarget(loan)}
+                      onApprove={canApprove && loan.status === 'pending' ? () => setApproveTarget(loan) : undefined}
+                    />
                   </div>
                 </div>
 
@@ -501,6 +544,23 @@ export function LoansPage() {
         }
         isLoading={deleteMutation.isPending}
         onConfirm={() => void confirmDelete()}
+      />
+
+      <ConfirmDialog
+        open={approveTarget !== undefined}
+        onOpenChange={(open) => !open && setApproveTarget(undefined)}
+        title={t('loans.approveConfirm.title')}
+        description={
+          approveTarget
+            ? t('loans.approveConfirm.description', {
+                name: approveTarget.employee
+                  ? `${approveTarget.employee.first_name} ${approveTarget.employee.last_name}`
+                  : `#${approveTarget.employee_id}`,
+              })
+            : undefined
+        }
+        isLoading={approveMutation.isPending}
+        onConfirm={() => void confirmApprove()}
       />
     </div>
   );

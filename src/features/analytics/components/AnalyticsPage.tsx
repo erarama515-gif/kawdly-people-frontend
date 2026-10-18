@@ -1,27 +1,34 @@
+import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { cn } from '@/lib/cn';
 import { Card } from '@/components/ui/Card';
+import { SkeletonTable } from '@/components/ui/SkeletonTable';
 import { PageHeader } from '@/components/ui/PageHeader';
+import { ExportButton } from '@/components/ui/ExportButton';
+import type { ExportColumn } from '@/components/ui/ExportButton';
 import { userFacingMessage } from '@/lib/api/errors';
 import {
   useTotalActiveEmployees,
   useOpenPositions,
   useAllTimeAttrition,
-  useDepartmentListForChart,
-  useDeptEmployeeCount,
+  useDepartmentHeadcounts,
   useLatestPayrollRun,
 } from '../hooks';
 import { attritionRateColor } from '../data';
-import type { DepartmentWire } from '../hooks';
+import type { DepartmentHeadcount } from '../hooks';
+import { HeadcountTrendChart } from './HeadcountTrendChart';
+import { DepartmentDistributionChart } from './DepartmentDistributionChart';
+import { TurnoverRateChart } from './TurnoverRateChart';
+import { LeaveUtilizationChart } from './LeaveUtilizationChart';
 
 // ─── KPI Card ─────────────────────────────────────────────────────────────────
 
 interface KpiCardProps {
   label: string;
   value: string | undefined;   // undefined → show loading dash
-  sub?: string;
-  valueClassName?: string;
-  error?: string | null;
+  sub?: string | undefined;
+  valueClassName?: string | undefined;
+  error?: string | null | undefined;
 }
 
 function KpiCard({ label, value, sub, valueClassName, error }: KpiCardProps) {
@@ -50,42 +57,27 @@ function KpiCard({ label, value, sub, valueClassName, error }: KpiCardProps) {
 /**
  * One row in the department distribution chart.
  *
- * Each row is its own React component so it can call useDeptEmployeeCount at
- * the top level (satisfying rules-of-hooks). The parent renders one fixed
- * component instance per department — the hook call count is stable after the
- * department list loads.
- *
  * Bar width is the fraction of this department's headcount relative to total
- * active employees (the `totalEmployees` prop), so each bar shows "what share
- * of the workforce is in this department". This is more meaningful than
- * relative-to-max scaling and avoids needing to know all counts upfront.
- *
- * N+1 query note: each row issues one useEmployeeList({ departmentId, perPage:1 })
- * query. React Query deduplicates in-flight requests, so N rows fire N parallel
- * requests — acceptable for typical department counts (≤~15).
+ * active employees, so each bar shows "what share of the workforce is in
+ * this department".
  */
 function DeptBarRow({
   dept,
-  totalEmployees,
+  totalActive,
   isLast,
 }: {
-  dept: DepartmentWire;
-  totalEmployees: number | undefined;
+  dept: DepartmentHeadcount;
+  totalActive: number;
   isLast: boolean;
 }) {
-  const { state } = useDeptEmployeeCount(dept.id);
-  const count = state.data?.meta.total;
-
-  // Bar width = this dept's count / total active employees, clamped to [0, 100].
-  // Falls back to 0% while either count is loading.
   const barWidthPct =
-    count !== undefined && totalEmployees !== undefined && totalEmployees > 0
-      ? Math.min(100, (count / totalEmployees) * 100)
-      : 0;
+    totalActive > 0 ? Math.min(100, (dept.headcount / totalActive) * 100) : 0;
 
   return (
     <li className="flex items-center gap-3.5 px-5 py-2.5">
-      <span className="w-[92px] shrink-0 text-body-sm font-medium text-ink">{dept.name}</span>
+      <span className="w-[92px] shrink-0 text-body-sm font-medium text-ink">
+        {dept.department_name}
+      </span>
       <span
         className="flex h-[12px] flex-1 overflow-hidden rounded-[1px] bg-surface"
         aria-hidden="true"
@@ -103,41 +95,44 @@ function DeptBarRow({
         />
       </span>
       <span className="nums w-[40px] shrink-0 text-end font-mono text-[15px] font-bold tracking-[-0.04em] text-ink">
-        {count !== undefined ? count : '—'}
+        {dept.headcount}
       </span>
     </li>
   );
 }
 
-function DepartmentDistributionCard({ totalEmployees }: { totalEmployees: number | undefined }) {
+function DepartmentDistributionCard() {
   const { t } = useTranslation();
-  const { state: deptState } = useDepartmentListForChart();
+  const { state: headcountState } = useDepartmentHeadcounts();
 
-  const departments = deptState.data?.data ?? [];
-
-  if (deptState.error) {
+  if (headcountState.error) {
     return (
       <Card className="flex flex-col">
         <div className="border-b border-divider px-5 py-3.5">
           <h2 className="text-[18px] font-semibold tracking-[-0.02em] text-ink">{t('analytics.byDepartment')}</h2>
         </div>
         <div className="px-5 py-6 text-body-sm text-coral">
-          {userFacingMessage(deptState.error)}
+          {userFacingMessage(headcountState.error)}
         </div>
       </Card>
     );
   }
 
-  if (deptState.status === 'pending' && departments.length === 0) {
+  if (headcountState.status === 'pending' || !headcountState.data) {
     return (
       <Card className="flex flex-col">
         <div className="border-b border-divider px-5 py-3.5">
           <h2 className="text-[18px] font-semibold tracking-[-0.02em] text-ink">{t('analytics.byDepartment')}</h2>
         </div>
-        <div className="px-5 py-6 text-body-sm text-ink-muted">{t('common.loading')}</div>
+        <div className="px-5 py-3">
+          <SkeletonTable rows={6} columns={3} />
+        </div>
       </Card>
     );
   }
+
+  const departments = headcountState.data.data;
+  const totalActive = headcountState.data.total_active;
 
   return (
     <Card className="flex flex-col">
@@ -151,9 +146,9 @@ function DepartmentDistributionCard({ totalEmployees }: { totalEmployees: number
         ) : (
           departments.map((dept, idx) => (
             <DeptBarRow
-              key={dept.id}
+              key={dept.department_id}
               dept={dept}
-              totalEmployees={totalEmployees}
+              totalActive={totalActive}
               isLast={idx === departments.length - 1}
             />
           ))
@@ -174,8 +169,12 @@ export function AnalyticsPage() {
   const { state: openPosState } = useOpenPositions();
   const { isLoading: attritionLoading, error: attritionError, rate: attritionRate } = useAllTimeAttrition();
   const { state: payrollState } = useLatestPayrollRun();
+  // Same cache key as `DepartmentDistributionCard` below — this is a cache
+  // hit, not a second network request, and gives the export button the
+  // department breakdown without prop-drilling into that component.
+  const { state: headcountState } = useDepartmentHeadcounts();
 
-  // Total active employees (also used as denominator for department bar chart)
+  // Total active employees
   const totalEmployees = activeEmpState.data?.meta.total;
   const totalEmployeesError = activeEmpState.error ? userFacingMessage(activeEmpState.error) : null;
 
@@ -183,20 +182,14 @@ export function AnalyticsPage() {
   const openPositions = openPosState.data?.meta.total;
   const openPositionsError = openPosState.error ? userFacingMessage(openPosState.error) : null;
 
-  // All-time attrition rate (terminated + resigned / total ever).
-  // NOT a trailing-12-month rate — EmployeeListParams has no date filter, so
-  // all counts are all-time totals. Labeled accordingly in the UI.
-  void attritionLoading; // used only to confirm loading state is tracked; dash handles the visual
+  // All-time attrition rate
+  void attritionLoading;
   const attritionDisplay = attritionRate !== undefined ? `${attritionRate}%` : undefined;
   const attritionErrorMsg = attritionError ? userFacingMessage(attritionError) : null;
 
-  // Latest payroll run — we show total_net (cash disbursed to employees).
-  // total_net chosen over total_gross: it represents money actually paid out.
-  // Label says "Latest Payroll Run" not "this month" because PayrollRunListParams
-  // has no period filter; we cannot confirm the record is for the current month.
+  // Latest payroll run
   const latestRun = payrollState.data?.data[0];
   const payrollNetRaw = latestRun?.total_net;
-  // Format in SAR millions (divide by 1,000,000), 2 decimal places
   const payrollDisplay =
     payrollNetRaw !== undefined
       ? `${(payrollNetRaw / 1_000_000).toFixed(2)}M SAR`
@@ -207,37 +200,39 @@ export function AnalyticsPage() {
       : t('analytics.sub.latestRun');
   const payrollError = payrollState.error ? userFacingMessage(payrollState.error) : null;
 
+  // ── Export Report — a metric/value snapshot of everything on this page,
+  // built only from values already fetched above (never fabricated). ────────
+  const exportColumns: ExportColumn[] = [
+    { key: 'metric', label: t('analytics.export.metric') },
+    { key: 'value', label: t('analytics.export.value') },
+  ];
+
+  const exportRows = useMemo(() => {
+    const rows: Record<string, unknown>[] = [
+      { metric: t('analytics.kpi.totalEmployees'), value: totalEmployees?.toLocaleString() ?? '—' },
+      { metric: t('analytics.kpi.openPositions'), value: openPositions?.toLocaleString() ?? '—' },
+      { metric: t('analytics.kpi.allTimeAttrition'), value: attritionDisplay ?? '—' },
+      { metric: t('analytics.kpi.payrollCost'), value: payrollDisplay ?? '—' },
+    ];
+    for (const dept of headcountState.data?.data ?? []) {
+      rows.push({
+        metric: t('analytics.export.departmentHeadcount', { department: dept.department_name }),
+        value: dept.headcount.toLocaleString(),
+      });
+    }
+    return rows;
+  }, [t, totalEmployees, openPositions, attritionDisplay, payrollDisplay, headcountState.data]);
+
   return (
     <div className="flex flex-col">
       <PageHeader
         title={t('analytics.title')}
         actions={
-          <button
-            type="button"
-            className={cn(
-              'rounded-[3px] border-[1.5px] border-navy bg-navy px-4 py-2 text-[13px] font-semibold text-on-navy',
-              'transition-colors hover:bg-navy-deep',
-            )}
-          >
-            {t('analytics.exportReport')}
-          </button>
+          <ExportButton data={exportRows} columns={exportColumns} filename="hr-analytics-report" />
         }
       />
 
-      {/* KPI Strip
-          Kept: totalEmployees (active only), openPositions, allTimeAttrition,
-                payrollCost (latest run total_net).
-          Omitted:
-            newHires      — EmployeeListParams has no joining_date date-range filter;
-                            cannot scope to "this month" server-side. Bounded-page client
-                            fallback rejected: an undercounted number without a visible
-                            caveat is worse than omission at the CEO-summary level.
-            absenceRate   — AttendanceListParams has no date-range filter; fetching all
-                            records unbounded is required. Same rationale as the
-                            overdueTasks omission in onboarding/api/queries.ts.
-            overtimeCost  — requires summing PayslipWire.overtime_amount across an
-                            unbounded payslip set; no aggregate endpoint exists.
-      */}
+      {/* KPI Strip */}
       <div className="mb-8 grid grid-cols-2 gap-3 sm:grid-cols-4">
         <KpiCard
           label={t('analytics.kpi.totalEmployees')}
@@ -266,24 +261,18 @@ export function AnalyticsPage() {
         />
       </div>
 
-      {/* Department distribution chart.
-          Bar width = dept headcount / total active employees (share-of-workforce metric).
-          N+1 per-dept queries are acceptable — see hooks.ts for the rationale.
-
-          Headcount Trend chart omitted: requires historical headcount snapshots or a
-          joining_date range filter on EmployeeListParams — neither exists.
-      */}
+      {/* Department distribution chart — single-query endpoint, no N+1 */}
       <div className="mb-6">
-        <DepartmentDistributionCard totalEmployees={totalEmployees} />
+        <DepartmentDistributionCard />
       </div>
 
-      {/*
-        Turnover Analysis card omitted: turnoverByDepartment requires termination-date
-        scoping per department. No date-range filter exists on EmployeeListParams.
-        The KPI strip shows all-time attrition (terminated+resigned / total ever)
-        as an honest substitute, labeled as "All-time" to avoid implying a
-        trailing-12-month scope.
-      */}
+      {/* ── Recharts analytics charts — 2×2 grid ─────────────────────────── */}
+      <div className="mb-8 grid grid-cols-1 gap-4 lg:grid-cols-2">
+        <HeadcountTrendChart />
+        <DepartmentDistributionChart />
+        <TurnoverRateChart />
+        <LeaveUtilizationChart />
+      </div>
 
       {/* Bottom spacer */}
       <div className="h-10" aria-hidden="true" />

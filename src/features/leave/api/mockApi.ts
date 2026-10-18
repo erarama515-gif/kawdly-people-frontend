@@ -19,11 +19,11 @@ import type { LeaveRequestApi, LeaveRequestStatus } from './resource';
 // ─── Mock leave types (what the /leave-types endpoint would return) ───────────
 
 export const MOCK_LEAVE_TYPES: LeaveTypeWire[] = [
-  { id: 1, name: 'Annual Leave', code: 'AL', color: '#0ea5e9', is_paid: 1, is_active: 1 },
-  { id: 2, name: 'Sick Leave', code: 'SL', color: '#ef4444', is_paid: 1, is_active: 1 },
-  { id: 3, name: 'Emergency Leave', code: 'EL', color: '#f59e0b', is_paid: 1, is_active: 1 },
-  { id: 4, name: 'Unpaid Leave', code: 'UL', color: '#6b7280', is_paid: 0, is_active: 1 },
-  { id: 5, name: 'Maternity Leave', code: 'ML', color: '#a855f7', is_paid: 1, is_active: 1 },
+  { id: 1, name: 'Annual Leave', code: 'AL', color: '#0ea5e9', is_paid: true, is_active: true },
+  { id: 2, name: 'Sick Leave', code: 'SL', color: '#ef4444', is_paid: true, is_active: true },
+  { id: 3, name: 'Emergency Leave', code: 'EL', color: '#f59e0b', is_paid: true, is_active: true },
+  { id: 4, name: 'Unpaid Leave', code: 'UL', color: '#6b7280', is_paid: false, is_active: true },
+  { id: 5, name: 'Maternity Leave', code: 'ML', color: '#a855f7', is_paid: true, is_active: true },
 ];
 
 // ─── Internal store shape ─────────────────────────────────────────────────────
@@ -211,6 +211,8 @@ export const mockLeaveRequestApi: LeaveRequestApi = {
       if (params.status && row.status !== params.status) return false;
       if (params.employeeId && row.employee_id !== params.employeeId) return false;
       if (params.leaveTypeId && row.leave_type_id !== params.leaveTypeId) return false;
+      if (params.dateFrom && row.start_date < params.dateFrom) return false;
+      if (params.dateTo && row.start_date > params.dateTo) return false;
       if (params.search) {
         const search = params.search.trim().toLowerCase();
         const emp = EMPLOYEE_REFS.find((e) => e.id === row.employee_id);
@@ -327,7 +329,7 @@ function toWire(row: StoredLeaveRequest): LeaveRequestWire {
     employee: emp
       ? { id: emp.id, first_name: emp.first_name, last_name: emp.last_name, employee_number: emp.employee_number, photo: emp.photo }
       : undefined,
-    leaveType: leaveType ? { id: leaveType.id, name: leaveType.name, color: leaveType.color } : undefined,
+    leave_type: leaveType ? { id: leaveType.id, name: leaveType.name, color: leaveType.color } : undefined,
   } as unknown as LeaveRequestWire;
 }
 

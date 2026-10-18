@@ -6,20 +6,31 @@ import {
   payrollRunListDecoder,
   payslipDecoder,
   payslipListDecoder,
+  employeeSalaryDecoder,
+  employeeSalaryListDecoder,
+  payslipItemDecoder,
+  payslipItemListDecoder,
 } from './schema';
 import type {
   PayrollRunListWire,
   PayrollRunWire,
   PayslipListWire,
   PayslipWire,
+  EmployeeSalaryListWire,
+  EmployeeSalaryWire,
+  PayslipItemListWire,
+  PayslipItemWire,
 } from './schema';
 import type {
   PayrollRunApi,
-  PayrollRunInput,
   PayrollRunStatus,
   PayslipApi,
-  PayslipInput,
   PayslipStatus,
+  EmployeeSalaryApi,
+  EmployeeSalaryInput,
+  PayslipItemApi,
+  PayslipItemInput,
+  PayslipItemType,
 } from './resource';
 
 /**
@@ -38,7 +49,10 @@ import type {
  *   - Payslip: total_deductions (not deductions).
  *   - Payslip: no department column; resolved via employee relation.
  *
- * SKIPPED: POST /payroll-runs/{id}/calculate and /approve — no auth context yet.
+ * `calculate` aggregates the run's own payslip rows (gross/deductions/net/count)
+ * so the mock behaves like the real calc engine instead of inventing numbers;
+ * `approve` just flips status + locks, matching the backend's segregation of
+ * draft/calculated (anyone with run.edit) vs approved (run.approve only).
  */
 
 // ─── Shared latency / failure helpers ─────────────────────────────────────────
@@ -241,12 +255,32 @@ function findRunOrThrow(id: number): StoredPayrollRun {
   return row;
 }
 
+/** Mirrors the backend's `PayrollRunRepository::parsePeriod()` — `YYYY-MM` or `YYYY-MM-DD`. */
+function parsePeriod(value: string): [number, number] {
+  const parts = value.split('-');
+  return [Number(parts[0]), Number(parts[1] ?? 1)];
+}
+
+/** `(year, month)` tuple comparison, same semantics as the backend's composite range filter. */
+function periodWithinRange(row: StoredPayrollRun, from: string | undefined, to: string | undefined): boolean {
+  if (from) {
+    const [fromYear, fromMonth] = parsePeriod(from);
+    if (row.period_year < fromYear || (row.period_year === fromYear && row.period_month < fromMonth)) return false;
+  }
+  if (to) {
+    const [toYear, toMonth] = parsePeriod(to);
+    if (row.period_year > toYear || (row.period_year === toYear && row.period_month > toMonth)) return false;
+  }
+  return true;
+}
+
 export const mockPayrollRunApi: PayrollRunApi = {
   async list(context, params) {
     await simulate(context, READ_LATENCY_MS);
 
     const filtered = runStore.filter((row) => {
       if (params.status && row.status !== params.status) return false;
+      if (!periodWithinRange(row, params.periodFrom, params.periodTo)) return false;
       return true;
     });
 
@@ -274,7 +308,7 @@ export const mockPayrollRunApi: PayrollRunApi = {
 
     const row: StoredPayrollRun = {
       id,
-      company_id: input.company_id,
+      company_id: input.company_id ?? 1,
       period_month: input.period_month,
       period_year: input.period_year,
       status: input.status ?? 'draft',
@@ -326,6 +360,59 @@ export const mockPayrollRunApi: PayrollRunApi = {
     await simulate(context, WRITE_LATENCY_MS);
     findRunOrThrow(id);
     runStore = runStore.filter((r) => r.id !== id);
+  },
+
+  async calculate(context, id) {
+    await simulate(context, WRITE_LATENCY_MS);
+    const row = findRunOrThrow(id);
+    if (row.is_locked) {
+      throw new ApiError('http', `PayrollRun ${id} is locked and cannot be recalculated`, {
+        status: 422,
+      });
+    }
+
+    // Aggregate from this run's own payslips, same as the real calc engine
+    // would — never invent a total_gross/employee_count out of thin air.
+    const runPayslips = payslipStore.filter((p) => p.payroll_run_id === id);
+    const totals = runPayslips.reduce(
+      (acc, p) => ({
+        gross: acc.gross + p.gross_salary,
+        deductions: acc.deductions + p.total_deductions,
+        net: acc.net + p.net_salary,
+      }),
+      { gross: 0, deductions: 0, net: 0 },
+    );
+
+    const updated: StoredPayrollRun = {
+      ...row,
+      status: 'calculated',
+      total_gross: totals.gross,
+      total_deductions: totals.deductions,
+      total_net: totals.net,
+      employee_count: runPayslips.length,
+      updated_at: new Date().toISOString(),
+    };
+    runStore = runStore.map((r) => (r.id === id ? updated : r));
+    return payrollRunDecoder.decode(structuredClone(payrollRunToWire(updated)));
+  },
+
+  async approve(context, id) {
+    await simulate(context, WRITE_LATENCY_MS);
+    const row = findRunOrThrow(id);
+    if (row.status !== 'calculated') {
+      throw new ApiError('http', `PayrollRun ${id} must be calculated before it can be approved`, {
+        status: 422,
+      });
+    }
+
+    const updated: StoredPayrollRun = {
+      ...row,
+      status: 'approved',
+      is_locked: true,
+      updated_at: new Date().toISOString(),
+    };
+    runStore = runStore.map((r) => (r.id === id ? updated : r));
+    return payrollRunDecoder.decode(structuredClone(payrollRunToWire(updated)));
   },
 };
 
@@ -605,5 +692,304 @@ export const mockPayslipApi: PayslipApi = {
     await simulate(context, WRITE_LATENCY_MS);
     findPayslipOrThrow(id);
     payslipStore = payslipStore.filter((r) => r.id !== id);
+  },
+};
+
+// ─── EmployeeSalary store ─────────────────────────────────────────────────────
+
+/** Minimal salary-structure name lookup — mirrors compensation/api/mockApi.ts's STRUCTURE_SEEDS ids/names. */
+const STRUCTURE_NAME_STUBS: Record<number, string> = {
+  1: 'Standard Egypt',
+  2: 'Executive Package',
+  3: 'Part-Time',
+  4: 'Intern / Trainee',
+  5: 'Contract (B2B)',
+  6: 'KSA Branch',
+};
+
+interface StoredEmployeeSalary {
+  id: number;
+  employee_id: number;
+  salary_structure_id: number;
+  effective_date: string;
+  components: unknown[];
+  gross_salary: number;
+  net_salary: number;
+  is_current?: boolean | undefined;
+  created_at?: string | undefined;
+  updated_at?: string | undefined;
+}
+
+/** One current assignment per employee stub, plus a couple of superseded history rows. */
+const EMPLOYEE_SALARY_ANCHORS: StoredEmployeeSalary[] = [
+  { id: 1, employee_id: 43, salary_structure_id: 1, effective_date: '2026-01-01', components: [], gross_salary: 14_500, net_salary: 12_400, is_current: true, created_at: '2026-01-01T08:00:00.000Z', updated_at: '2026-01-01T08:00:00.000Z' },
+  { id: 2, employee_id: 71, salary_structure_id: 1, effective_date: '2026-01-01', components: [], gross_salary: 11_200, net_salary: 9_520, is_current: true, created_at: '2026-01-01T08:00:00.000Z', updated_at: '2026-01-01T08:00:00.000Z' },
+  { id: 3, employee_id: 89, salary_structure_id: 2, effective_date: '2025-06-01', components: [], gross_salary: 48_000, net_salary: 39_600, is_current: true, created_at: '2025-06-01T08:00:00.000Z', updated_at: '2025-06-01T08:00:00.000Z' },
+  { id: 4, employee_id: 112, salary_structure_id: 1, effective_date: '2026-01-01', components: [], gross_salary: 13_100, net_salary: 11_135, is_current: true, created_at: '2026-01-01T08:00:00.000Z', updated_at: '2026-01-01T08:00:00.000Z' },
+  { id: 5, employee_id: 134, salary_structure_id: 1, effective_date: '2026-01-01', components: [], gross_salary: 9_100, net_salary: 7_735, is_current: true, created_at: '2026-01-01T08:00:00.000Z', updated_at: '2026-01-01T08:00:00.000Z' },
+  { id: 6, employee_id: 158, salary_structure_id: 3, effective_date: '2026-02-01', components: [], gross_salary: 9_800, net_salary: 8_330, is_current: true, created_at: '2026-02-01T08:00:00.000Z', updated_at: '2026-02-01T08:00:00.000Z' },
+  { id: 7, employee_id: 177, salary_structure_id: 1, effective_date: '2026-01-01', components: [], gross_salary: 10_600, net_salary: 9_010, is_current: true, created_at: '2026-01-01T08:00:00.000Z', updated_at: '2026-01-01T08:00:00.000Z' },
+  { id: 8, employee_id: 203, salary_structure_id: 1, effective_date: '2026-01-01', components: [], gross_salary: 8_200, net_salary: 6_970, is_current: true, created_at: '2026-01-01T08:00:00.000Z', updated_at: '2026-01-01T08:00:00.000Z' },
+  { id: 9, employee_id: 1000, salary_structure_id: 4, effective_date: '2026-09-01', components: [], gross_salary: 2_200, net_salary: 2_200, is_current: true, created_at: '2026-09-01T08:00:00.000Z', updated_at: '2026-09-01T08:00:00.000Z' },
+  { id: 10, employee_id: 1001, salary_structure_id: 1, effective_date: '2026-01-01', components: [], gross_salary: 10_900, net_salary: 9_265, is_current: true, created_at: '2026-01-01T08:00:00.000Z', updated_at: '2026-01-01T08:00:00.000Z' },
+  { id: 11, employee_id: 1002, salary_structure_id: 1, effective_date: '2026-01-01', components: [], gross_salary: 10_200, net_salary: 8_670, is_current: true, created_at: '2026-01-01T08:00:00.000Z', updated_at: '2026-01-01T08:00:00.000Z' },
+  { id: 12, employee_id: 1003, salary_structure_id: 6, effective_date: '2026-03-01', components: [], gross_salary: 16_800, net_salary: 14_950, is_current: true, created_at: '2026-03-01T08:00:00.000Z', updated_at: '2026-03-01T08:00:00.000Z' },
+  // Superseded history rows (is_current: false) so the "history" case is exercised
+  { id: 13, employee_id: 43, salary_structure_id: 1, effective_date: '2025-01-01', components: [], gross_salary: 13_000, net_salary: 11_100, is_current: false, created_at: '2025-01-01T08:00:00.000Z', updated_at: '2025-01-01T08:00:00.000Z' },
+  { id: 14, employee_id: 89, salary_structure_id: 2, effective_date: '2024-06-01', components: [], gross_salary: 42_000, net_salary: 34_700, is_current: false, created_at: '2024-06-01T08:00:00.000Z', updated_at: '2024-06-01T08:00:00.000Z' },
+];
+
+function seedEmployeeSalaries(): StoredEmployeeSalary[] {
+  return EMPLOYEE_SALARY_ANCHORS.map((row) => ({ ...row, components: [...row.components] }));
+}
+
+let employeeSalaryStore: StoredEmployeeSalary[] = seedEmployeeSalaries();
+let nextEmployeeSalaryId = 1000;
+
+export function resetMockEmployeeSalaries(): void {
+  employeeSalaryStore = seedEmployeeSalaries();
+  nextEmployeeSalaryId = 1000;
+}
+
+function employeeSalaryToWire(row: StoredEmployeeSalary): EmployeeSalaryWire {
+  const emp = EMPLOYEE_STUBS.find((e) => e.id === row.employee_id);
+  const structureName = STRUCTURE_NAME_STUBS[row.salary_structure_id];
+  return {
+    ...row,
+    employee: emp ? { ...emp } : undefined,
+    salaryStructure: structureName ? { id: row.salary_structure_id, name: structureName } : undefined,
+  } as unknown as EmployeeSalaryWire;
+}
+
+function findEmployeeSalaryOrThrow(id: number): StoredEmployeeSalary {
+  const row = employeeSalaryStore.find((r) => r.id === id);
+  if (!row) throw new ApiError('http', `EmployeeSalary ${id} not found`, { status: 404 });
+  return row;
+}
+
+export const mockEmployeeSalaryApi: EmployeeSalaryApi = {
+  async list(context, params) {
+    await simulate(context, READ_LATENCY_MS);
+
+    const filtered = employeeSalaryStore.filter((row) => {
+      if (params.employee_id !== undefined && row.employee_id !== params.employee_id) return false;
+      if (params.salary_structure_id !== undefined && row.salary_structure_id !== params.salary_structure_id) return false;
+      if (params.is_current !== undefined && Boolean(row.is_current) !== params.is_current) return false;
+      return true;
+    });
+
+    const perPage = params.perPage && params.perPage > 0 ? Math.min(params.perPage, 200) : 25;
+    const currentPage = params.page && params.page > 0 ? params.page : 1;
+    const total = filtered.length;
+    const lastPage = Math.max(1, Math.ceil(total / perPage));
+    const safePage = Math.min(currentPage, lastPage);
+    const start = (safePage - 1) * perPage;
+    const page = filtered.slice(start, start + perPage);
+
+    const wire: EmployeeSalaryListWire = {
+      data: page.map(employeeSalaryToWire),
+      meta: { current_page: safePage, per_page: perPage, total, last_page: lastPage },
+    };
+    return employeeSalaryListDecoder.decode(structuredClone(wire));
+  },
+
+  async create(context, input: EmployeeSalaryInput) {
+    await simulate(context, WRITE_LATENCY_MS);
+
+    const id = nextEmployeeSalaryId;
+    nextEmployeeSalaryId += 1;
+    const stamp = new Date().toISOString();
+
+    const row: StoredEmployeeSalary = {
+      id,
+      employee_id: input.employee_id,
+      salary_structure_id: input.salary_structure_id,
+      effective_date: input.effective_date,
+      components: input.components ?? [],
+      gross_salary: input.gross_salary,
+      net_salary: input.net_salary,
+      is_current: input.is_current ?? undefined,
+      created_at: stamp,
+      updated_at: stamp,
+    };
+    employeeSalaryStore = [row, ...employeeSalaryStore];
+    return employeeSalaryDecoder.decode(structuredClone(employeeSalaryToWire(row)));
+  },
+
+  async update(context, id, input) {
+    await simulate(context, WRITE_LATENCY_MS);
+    const row = findEmployeeSalaryOrThrow(id);
+
+    const updated: StoredEmployeeSalary = {
+      id: row.id,
+      created_at: row.created_at,
+      employee_id: input.employee_id ?? row.employee_id,
+      salary_structure_id: input.salary_structure_id ?? row.salary_structure_id,
+      effective_date: input.effective_date ?? row.effective_date,
+      components: input.components ?? row.components,
+      gross_salary: input.gross_salary ?? row.gross_salary,
+      net_salary: input.net_salary ?? row.net_salary,
+      is_current: input.is_current === null ? undefined : (input.is_current ?? row.is_current),
+      updated_at: new Date().toISOString(),
+    };
+    employeeSalaryStore = employeeSalaryStore.map((r) => (r.id === id ? updated : r));
+    return employeeSalaryDecoder.decode(structuredClone(employeeSalaryToWire(updated)));
+  },
+
+  async remove(context, id) {
+    await simulate(context, WRITE_LATENCY_MS);
+    findEmployeeSalaryOrThrow(id);
+    employeeSalaryStore = employeeSalaryStore.filter((r) => r.id !== id);
+  },
+};
+
+// ─── PayslipItem store ────────────────────────────────────────────────────────
+
+interface StoredPayslipItem {
+  id: number;
+  payslip_id: number;
+  salary_component_id?: number | undefined;
+  description: string;
+  type: PayslipItemType;
+  amount: number;
+  is_taxable?: boolean | undefined;
+  sort_order?: number | undefined;
+  created_at?: string | undefined;
+  updated_at?: string | undefined;
+}
+
+/** Five line items per anchor payslip, matching the real backend seeder's pattern. */
+const LINE_ITEM_TEMPLATE: Array<{ description: string; type: PayslipItemType; share: number; is_taxable: boolean }> = [
+  { description: 'Basic Salary', type: 'earning', share: 0.82, is_taxable: true },
+  { description: 'Housing Allowance', type: 'earning', share: 0.12, is_taxable: false },
+  { description: 'Transportation Allowance', type: 'earning', share: 0.06, is_taxable: false },
+  { description: 'Income Tax', type: 'deduction', share: -0.1, is_taxable: true },
+  { description: 'Social Insurance', type: 'deduction', share: -0.05, is_taxable: false },
+];
+
+function generateItemsForPayslip(payslip: StoredPayslip, startId: number): StoredPayslipItem[] {
+  const stamp = payslip.created_at ?? new Date().toISOString();
+  return LINE_ITEM_TEMPLATE.map((tpl, idx) => ({
+    id: startId + idx,
+    payslip_id: payslip.id,
+    description: tpl.description,
+    type: tpl.type,
+    amount: Math.round(Math.abs(payslip.gross_salary * tpl.share)),
+    is_taxable: tpl.is_taxable,
+    sort_order: tpl.type === 'earning' ? (idx + 1) * 10 : (idx + 1) * 10 + 50,
+    created_at: stamp,
+    updated_at: stamp,
+  }));
+}
+
+function seedPayslipItems(): StoredPayslipItem[] {
+  const rows: StoredPayslipItem[] = [];
+  let nextId = 1;
+  for (const payslip of seedPayslips()) {
+    rows.push(...generateItemsForPayslip(payslip, nextId));
+    nextId += LINE_ITEM_TEMPLATE.length;
+  }
+  return rows;
+}
+
+let payslipItemStore: StoredPayslipItem[] = seedPayslipItems();
+let nextPayslipItemId = 10_000;
+
+export function resetMockPayslipItems(): void {
+  payslipItemStore = seedPayslipItems();
+  nextPayslipItemId = 10_000;
+}
+
+function payslipItemToWire(row: StoredPayslipItem): PayslipItemWire {
+  return { ...row } as unknown as PayslipItemWire;
+}
+
+function findPayslipItemOrThrow(id: number): StoredPayslipItem {
+  const row = payslipItemStore.find((r) => r.id === id);
+  if (!row) throw new ApiError('http', `PayslipItem ${id} not found`, { status: 404 });
+  return row;
+}
+
+export const mockPayslipItemApi: PayslipItemApi = {
+  async list(context, params) {
+    await simulate(context, READ_LATENCY_MS);
+
+    const filtered = payslipItemStore.filter((row) => {
+      if (params.payslip_id !== undefined && row.payslip_id !== params.payslip_id) return false;
+      if (params.salary_component_id !== undefined && row.salary_component_id !== params.salary_component_id) return false;
+      if (params.type && row.type !== params.type) return false;
+      if (params.is_taxable !== undefined && Boolean(row.is_taxable) !== params.is_taxable) return false;
+      return true;
+    });
+
+    const sorted = [...filtered].sort((a, b) => {
+      const ao = a.sort_order ?? 9999;
+      const bo = b.sort_order ?? 9999;
+      return ao !== bo ? ao - bo : a.id - b.id;
+    });
+
+    const perPage = params.perPage && params.perPage > 0 ? Math.min(params.perPage, 200) : 25;
+    const currentPage = params.page && params.page > 0 ? params.page : 1;
+    const total = sorted.length;
+    const lastPage = Math.max(1, Math.ceil(total / perPage));
+    const safePage = Math.min(currentPage, lastPage);
+    const start = (safePage - 1) * perPage;
+    const page = sorted.slice(start, start + perPage);
+
+    const wire: PayslipItemListWire = {
+      data: page.map(payslipItemToWire),
+      meta: { current_page: safePage, per_page: perPage, total, last_page: lastPage },
+    };
+    return payslipItemListDecoder.decode(structuredClone(wire));
+  },
+
+  async create(context, input: PayslipItemInput) {
+    await simulate(context, WRITE_LATENCY_MS);
+
+    const id = nextPayslipItemId;
+    nextPayslipItemId += 1;
+    const stamp = new Date().toISOString();
+
+    const row: StoredPayslipItem = {
+      id,
+      payslip_id: input.payslip_id,
+      salary_component_id: input.salary_component_id ?? undefined,
+      description: input.description,
+      type: input.type,
+      amount: input.amount,
+      is_taxable: input.is_taxable ?? undefined,
+      sort_order: input.sort_order ?? undefined,
+      created_at: stamp,
+      updated_at: stamp,
+    };
+    payslipItemStore = [...payslipItemStore, row];
+    return payslipItemDecoder.decode(structuredClone(payslipItemToWire(row)));
+  },
+
+  async update(context, id, input) {
+    await simulate(context, WRITE_LATENCY_MS);
+    const row = findPayslipItemOrThrow(id);
+
+    const updated: StoredPayslipItem = {
+      id: row.id,
+      created_at: row.created_at,
+      payslip_id: input.payslip_id ?? row.payslip_id,
+      salary_component_id:
+        input.salary_component_id === null ? undefined : (input.salary_component_id ?? row.salary_component_id),
+      description: input.description ?? row.description,
+      type: input.type ?? row.type,
+      amount: input.amount ?? row.amount,
+      is_taxable: input.is_taxable === null ? undefined : (input.is_taxable ?? row.is_taxable),
+      sort_order: input.sort_order === null ? undefined : (input.sort_order ?? row.sort_order),
+      updated_at: new Date().toISOString(),
+    };
+    payslipItemStore = payslipItemStore.map((r) => (r.id === id ? updated : r));
+    return payslipItemDecoder.decode(structuredClone(payslipItemToWire(updated)));
+  },
+
+  async remove(context, id) {
+    await simulate(context, WRITE_LATENCY_MS);
+    findPayslipItemOrThrow(id);
+    payslipItemStore = payslipItemStore.filter((r) => r.id !== id);
   },
 };

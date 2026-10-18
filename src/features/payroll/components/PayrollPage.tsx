@@ -1,6 +1,8 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Pencil, Plus, Trash2 } from 'lucide-react';
+import { Calculator, CheckCircle2, Pencil, Plus, Receipt, Trash2 } from 'lucide-react';
+import { ExportButton } from '@/components/ui/ExportButton';
+import type { ExportColumn } from '@/components/ui/ExportButton';
 import { cn } from '@/lib/cn';
 import { Avatar } from '@/components/ui/Avatar';
 import { Card } from '@/components/ui/Card';
@@ -10,9 +12,13 @@ import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { Pagination } from '@/components/ui/Pagination';
 import { Select } from '@/components/ui/form';
 import { userFacingMessage } from '@/lib/api/errors';
+import { useHasPermission } from '@/auth/session';
+import { toast } from '@/components/ui/Toast';
 import {
   usePayrollRunList,
   useDeletePayrollRun,
+  useCalculatePayrollRun,
+  useApprovePayrollRun,
   usePayslipList,
   useDeletePayslip,
 } from '../api/queries';
@@ -26,6 +32,9 @@ import { PAYROLL_RUN_PIPELINE } from '../api/resource';
 import type { PayrollRunWire, PayslipWire } from '../api/schema';
 import { PayrollRunFormDialog } from './PayrollRunFormDialog';
 import { PayslipFormDialog } from './PayslipFormDialog';
+import { PayslipItemsDialog } from './PayslipItemsDialog';
+import { DateRangeFilter } from '@/components/ui/DateRangeFilter';
+import type { DateRange } from '@/components/ui/DateRangeFilter';
 
 /**
  * Payroll module live-data page — two independently-paged resources.
@@ -33,7 +42,9 @@ import { PayslipFormDialog } from './PayslipFormDialog';
  * Section 1: PayrollRun — paginated table with Add/Edit/Delete + pipeline stepper.
  *   - period_month (int) + period_year (int) formatted client-side.
  *   - 7-value status enum: draft|calculating|calculated|reviewing|approved|posted|paid.
- *   - /calculate and /approve actions SKIPPED — no auth context yet (same as Loans /approve).
+ *   - /calculate (gated by `payroll.run.edit`) and /approve (gated by
+ *     `payroll.run.approve`) are wired as row actions, same pattern as Loans'
+ *     /approve — backend still enforces the real check either way.
  *
  * Section 2: Payslip — table scoped to the currently-selected PayrollRun.
  *   - Payslip index endpoint supports ?payroll_run_id= filter (verified from $filterable).
@@ -64,7 +75,7 @@ function initialsOf(firstName: string, lastName: string): string {
 // ─── Status badges ────────────────────────────────────────────────────────────
 
 const RUN_STATUS_STYLES: Record<PayrollRunStatus, string> = {
-  draft:       'bg-gray-100 text-gray-600',
+  draft:       'bg-surface text-ink-muted border border-divider',
   calculating: 'bg-sky-50 text-sky-700',
   calculated:  'bg-blue-50 text-blue-700',
   reviewing:   'bg-amber-50 text-amber-700',
@@ -74,7 +85,7 @@ const RUN_STATUS_STYLES: Record<PayrollRunStatus, string> = {
 };
 
 const PAYSLIP_STATUS_STYLES: Record<PayslipStatus, string> = {
-  draft:     'bg-gray-100 text-gray-600',
+  draft:     'bg-surface text-ink-muted border border-divider',
   finalized: 'bg-sky-50 text-sky-700',
   paid:      'bg-emerald-50 text-emerald-700',
 };
@@ -119,14 +130,61 @@ function StatCard({ label, value, accent }: { label: string; value: number | und
 
 // ─── Row Actions ──────────────────────────────────────────────────────────────
 
-function RowActions({ onEdit, onDelete, editLabel, deleteLabel }: {
+function RowActions({
+  onEdit,
+  onDelete,
+  editLabel,
+  deleteLabel,
+  onCalculate,
+  calculateLabel,
+  onApprove,
+  approveLabel,
+  onBreakdown,
+  breakdownLabel,
+}: {
   onEdit: () => void;
   onDelete: () => void;
   editLabel: string;
   deleteLabel: string;
+  onCalculate?: (() => void) | undefined;
+  calculateLabel?: string | undefined;
+  onApprove?: (() => void) | undefined;
+  approveLabel?: string | undefined;
+  onBreakdown?: (() => void) | undefined;
+  breakdownLabel?: string | undefined;
 }) {
   return (
     <div className="flex items-center gap-1">
+      {onCalculate ? (
+        <Button
+          variant="ghost"
+          className="h-7 w-7 px-0 hover:!text-sky-600"
+          aria-label={calculateLabel}
+          onClick={onCalculate}
+        >
+          <Calculator className="h-3.5 w-3.5" strokeWidth={1.75} aria-hidden="true" />
+        </Button>
+      ) : null}
+      {onApprove ? (
+        <Button
+          variant="ghost"
+          className="h-7 w-7 px-0 hover:!text-emerald-600"
+          aria-label={approveLabel}
+          onClick={onApprove}
+        >
+          <CheckCircle2 className="h-3.5 w-3.5" strokeWidth={1.75} aria-hidden="true" />
+        </Button>
+      ) : null}
+      {onBreakdown ? (
+        <Button
+          variant="ghost"
+          className="h-7 w-7 px-0 hover:!text-navy"
+          aria-label={breakdownLabel}
+          onClick={onBreakdown}
+        >
+          <Receipt className="h-3.5 w-3.5" strokeWidth={1.75} aria-hidden="true" />
+        </Button>
+      ) : null}
       <Button variant="ghost" className="h-7 w-7 px-0" aria-label={editLabel} onClick={onEdit}>
         <Pencil className="h-3.5 w-3.5" strokeWidth={1.75} aria-hidden="true" />
       </Button>
@@ -200,19 +258,29 @@ export function PayrollPage() {
   // ── PayrollRun state ────
   const [runPage, setRunPage] = useState(1);
   const [runStatusFilter, setRunStatusFilter] = useState<PayrollRunStatus | 'all'>('all');
+  const [dateRange, setDateRange] = useState<DateRange | null>(null);
   const [runFormOpen, setRunFormOpen] = useState(false);
   const [editRun, setEditRun] = useState<PayrollRunWire | undefined>(undefined);
   const [deleteRun, setDeleteRun] = useState<PayrollRunWire | undefined>(undefined);
+  const [calculateRun, setCalculateRun] = useState<PayrollRunWire | undefined>(undefined);
+  const [approveRun, setApproveRun] = useState<PayrollRunWire | undefined>(undefined);
   /** The run whose payslips are shown in section 2. */
   const [selectedRunId, setSelectedRunId] = useState<number | undefined>(undefined);
+
+  // A new status/date filter invalidates the current page number.
+  useEffect(() => {
+    setRunPage(1);
+  }, [runStatusFilter, dateRange]);
 
   const runParams = useMemo<PayrollRunListParams>(
     () => ({
       page: runPage,
       perPage: RUN_PER_PAGE,
       status: runStatusFilter === 'all' ? undefined : runStatusFilter,
+      periodFrom: dateRange?.from,
+      periodTo: dateRange?.to,
     }),
-    [runPage, runStatusFilter],
+    [runPage, runStatusFilter, dateRange],
   );
   const { state: runState, refetch: refetchRuns } = usePayrollRunList(runParams);
   // Cheap stat queries — each reads only `meta.total`.
@@ -221,7 +289,12 @@ export function PayrollPage() {
   const { state: reviewingRunState} = usePayrollRunList({ page: 1, perPage: 1, status: 'reviewing' });
 
   const deleteRunMutation = useDeletePayrollRun(runParams);
+  const calculateRunMutation = useCalculatePayrollRun();
+  const approveRunMutation = useApprovePayrollRun();
+  const canCalculateRun = useHasPermission('payroll.run.edit');
+  const canApproveRun = useHasPermission('payroll.run.approve');
 
+  // Date range is now applied server-side via `runParams.periodFrom`/`periodTo` (see above).
   const runs    = runState.data?.data ?? [];
   const runMeta = runState.data?.meta;
 
@@ -231,6 +304,7 @@ export function PayrollPage() {
   const [payslipFormOpen, setPayslipFormOpen] = useState(false);
   const [editPayslip, setEditPayslip] = useState<PayslipWire | undefined>(undefined);
   const [deletePayslip, setDeletePayslip] = useState<PayslipWire | undefined>(undefined);
+  const [breakdownPayslip, setBreakdownPayslip] = useState<PayslipWire | undefined>(undefined);
 
   const payslipParams = useMemo<PayslipListParams>(
     () => ({
@@ -247,6 +321,44 @@ export function PayrollPage() {
 
   const payslips     = payslipState.data?.data ?? [];
   const payslipMeta  = payslipState.data?.meta;
+
+  // ── Export columns / data ────
+
+  const runExportColumns: ExportColumn[] = [
+    { key: 'period', label: t('payroll.run.table.period') },
+    { key: 'employees', label: t('payroll.run.table.employees') },
+    { key: 'gross', label: t('payroll.run.table.gross') },
+    { key: 'deductions', label: t('payroll.run.table.deductions') },
+    { key: 'net', label: t('payroll.run.table.net') },
+    { key: 'status', label: t('payroll.run.table.status') },
+  ];
+
+  const runExportData = runs.map((run) => ({
+    period: formatPeriod(run.period_month, run.period_year),
+    employees: run.employee_count != null ? String(run.employee_count) : '',
+    gross: run.total_gross != null ? run.total_gross.toLocaleString() : '',
+    deductions: run.total_deductions != null ? run.total_deductions.toLocaleString() : '',
+    net: run.total_net != null ? run.total_net.toLocaleString() : '',
+    status: t(`payroll.runStatusOptions.${run.status}`),
+  }));
+
+  const payslipExportColumns: ExportColumn[] = [
+    { key: 'employee', label: t('payroll.payslip.table.employee') },
+    { key: 'basic', label: t('payroll.payslip.table.basic') },
+    { key: 'gross', label: t('payroll.payslip.table.gross') },
+    { key: 'deductions', label: t('payroll.payslip.table.deductions') },
+    { key: 'net', label: t('payroll.payslip.table.net') },
+    { key: 'status', label: t('payroll.payslip.table.status') },
+  ];
+
+  const payslipExportData = payslips.map((ps) => ({
+    employee: ps.employee ? `${ps.employee.first_name} ${ps.employee.last_name}` : `#${ps.employee_id}`,
+    basic: ps.basic_salary != null ? ps.basic_salary.toLocaleString() : '',
+    gross: ps.gross_salary != null ? ps.gross_salary.toLocaleString() : '',
+    deductions: ps.total_deductions != null ? ps.total_deductions.toLocaleString() : '',
+    net: ps.net_salary != null ? ps.net_salary.toLocaleString() : '',
+    status: ps.status ? t(`payroll.payslipStatusOptions.${ps.status}`) : '',
+  }));
 
   // ── PayrollRun actions ────
 
@@ -266,6 +378,28 @@ export function PayrollPage() {
     if (result !== undefined || deleteRunMutation.error === undefined) setDeleteRun(undefined);
   }
 
+  async function confirmCalculateRun() {
+    if (!calculateRun) return;
+    const result = await calculateRunMutation.mutate(calculateRun.id);
+    if (result !== undefined) {
+      toast.success('payroll.run.calculateSuccess');
+      setCalculateRun(undefined);
+    } else {
+      toast.error(userFacingMessage(calculateRunMutation.error) || 'payroll.run.calculateFailed');
+    }
+  }
+
+  async function confirmApproveRun() {
+    if (!approveRun) return;
+    const result = await approveRunMutation.mutate(approveRun.id);
+    if (result !== undefined) {
+      toast.success('payroll.run.approveSuccess');
+      setApproveRun(undefined);
+    } else {
+      toast.error(userFacingMessage(approveRunMutation.error) || 'payroll.run.approveFailed');
+    }
+  }
+
   function handleRunStatusFilterChange(e: React.ChangeEvent<HTMLSelectElement>) {
     const val = e.target.value;
     setRunStatusFilter(val === 'all' ? 'all' : (val as PayrollRunStatus));
@@ -282,6 +416,10 @@ export function PayrollPage() {
   function openEditPayslip(ps: PayslipWire) {
     setEditPayslip(ps);
     setPayslipFormOpen(true);
+  }
+
+  function openBreakdown(ps: PayslipWire) {
+    setBreakdownPayslip(ps);
   }
 
   async function confirmDeletePayslip() {
@@ -303,10 +441,13 @@ export function PayrollPage() {
       <PageHeader
         title={t('payroll.title')}
         actions={
-          <Button variant="primary" onClick={openAddRun}>
-            <Plus className="h-3.5 w-3.5" strokeWidth={2} aria-hidden="true" />
-            {t('payroll.run.add')}
-          </Button>
+          <div className="flex items-center gap-2">
+            <ExportButton data={runExportData} columns={runExportColumns} filename="payroll-runs" />
+            <Button variant="primary" onClick={openAddRun}>
+              <Plus className="h-3.5 w-3.5" strokeWidth={2} aria-hidden="true" />
+              {t('payroll.run.add')}
+            </Button>
+          </div>
         }
       />
 
@@ -318,21 +459,25 @@ export function PayrollPage() {
       </div>
 
       {/* ═══ Section 1: Payroll Runs ═══════════════════════════════════════════ */}
-      <div className="mb-2 flex items-center justify-between gap-3">
+      <div className="mb-2 flex flex-wrap items-center justify-between gap-3">
         <h2 className="text-body font-semibold text-ink">{t('payroll.run.sectionTitle')}</h2>
-        <Select
-          className="h-8 w-44 text-[12px]"
-          value={runStatusFilter}
-          onChange={handleRunStatusFilterChange}
-          aria-label={t('payroll.run.filterByStatus')}
-        >
-          <option value="all">{t('payroll.run.allStatuses')}</option>
-          {(['draft', 'calculating', 'calculated', 'reviewing', 'approved', 'posted', 'paid'] as PayrollRunStatus[]).map((s) => (
-            <option key={s} value={s}>
-              {t(`payroll.runStatusOptions.${s}`)}
-            </option>
-          ))}
-        </Select>
+        <div className="flex flex-wrap items-center gap-2">
+          {/* Date range filter */}
+          <DateRangeFilter value={dateRange} onChange={setDateRange} />
+          <Select
+            className="h-8 w-44 text-[12px]"
+            value={runStatusFilter}
+            onChange={handleRunStatusFilterChange}
+            aria-label={t('payroll.run.filterByStatus')}
+          >
+            <option value="all">{t('payroll.run.allStatuses')}</option>
+            {(['draft', 'calculating', 'calculated', 'reviewing', 'approved', 'posted', 'paid'] as PayrollRunStatus[]).map((s) => (
+              <option key={s} value={s}>
+                {t(`payroll.runStatusOptions.${s}`)}
+              </option>
+            ))}
+          </Select>
+        </div>
       </div>
 
       {runState.error ? (
@@ -349,7 +494,7 @@ export function PayrollPage() {
           ))}
         </div>
 
-        {runs.length === 0 && !runState.loading ? (
+        {runs.length === 0 && runState.status !== 'pending' ? (
           <p className="px-5 py-6 text-center text-body-sm text-ink-muted">{t('payroll.run.empty')}</p>
         ) : null}
 
@@ -395,6 +540,10 @@ export function PayrollPage() {
                   onDelete={() => setDeleteRun(run)}
                   editLabel={t('payroll.run.editAction')}
                   deleteLabel={t('payroll.run.deleteAction')}
+                  onCalculate={canCalculateRun && !run.is_locked ? () => setCalculateRun(run) : undefined}
+                  calculateLabel={t('payroll.run.calculateAction')}
+                  onApprove={canApproveRun && run.status === 'calculated' ? () => setApproveRun(run) : undefined}
+                  approveLabel={t('payroll.run.approveAction')}
                 />
               </div>
             </div>
@@ -459,6 +608,10 @@ export function PayrollPage() {
                   onDelete={() => setDeleteRun(run)}
                   editLabel={t('payroll.run.editAction')}
                   deleteLabel={t('payroll.run.deleteAction')}
+                  onCalculate={canCalculateRun && !run.is_locked ? () => setCalculateRun(run) : undefined}
+                  calculateLabel={t('payroll.run.calculateAction')}
+                  onApprove={canApproveRun && run.status === 'calculated' ? () => setApproveRun(run) : undefined}
+                  approveLabel={t('payroll.run.approveAction')}
                 />
               </div>
             </Card>
@@ -510,10 +663,13 @@ export function PayrollPage() {
             ))}
           </Select>
           {selectedRunId ? (
-            <Button variant="primary" onClick={openAddPayslip}>
-              <Plus className="h-3.5 w-3.5" strokeWidth={2} aria-hidden="true" />
-              {t('payroll.payslip.add')}
-            </Button>
+            <>
+              <ExportButton data={payslipExportData} columns={payslipExportColumns} filename="payslips" />
+              <Button variant="primary" onClick={openAddPayslip}>
+                <Plus className="h-3.5 w-3.5" strokeWidth={2} aria-hidden="true" />
+                {t('payroll.payslip.add')}
+              </Button>
+            </>
           ) : null}
         </div>
       </div>
@@ -534,7 +690,7 @@ export function PayrollPage() {
 
         {!selectedRunId ? (
           <p className="px-5 py-6 text-center text-body-sm text-ink-muted">{t('payroll.payslip.selectRunHint')}</p>
-        ) : payslips.length === 0 && !payslipState.loading ? (
+        ) : payslips.length === 0 && payslipState.status !== 'pending' ? (
           <p className="px-5 py-6 text-center text-body-sm text-ink-muted">{t('payroll.payslip.empty')}</p>
         ) : null}
 
@@ -565,6 +721,8 @@ export function PayrollPage() {
                 onDelete={() => setDeletePayslip(ps)}
                 editLabel={t('payroll.payslip.editAction')}
                 deleteLabel={t('payroll.payslip.deleteAction')}
+                onBreakdown={() => openBreakdown(ps)}
+                breakdownLabel={t('payroll.payslip.breakdownAction')}
               />
             </div>
           );
@@ -659,6 +817,12 @@ export function PayrollPage() {
         />
       ) : null}
 
+      <PayslipItemsDialog
+        open={breakdownPayslip !== undefined}
+        onOpenChange={(o) => { if (!o) setBreakdownPayslip(undefined); }}
+        payslip={breakdownPayslip}
+      />
+
       <ConfirmDialog
         open={deleteRun !== undefined}
         onOpenChange={(open) => { if (!open) setDeleteRun(undefined); }}
@@ -673,6 +837,38 @@ export function PayrollPage() {
         confirmLabel={t('common.delete')}
         onConfirm={confirmDeleteRun}
         isLoading={deleteRunMutation.isPending}
+      />
+
+      <ConfirmDialog
+        open={calculateRun !== undefined}
+        onOpenChange={(open) => { if (!open) setCalculateRun(undefined); }}
+        title={t('payroll.run.calculateTitle')}
+        description={
+          calculateRun
+            ? t('payroll.run.calculateDescription', {
+                period: formatPeriod(calculateRun.period_month, calculateRun.period_year),
+              })
+            : ''
+        }
+        confirmLabel={t('payroll.run.calculateAction')}
+        onConfirm={confirmCalculateRun}
+        isLoading={calculateRunMutation.isPending}
+      />
+
+      <ConfirmDialog
+        open={approveRun !== undefined}
+        onOpenChange={(open) => { if (!open) setApproveRun(undefined); }}
+        title={t('payroll.run.approveTitle')}
+        description={
+          approveRun
+            ? t('payroll.run.approveDescription', {
+                period: formatPeriod(approveRun.period_month, approveRun.period_year),
+              })
+            : ''
+        }
+        confirmLabel={t('payroll.run.approveAction')}
+        onConfirm={confirmApproveRun}
+        isLoading={approveRunMutation.isPending}
       />
 
       <ConfirmDialog
@@ -694,16 +890,16 @@ export function PayrollPage() {
       />
 
       {/* Log load errors for developers when not displayed inline */}
-      {runState.error && !runState.loading ? (
+      {runState.error && runState.status !== 'pending' ? (
         <p className="mt-2 text-caption text-ink-faint">
           {t('payroll.run.loadFailed')}
-          <button className="ml-1 underline" onClick={refetchRuns}>{t('common.retry')}</button>
+          <button className="ms-1 underline" onClick={refetchRuns}>{t('common.retry')}</button>
         </p>
       ) : null}
-      {payslipState.error && !payslipState.loading ? (
+      {payslipState.error && payslipState.status !== 'pending' ? (
         <p className="mt-2 text-caption text-ink-faint">
           {t('payroll.payslip.loadFailed')}
-          <button className="ml-1 underline" onClick={refetchPayslips}>{t('common.retry')}</button>
+          <button className="ms-1 underline" onClick={refetchPayslips}>{t('common.retry')}</button>
         </p>
       ) : null}
     </div>

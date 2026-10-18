@@ -1,4 +1,23 @@
-import { ChartColumn, Clock, LayoutDashboard, Settings, Target, Users, Wallet } from 'lucide-react';
+import {
+  BriefcaseBusiness,
+  CalendarCheck,
+  ChartColumn,
+  Clock,
+  CreditCard,
+  FileText,
+  FolderOpen,
+  GraduationCap,
+  Handshake,
+  LayoutDashboard,
+  Network,
+  Settings,
+  Sparkles,
+  Target,
+  TrendingUp,
+  UserPlus,
+  Users,
+  Wallet,
+} from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 
 /** A navigable leaf (a real page). */
@@ -34,10 +53,10 @@ export const navigation: NavigationConfig = {
       id: 'people',
       icon: Users,
       children: [
-        { id: 'organization', path: '/people/organization', icon: Users },
+        { id: 'organization', path: '/people/organization', icon: Network },
         { id: 'employees', path: '/people/employees', icon: Users },
-        { id: 'contracts', path: '/people/contracts', icon: Users },
-        { id: 'documents', path: '/people/documents', icon: Users },
+        { id: 'contracts', path: '/people/contracts', icon: FileText },
+        { id: 'documents', path: '/people/documents', icon: FolderOpen },
       ],
     },
     {
@@ -45,7 +64,7 @@ export const navigation: NavigationConfig = {
       icon: Clock,
       children: [
         { id: 'attendance', path: '/workforce/attendance', icon: Clock },
-        { id: 'leave', path: '/workforce/leave', icon: Clock },
+        { id: 'leave', path: '/workforce/leave', icon: CalendarCheck },
       ],
     },
     {
@@ -53,19 +72,19 @@ export const navigation: NavigationConfig = {
       icon: Wallet,
       children: [
         { id: 'payroll', path: '/finance/payroll', icon: Wallet },
-        { id: 'compensation', path: '/finance/compensation', icon: Wallet },
-        { id: 'loans', path: '/finance/loans', icon: Wallet },
+        { id: 'compensation', path: '/finance/compensation', icon: TrendingUp },
+        { id: 'loans', path: '/finance/loans', icon: CreditCard },
       ],
     },
     {
       id: 'talent',
       icon: Target,
       children: [
-        { id: 'recruitment', path: '/talent/recruitment', icon: Target },
-        { id: 'onboarding', path: '/talent/onboarding', icon: Target },
+        { id: 'recruitment', path: '/talent/recruitment', icon: Handshake },
+        { id: 'onboarding', path: '/talent/onboarding', icon: UserPlus },
         { id: 'performance', path: '/talent/performance', icon: Target },
-        { id: 'learning', path: '/talent/learning', icon: Target },
-        { id: 'career', path: '/talent/career', icon: Target },
+        { id: 'learning', path: '/talent/learning', icon: GraduationCap },
+        { id: 'career', path: '/talent/career', icon: BriefcaseBusiness },
       ],
     },
     {
@@ -73,7 +92,7 @@ export const navigation: NavigationConfig = {
       icon: ChartColumn,
       children: [
         { id: 'analytics', path: '/intelligence/analytics', icon: ChartColumn },
-        { id: 'copilot', path: '/intelligence/copilot', icon: ChartColumn },
+        { id: 'copilot', path: '/intelligence/copilot', icon: Sparkles },
       ],
     },
   ],

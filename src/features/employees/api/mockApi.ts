@@ -1,7 +1,7 @@
 import { ApiError } from '@/lib/api/errors';
 import type { FetchContext } from '@/lib/query';
 import { pravatar } from '@/features/dashboard/model';
-import { COMPANY_ID, DEPARTMENTS, JOB_POSITIONS } from '../orgLookup';
+import { BRANCHES, COMPANY_ID, DEPARTMENTS, JOB_GRADES, JOB_POSITIONS } from '../orgLookup';
 import { employeeDecoder, employeeListDecoder } from './schema';
 import type { EmployeeListWire, EmployeeWire } from './schema';
 import type { EmployeeApi, EmployeeStatus } from './resource';
@@ -36,10 +36,13 @@ interface StoredEmployee {
   job_position_id: number;
   job_grade_id?: number | undefined;
   job_level_id?: number | undefined;
+  direct_manager_id?: number | undefined;
   joining_date: string;
   employment_type: 'full_time' | 'part_time' | 'contract' | 'intern';
   work_location: 'office' | 'remote' | 'hybrid';
   status: EmployeeStatus;
+  termination_date?: string | undefined;
+  termination_reason?: string | undefined;
   created_at: string;
   updated_at: string;
 }
@@ -180,6 +183,12 @@ const READ_LATENCY_MS = 220;
 const WRITE_LATENCY_MS = 420;
 
 export const mockEmployeeApi: EmployeeApi = {
+  async show(context, id) {
+    await simulate(context, READ_LATENCY_MS);
+    const row = findOrThrow(id);
+    return employeeDecoder.decode(structuredClone(toWire(row)));
+  },
+
   async list(context, params) {
     await simulate(context, READ_LATENCY_MS);
 
@@ -217,7 +226,7 @@ export const mockEmployeeApi: EmployeeApi = {
     const row: StoredEmployee = {
       id,
       uuid: `00000000-0000-4000-8000-${String(id).padStart(12, '0')}`,
-      company_id: input.company_id,
+      company_id: input.company_id ?? 1,
       employee_number: input.employee_number,
       first_name: input.first_name,
       last_name: input.last_name,
@@ -261,6 +270,7 @@ export const mockEmployeeApi: EmployeeApi = {
       marital_status: input.marital_status === null ? undefined : (input.marital_status ?? row.marital_status),
       job_grade_id: input.job_grade_id === null ? undefined : (input.job_grade_id ?? row.job_grade_id),
       job_level_id: input.job_level_id === null ? undefined : (input.job_level_id ?? row.job_level_id),
+      photo: input.photo === null ? undefined : (input.photo ?? row.photo),
       updated_at: new Date().toISOString(),
     };
     store = store.map((item) => (item.id === id ? updated : item));
@@ -272,15 +282,90 @@ export const mockEmployeeApi: EmployeeApi = {
     findOrThrow(id);
     store = store.filter((item) => item.id !== id);
   },
+
+  // ── Lifecycle actions ──
+  // Each mirrors the real `EmployeeLifecycleService` method it stands in for:
+  // only the fields that service actually writes to `employees` are touched
+  // here (see `EmployeeLifecycleController` for the validated input shape).
+  // The backend additionally appends `employee_history`/`employment_events`
+  // audit rows — there is no equivalent read surface on the frontend yet, so
+  // the mock does not fabricate any of that bookkeeping.
+
+  async promote(context, id, input) {
+    await simulate(context, WRITE_LATENCY_MS);
+    const row = findOrThrow(id);
+    const updated: StoredEmployee = {
+      ...row,
+      job_position_id: input.new_job_position_id ?? row.job_position_id,
+      job_grade_id: input.new_job_grade_id ?? row.job_grade_id,
+      job_level_id: input.new_job_level_id ?? row.job_level_id,
+      updated_at: new Date().toISOString(),
+    };
+    store = store.map((item) => (item.id === id ? updated : item));
+    return employeeDecoder.decode(structuredClone(toWire(updated)));
+  },
+
+  async transfer(context, id, input) {
+    await simulate(context, WRITE_LATENCY_MS);
+    const row = findOrThrow(id);
+    const updated: StoredEmployee = {
+      ...row,
+      branch_id: input.new_branch_id ?? row.branch_id,
+      department_id: input.new_department_id ?? row.department_id,
+      direct_manager_id: input.new_direct_manager_id ?? row.direct_manager_id,
+      updated_at: new Date().toISOString(),
+    };
+    store = store.map((item) => (item.id === id ? updated : item));
+    return employeeDecoder.decode(structuredClone(toWire(updated)));
+  },
+
+  async suspend(context, id, _input) {
+    await simulate(context, WRITE_LATENCY_MS);
+    const row = findOrThrow(id);
+    const updated: StoredEmployee = { ...row, status: 'suspended', updated_at: new Date().toISOString() };
+    store = store.map((item) => (item.id === id ? updated : item));
+    return employeeDecoder.decode(structuredClone(toWire(updated)));
+  },
+
+  async terminate(context, id, input) {
+    await simulate(context, WRITE_LATENCY_MS);
+    const row = findOrThrow(id);
+    const updated: StoredEmployee = {
+      ...row,
+      status: 'terminated',
+      termination_date: input.termination_date,
+      termination_reason: input.termination_reason,
+      updated_at: new Date().toISOString(),
+    };
+    store = store.map((item) => (item.id === id ? updated : item));
+    return employeeDecoder.decode(structuredClone(toWire(updated)));
+  },
+
+  async reinstate(context, id, _input) {
+    await simulate(context, WRITE_LATENCY_MS);
+    const row = findOrThrow(id);
+    // Matches the real `EmployeeLifecycleService::reinstate()` exactly: it
+    // only flips `status` back to active and does not clear the prior
+    // termination_date/termination_reason columns.
+    const updated: StoredEmployee = { ...row, status: 'active', updated_at: new Date().toISOString() };
+    store = store.map((item) => (item.id === id ? updated : item));
+    return employeeDecoder.decode(structuredClone(toWire(updated)));
+  },
 };
 
 function toWire(row: StoredEmployee): EmployeeWire {
   const department = DEPARTMENTS.find((item) => item.id === row.department_id);
   const position = JOB_POSITIONS.find((item) => item.id === row.job_position_id);
+  const branch = BRANCHES.find((item) => item.id === row.branch_id);
+  const jobGrade = JOB_GRADES.find((item) => item.id === row.job_grade_id);
+  const manager = row.direct_manager_id !== undefined ? store.find((item) => item.id === row.direct_manager_id) : undefined;
   return {
     ...row,
     department: department ? { id: department.id, name: department.name } : undefined,
-    jobPosition: position ? { id: position.id, title: position.name } : undefined,
+    job_position: position ? { id: position.id, title: position.name } : undefined,
+    branch: branch ? { id: branch.id, name: branch.name } : undefined,
+    job_grade: jobGrade ? { id: jobGrade.id, name: jobGrade.name } : undefined,
+    direct_manager: manager ? { id: manager.id, first_name: manager.first_name, last_name: manager.last_name } : undefined,
   } as unknown as EmployeeWire;
 }
 

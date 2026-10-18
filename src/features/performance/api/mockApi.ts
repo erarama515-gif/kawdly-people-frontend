@@ -218,7 +218,7 @@ export const mockPerformanceCycleApi: PerformanceCycleApi = {
     const stamp = new Date().toISOString();
     const row: StoredPerformanceCycle = {
       id,
-      company_id: input.company_id,
+      company_id: input.company_id ?? 1,
       name: input.name,
       type: input.type,
       start_date: input.start_date,

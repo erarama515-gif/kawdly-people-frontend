@@ -15,24 +15,30 @@ import { DecisionQueue } from './DecisionQueue';
 import { FooterBar } from './FooterBar';
 import { HeroHeader } from './HeroHeader';
 import { KpiStrip } from './KpiStrip';
-import { DepartmentsCard, RosterCard } from './RightRailCards';
+import { RosterCard } from './RightRailCards';
 import { RightRail } from './RightRail';
 import { TrendsBand } from './TrendsBand';
+import { OrgTreemap } from './OrgTreemap';
+import { WhatChanged } from './WhatChanged';
+import { UpcomingCard } from './RightRailCards';
 
 /** Chip exit plays first (200ms); the 0fr row collapse finishes later (380ms + 140ms delay). */
 const CHIP_EXIT_MS = 260;
 const ROW_COLLAPSE_MS = 620;
 
 /**
- * Dashboard page = full-bleed ledger within the AppShell's 1440 content
- * column. Hero and alert band break out of the gutters; the KPI strip, trends
- * band, queue/rail grid and footer share the same bordered ledger column.
+ * Dashboard page — redesigned to match the new Kawdly People Dashboard
+ * template. Structure:
  *
- * Layout and copy are unchanged from the design review build. What changed is
- * where the numbers come from: everything below the hero is served by
- * `DashboardApi` through the query cache, with skeleton, error and stale-refresh
- * states, and the queue resolve is now a real mutation rather than a local
- * decrement.
+ * 1. Hero header (greeting, date, quick actions)
+ * 2. KPI strip (3 metric tiles + navy "Open actions" panel)
+ * 3. Updated timestamp + refresh
+ * 4. Decision queue + "What changed" / Upcoming (2-column)
+ * 5. Trend charts (question/answer format with area fills)
+ * 6. Org treemap + Attendance sidebar (2-column)
+ * 7. Footer
+ *
+ * All data comes from the real API through the query cache.
  */
 export function DashboardPage() {
   const { t, i18n } = useTranslation();
@@ -45,9 +51,6 @@ export function DashboardPage() {
 
   const data = dataset.data;
 
-  // Queue choreography (chip exit + 0fr row collapse + the empty state) is
-  // presentation state, so it stays here rather than in the cache. Counts come
-  // from the server payload; these sets only mark what the user just resolved.
   const [removing, setRemoving] = useState<ReadonlySet<QueueItemId>>(new Set());
   const [removed, setRemoved] = useState<ReadonlySet<QueueItemId>>(new Set());
   const timersRef = useRef<number[]>([]);
@@ -57,7 +60,6 @@ export function DashboardPage() {
     timersRef.current = [];
   }, []);
 
-  // A role switch swaps the whole dataset, so the choreography resets with it.
   useEffect(() => {
     clearTimers();
     setRemoving(new Set());
@@ -68,19 +70,11 @@ export function DashboardPage() {
 
   const counts = deriveCounts(data?.queues);
 
-  /**
-   * Resolving a row is a real write, so the exit choreography only starts once
-   * the server has accepted it. If the write fails the cache rolls the count
-   * back and the row stays put — the user sees a retry affordance instead of a
-   * row silently vanishing.
-   */
   const onResolve = useCallback(
     (id: QueueItemId) => {
       if ((counts[id] ?? 0) <= 0 || resolveQueue.isPending) return;
 
       void resolveQueue.mutate(id).then((result) => {
-        // Undefined means the write failed: the cache has already rolled the
-        // count back, so the row stays visible with the retry affordance.
         if (!result || result.queue.count > 0) return;
 
         setRemoving((prev) => new Set(prev).add(id));
@@ -101,7 +95,7 @@ export function DashboardPage() {
     [counts, resolveQueue.isPending, resolveQueue.mutate],
   );
 
-  const roleLabel = t(role === 'hr_admin' ? 'dashboard.role.admin' : 'dashboard.role.manager');
+  const roleLabel = t(role === 'department_manager' ? 'dashboard.role.manager' : 'dashboard.role.admin');
   const today = new Intl.DateTimeFormat(language, {
     weekday: 'long',
     day: 'numeric',
@@ -119,11 +113,6 @@ export function DashboardPage() {
 
   return (
     <div className="flex flex-col">
-      {/*
-        A failed write rolls the cache back; a failed *refresh* keeps the last
-        good numbers. Both surface in the same quiet strip rather than a toast,
-        so the ledger stays readable behind the notice.
-      */}
       {resolveQueue.error ? (
         <ActionError message={userFacingMessage(resolveQueue.error)} onRetry={resolveQueue.reset} />
       ) : dataset.status === 'error' ? (
@@ -149,14 +138,19 @@ export function DashboardPage() {
       />
 
       <div className="flex flex-col">
-        <section data-testid="kpi-strip" className="border border-hairline border-t-0 bg-hairline">
-          {/* Keyed by role so switching roles restarts the count-up for the new set. */}
-          <KpiStrip key={role} kpis={data.kpis} />
+        {/* 1. KPI strip with Open Actions panel */}
+        <section
+          data-testid="kpi-strip"
+          className="border-t-[2px] border-b border-hairline bg-hairline"
+          style={{ borderTopColor: 'var(--color-ink, #14202e)' }}
+        >
+          <KpiStrip key={role} kpis={data.kpis} queues={data.queues} counts={counts} />
         </section>
 
+        {/* Updated timestamp */}
         <div className="flex items-center justify-end gap-2 bg-page py-2">
-          <span className="nums font-mono text-[10px] font-medium text-ink-faint">
-            {t('dashboard.kpi.updatedAt', { time: formatTime(data.updatedAt, language) })}
+          <span className="nums font-mono text-[10px] font-medium text-ink-faint" dir="ltr">
+            {t('dashboard.kpi.updatedAt', { time: formatTime(data.updatedAt, language) })} · live
           </span>
           <button
             type="button"
@@ -174,12 +168,10 @@ export function DashboardPage() {
           </button>
         </div>
 
-        <div className="border border-hairline">
-          <TrendsBand kpis={data.kpis} labels={data.attendance.weekLabels} language={language} />
-        </div>
-
-        <div className="grid gap-px border-x border-b border-hairline bg-hairline lg:grid-cols-[minmax(0,1fr)_360px]">
-          <div className="flex min-w-0 flex-col gap-px bg-page">
+        {/* 2. Decision queue + What changed / Upcoming (2-column) */}
+        <div className="grid items-start gap-7 lg:grid-cols-[minmax(0,1.7fr)_minmax(0,1fr)]">
+          {/* Left: Decision queue */}
+          <div className="border border-hairline" style={{ borderTopWidth: 3, borderTopColor: 'var(--color-coral, #e8694a)' }}>
             <DecisionQueue
               rows={data.queues}
               counts={counts}
@@ -189,17 +181,34 @@ export function DashboardPage() {
               isResolving={resolveQueue.isPending}
               onResolve={onResolve}
             />
-            {role === 'hr_admin' ? (
-              <DepartmentsCard rows={data.departments} language={language} />
-            ) : (
-              <RosterCard members={data.teamRoster} language={language} />
-            )}
           </div>
 
+          {/* Right: What changed + Upcoming */}
+          <div className="flex flex-col gap-6">
+            <WhatChanged kpis={data.kpis} departments={data.departments} language={language} />
+            <UpcomingCard items={data.upcoming} language={language} className="border border-hairline" />
+          </div>
+        </div>
+
+        {/* 3. Trends section — question/answer charts */}
+        <div className="mt-8 border border-hairline">
+          <TrendsBand kpis={data.kpis} labels={data.attendance.weekLabels} language={language} />
+        </div>
+
+        {/* 4. Org treemap + Attendance sidebar (2-column) */}
+        <div className="mt-8 grid items-start gap-7 lg:grid-cols-[minmax(0,1.9fr)_minmax(0,1fr)]">
+          {/* Left: Treemap or Departments card */}
+          {role === 'department_manager' ? (
+            <RosterCard members={data.teamRoster} language={language} className="border border-hairline" />
+          ) : (
+            <OrgTreemap rows={data.departments} language={language} />
+          )}
+
+          {/* Right: Attendance sidebar */}
           <RightRail
             attendance={data.attendance}
-            upcoming={data.upcoming}
-            className="w-full min-w-0 lg:w-auto"
+            upcoming={[]} /* Upcoming is shown above in the what-changed column */
+            className="w-full min-w-0 border border-hairline lg:w-auto"
             language={language}
           />
         </div>
@@ -207,7 +216,7 @@ export function DashboardPage() {
         <FooterBar />
       </div>
 
-      <div className="h-8 md:h-10" aria-hidden="true" />
+      <div className="h-10 md:h-14 pb-[env(safe-area-inset-bottom)]" aria-hidden="true" />
     </div>
   );
 }

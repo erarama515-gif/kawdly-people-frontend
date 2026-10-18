@@ -2,7 +2,7 @@ import { ApiError } from '@/lib/api/errors';
 import type { FetchContext } from '@/lib/query';
 import { settingDecoder, settingListDecoder } from './schema';
 import type { SettingListWire, SettingWire } from './schema';
-import type { SettingApi, SettingInput, SettingListParams } from './resource';
+import type { SettingApi } from './resource';
 
 /**
  * In-process implementation of SettingApi.

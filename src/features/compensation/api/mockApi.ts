@@ -14,11 +14,7 @@ import type {
 } from './schema';
 import type {
   SalaryStructureApi,
-  SalaryStructureInput,
-  SalaryStructureListParams,
   SalaryComponentApi,
-  SalaryComponentInput,
-  SalaryComponentListParams,
   SalaryComponentType,
   SalaryComponentCalculationType,
 } from './resource';
@@ -225,7 +221,7 @@ export const mockSalaryStructureApi: SalaryStructureApi = {
     const stamp = new Date().toISOString();
     const row: StoredSalaryStructure = {
       id: nextStructureId,
-      company_id: input.company_id,
+      company_id: input.company_id ?? 1,
       name: input.name,
       description: input.description ?? undefined,
       is_default: input.is_default ?? undefined,
@@ -309,7 +305,7 @@ export const mockSalaryComponentApi: SalaryComponentApi = {
     const stamp = new Date().toISOString();
     const row: StoredSalaryComponent = {
       id: nextComponentId,
-      company_id: input.company_id,
+      company_id: input.company_id ?? 1,
       salary_structure_id: input.salary_structure_id,
       name: input.name,
       code: input.code ?? undefined,

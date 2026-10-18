@@ -179,7 +179,7 @@ export const mockCareerPathApi: CareerPathApi = {
     const stamp = new Date().toISOString();
     const row: StoredCareerPath = {
       id,
-      company_id: input.company_id,
+      company_id: input.company_id ?? 1,
       name: input.name,
       job_family: input.job_family ?? undefined,
       created_at: stamp,

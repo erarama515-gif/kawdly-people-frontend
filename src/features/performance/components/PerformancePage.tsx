@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { Pencil, Plus, Trash2 } from 'lucide-react';
 import { cn } from '@/lib/cn';
 import { Card } from '@/components/ui/Card';
+import { SkeletonTable } from '@/components/ui/SkeletonTable';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { Avatar } from '@/components/ui/Avatar';
 import { Button } from '@/components/ui/Button';
@@ -191,7 +192,7 @@ function CycleBanner({ cycle, completionPercent, onEdit, onDelete }: CycleBanner
                 deleteLabel={t('performance.deleteCycleAction')}
               />
             </div>
-            <div className="text-right">
+            <div className="text-end">
               <p className="text-caption text-on-navy/60">{t('performance.deadline')}</p>
               <p className="text-body-sm font-semibold text-on-navy">
                 {formatDate(cycle.manager_review_deadline)}
@@ -472,9 +473,7 @@ export function PerformancePage() {
       ) : (
         <Card className="mb-8 overflow-hidden">
           {cycleState.status === 'pending' ? (
-            <div className="flex items-center justify-center px-5 py-10">
-              <span className="text-caption text-ink-muted">{t('common.loading')}</span>
-            </div>
+            <SkeletonTable />
           ) : cycles.length === 0 ? (
             <div className="flex items-center justify-center px-5 py-10">
               <p className="text-body-sm text-ink-muted">{t('performance.noCycles')}</p>
@@ -515,7 +514,7 @@ export function PerformancePage() {
         <h3 className="text-body-md font-semibold text-ink">
           {t('performance.reviewsTitle')}
           {selectedCycle ? (
-            <span className="ml-2 text-body-sm font-normal text-ink-muted">— {selectedCycle.name}</span>
+            <span className="ms-2 text-body-sm font-normal text-ink-muted">— {selectedCycle.name}</span>
           ) : null}
         </h3>
         <div className="flex flex-wrap items-center gap-2">
@@ -576,7 +575,7 @@ export function PerformancePage() {
                 <span className="text-caption font-semibold uppercase tracking-wide text-ink-faint">
                   {t('performance.table.reviewType')}
                 </span>
-                <span className="text-caption font-semibold uppercase tracking-wide text-ink-faint text-right">
+                <span className="text-caption font-semibold uppercase tracking-wide text-ink-faint text-end">
                   {t('performance.table.rating')}
                 </span>
                 <span className="text-caption font-semibold uppercase tracking-wide text-ink-faint">
@@ -588,9 +587,7 @@ export function PerformancePage() {
 
             {/* Table body */}
             {reviewState.status === 'pending' ? (
-              <div className="flex items-center justify-center px-5 py-10">
-                <span className="text-caption text-ink-muted">{t('common.loading')}</span>
-              </div>
+              <SkeletonTable />
             ) : reviews.length === 0 ? (
               <div className="flex items-center justify-center px-5 py-10">
                 <p className="text-body-sm text-ink-muted">{t('performance.noReviews')}</p>
@@ -650,10 +647,10 @@ export function PerformancePage() {
                     </span>
 
                     {/* Overall rating */}
-                    <div className="text-right">
-                      {review.overall_rating !== undefined ? (
+                    <div className="text-end">
+                      {review.overall_rating != null ? (
                         <span className="nums font-mono text-body-sm font-semibold text-ink">
-                          {review.overall_rating.toFixed(1)}
+                          {parseFloat(review.overall_rating).toFixed(1)}
                         </span>
                       ) : (
                         <span className="text-body-sm text-ink-faint">—</span>
@@ -691,9 +688,7 @@ export function PerformancePage() {
           {/* Mobile / tablet-portrait cards */}
           <div className="flex flex-col gap-3 lg:hidden">
             {reviewState.status === 'pending' ? (
-              <Card className="flex items-center justify-center px-5 py-10">
-                <span className="text-caption text-ink-muted">{t('common.loading')}</span>
-              </Card>
+              <SkeletonTable />
             ) : reviews.length === 0 ? (
               <Card className="flex items-center justify-center px-5 py-10">
                 <p className="text-body-sm text-ink-muted">{t('performance.noReviews')}</p>
@@ -743,9 +738,9 @@ export function PerformancePage() {
                       </div>
                       <div className="flex flex-col gap-0.5">
                         <span className="text-caption text-ink-faint">{t('performance.table.rating')}</span>
-                        {review.overall_rating !== undefined ? (
+                        {review.overall_rating != null ? (
                           <span className="nums font-mono text-body-sm font-semibold text-ink">
-                            {review.overall_rating.toFixed(1)}
+                            {parseFloat(review.overall_rating).toFixed(1)}
                           </span>
                         ) : (
                           <span className="text-body-sm text-ink-faint">—</span>
@@ -791,7 +786,6 @@ export function PerformancePage() {
         confirmLabel={t('common.delete')}
         onConfirm={confirmDeleteCycle}
         isLoading={deleteCycleMutation.isPending}
-        error={deleteCycleMutation.error ? userFacingMessage(deleteCycleMutation.error) : undefined}
       />
 
       {/* Review form */}
@@ -819,7 +813,6 @@ export function PerformancePage() {
         confirmLabel={t('common.delete')}
         onConfirm={confirmDeleteReview}
         isLoading={deleteReviewMutation.isPending}
-        error={deleteReviewMutation.error ? userFacingMessage(deleteReviewMutation.error) : undefined}
       />
     </div>
   );

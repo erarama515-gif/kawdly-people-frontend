@@ -10,23 +10,10 @@ interface TrendsBandProps {
 }
 
 const VIEW_W = 240;
-const VIEW_H = 86;
-const BASELINE_Y = 70;
-const LABEL_Y = 83;
+const VIEW_H = 90;
+const BASELINE_Y = 82;
 const TOP_Y = 8;
-const PAD_X = 6;
-
-/** Shared label for each KPI id (design short forms). */
-const TREND_LABEL_KEY: Record<string, string> = {
-  employees: 'dashboard.trends.headcount',
-  attendanceToday: 'dashboard.trends.attendance',
-  payrollCostMTD: 'dashboard.trends.payroll',
-  openPositions: 'dashboard.trends.openRoles',
-  teamMembers: 'dashboard.trends.headcount',
-  teamAttendanceToday: 'dashboard.trends.attendance',
-  pendingLeave: 'dashboard.trends.openRoles',
-  reviewsDue: 'dashboard.trends.openRoles',
-};
+const PAD_X = 0;
 
 /** Horizontal positions for `count` data points, spread across the view width. */
 function xsFor(count: number): number[] {
@@ -44,21 +31,42 @@ function yOf(trend: number[], value: number): number {
   return TOP_Y + (1 - (value - min) / span) * (BASELINE_Y - TOP_Y);
 }
 
-function polyline(trend: number[], xs: number[]): string {
-  return trend.map((value, index) => `${xs[index]?.toFixed(1)},${yOf(trend, value).toFixed(1)}`).join(' ');
+function linePath(trend: number[], xs: number[]): string {
+  return trend.map((value, index) => `${index === 0 ? 'M' : 'L'}${xs[index]?.toFixed(1)} ${yOf(trend, value).toFixed(1)}`).join(' ');
 }
 
-function formatRange(kpi: Kpi): string {
-  const first = String(kpi.trend[0]);
-  const lastValue = kpi.trend[kpi.trend.length - 1];
-  const suffix = kpi.suffix && kpi.suffix !== '%' ? kpi.suffix : '';
-  return `${first} → ${lastValue}${suffix}`;
+function areaPath(trend: number[], xs: number[]): string {
+  const line = linePath(trend, xs);
+  return `${line} L${VIEW_W} ${BASELINE_Y} L0 ${BASELINE_Y} Z`;
 }
+
+/** Short answer text derived from the KPI's trend data. */
+function deriveAnswer(kpi: Kpi, t: (key: string) => string): string {
+  const first = kpi.trend[0];
+  const last = kpi.trend[kpi.trend.length - 1];
+  const diff = last - first;
+  const suffix = kpi.suffix ?? '';
+  if (diff > 0) return `${first}${suffix} → ${last}${suffix} (+${diff.toFixed(suffix === '%' ? 1 : 0)}${suffix})`;
+  if (diff < 0) return `${first}${suffix} → ${last}${suffix} (${diff.toFixed(suffix === '%' ? 1 : 0)}${suffix})`;
+  return `${last}${suffix} — ${t('dashboard.kpi.pendingLeave.delta')}`;
+}
+
+/** Question key per KPI id. */
+const QUESTION_KEY: Record<string, string> = {
+  employees: 'dashboard.trends.questions.employees',
+  attendanceToday: 'dashboard.trends.questions.attendanceToday',
+  payrollCostMTD: 'dashboard.trends.questions.payrollCostMTD',
+  openPositions: 'dashboard.trends.questions.openPositions',
+  teamMembers: 'dashboard.trends.questions.teamMembers',
+  teamAttendanceToday: 'dashboard.trends.questions.teamAttendanceToday',
+  pendingLeave: 'dashboard.trends.questions.pendingLeave',
+  reviewsDue: 'dashboard.trends.questions.reviewsDue',
+};
 
 /**
- * The "Last 7 days" band: per-KPI mini line charts drawn from the same trend
- * arrays that feed the KPI strip. Geometry is derived from the actual number of
- * points, so a server-provided series of any length renders correctly.
+ * Trends section — "Where the organization is heading". Per-KPI charts with
+ * question/answer labels and filled area paths, matching the new dashboard
+ * design. A section header with title and date range precedes the chart grid.
  */
 export function TrendsBand({ kpis, labels, language }: TrendsBandProps) {
   const { t } = useTranslation();
@@ -68,39 +76,42 @@ export function TrendsBand({ kpis, labels, language }: TrendsBandProps) {
 
   return (
     <div className="flex flex-col bg-surface">
-      <div className="flex items-baseline justify-between gap-3 border-b border-divider px-4 py-3 md:px-6">
-        <span className="text-[16px] font-bold tracking-[-0.02em] text-ink">{t('dashboard.trends.title')}</span>
-        <span className="nums font-mono text-[10px] font-medium text-ink-faint">
-          {chartLabels[0]} – {chartLabels[chartLabels.length - 1]}
+      {/* Section header — matching new design */}
+      <div className="flex items-baseline justify-between gap-3 border-b border-ink px-4 py-3 md:px-6">
+        <span className="text-[19px] font-bold tracking-[-0.02em] text-ink">{t('dashboard.trends.sectionTitle')}</span>
+        <span className="nums font-mono text-[11px] text-ink-faint">
+          {t('dashboard.trends.sectionSubtitle')}
         </span>
       </div>
 
-      <div className="grid grid-cols-2 gap-px bg-divider lg:grid-cols-4">
+      <div className="grid grid-cols-2 gap-px overflow-x-auto bg-divider sm:overflow-x-visible lg:grid-cols-4">
         {kpis.map((kpi) => {
-          const labelKey = TREND_LABEL_KEY[kpi.id];
-          const title = labelKey ? t(labelKey) : t(kpi.captionKey);
+          const question = QUESTION_KEY[kpi.id] ? t(QUESTION_KEY[kpi.id]) : t(kpi.captionKey);
+          const answer = deriveAnswer(kpi, t);
           const endpoint = kpi.trend[kpi.trend.length - 1];
           return (
-            <div key={kpi.id} className="min-w-0 bg-surface px-4 py-4 md:px-6">
-              <div className="flex items-baseline justify-between gap-2">
-                <span className="truncate text-[12px] text-ink-muted">{title}</span>
-                <span className="nums shrink-0 font-mono text-[12px] font-bold text-ink">
-                  {formatRange(kpi)}
-                </span>
-              </div>
+            <div key={kpi.id} className="min-w-0 bg-surface px-4 py-4 md:px-[18px]">
+              {/* Question */}
+              <p className="text-[12px] text-ink-muted">{question}</p>
+              {/* Answer */}
+              <p className="mt-0.5 min-h-[42px] text-[14px] font-semibold leading-snug text-ink">
+                {answer}
+              </p>
 
-              <svg viewBox={`0 0 ${VIEW_W} ${VIEW_H}`} className="mt-2 block w-full" aria-hidden="true">
-                <path d={`M0 ${BASELINE_Y}H${VIEW_W}M0 0V${BASELINE_Y}`} stroke="#C9D2DA" fill="none" />
-                <polyline points={polyline(kpi.trend, xs)} stroke="#0C4874" strokeWidth={1} fill="none" />
-                <circle cx={lastX} cy={yOf(kpi.trend, endpoint)} r={3.5} fill="#E4714E" />
-                <g fontFamily="JetBrains Mono, monospace" fontSize={10} fill="#9AA7B3" textAnchor="middle">
-                  {chartLabels.map((label, index) => (
-                    <text key={`${label}-${index}`} x={xs[index]} y={LABEL_Y}>
-                      {label}
-                    </text>
-                  ))}
-                </g>
+              {/* Area chart */}
+              <svg viewBox={`0 0 ${VIEW_W} ${VIEW_H}`} className="mt-2 block w-full" aria-hidden="true" style={{ direction: 'ltr' }}>
+                <line x1="0" y1={BASELINE_Y} x2={VIEW_W} y2={BASELINE_Y} stroke="var(--color-hairline, #d5dbe3)" />
+                <line x1="0" y1={45} x2={VIEW_W} y2={45} stroke="var(--color-divider, #eef1f5)" />
+                <path d={areaPath(kpi.trend, xs)} fill="var(--color-navy, #0C4874)" fillOpacity={0.07} />
+                <path d={linePath(kpi.trend, xs)} fill="none" stroke="var(--color-navy, #0C4874)" strokeWidth={1.8} />
+                <circle cx={lastX} cy={yOf(kpi.trend, endpoint)} r={3.5} fill="var(--color-coral, #E4714E)" />
               </svg>
+
+              {/* X-axis labels */}
+              <div className="mt-1 flex justify-between font-mono text-[10px] text-ink-faint" dir="ltr">
+                <span>{chartLabels[0]}</span>
+                <span>{chartLabels[chartLabels.length - 1]}</span>
+              </div>
             </div>
           );
         })}

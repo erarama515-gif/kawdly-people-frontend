@@ -21,20 +21,11 @@ import type {
 } from './schema';
 import type {
   OnboardingInstanceApi,
-  OnboardingInstanceInput,
-  OnboardingInstanceListParams,
   OnboardingInstanceStatus,
-  OnboardingInstanceUpdateInput,
   OnboardingOwnerType,
   OnboardingTaskApi,
-  OnboardingTaskListParams,
-  OnboardingTaskUpdateInput,
   OnboardingTemplateApi,
-  OnboardingTemplateListParams,
   OnboardingTemplateTaskApi,
-  OnboardingTemplateTaskInput,
-  OnboardingTemplateTaskListParams,
-  OnboardingTemplateTaskUpdateInput,
   OnboardingType,
 } from './resource';
 
@@ -103,8 +94,8 @@ interface StoredTemplate {
   id: number;
   name: string;
   type: OnboardingType;
-  is_default: number;
-  is_active: number;
+  is_default: boolean;
+  is_active: boolean;
   created_at: string;
   updated_at: string;
 }
@@ -125,10 +116,10 @@ interface StoredTemplateTask {
 // ─── Seed data ────────────────────────────────────────────────────────────────
 
 const SEED_TEMPLATES: StoredTemplate[] = [
-  { id: 1, name: 'Standard Onboarding',    type: 'onboarding',  is_default: 1, is_active: 1, created_at: '2024-01-01T00:00:00Z', updated_at: '2024-01-01T00:00:00Z' },
-  { id: 2, name: 'Engineering Onboarding', type: 'onboarding',  is_default: 0, is_active: 1, created_at: '2024-01-01T00:00:00Z', updated_at: '2024-01-01T00:00:00Z' },
-  { id: 3, name: 'Sales Onboarding',       type: 'onboarding',  is_default: 0, is_active: 1, created_at: '2024-01-01T00:00:00Z', updated_at: '2024-01-01T00:00:00Z' },
-  { id: 4, name: 'Standard Offboarding',   type: 'offboarding', is_default: 1, is_active: 1, created_at: '2024-01-01T00:00:00Z', updated_at: '2024-01-01T00:00:00Z' },
+  { id: 1, name: 'Standard Onboarding',    type: 'onboarding',  is_default: true, is_active: true, created_at: '2024-01-01T00:00:00Z', updated_at: '2024-01-01T00:00:00Z' },
+  { id: 2, name: 'Engineering Onboarding', type: 'onboarding',  is_default: false, is_active: true, created_at: '2024-01-01T00:00:00Z', updated_at: '2024-01-01T00:00:00Z' },
+  { id: 3, name: 'Sales Onboarding',       type: 'onboarding',  is_default: false, is_active: true, created_at: '2024-01-01T00:00:00Z', updated_at: '2024-01-01T00:00:00Z' },
+  { id: 4, name: 'Standard Offboarding',   type: 'offboarding', is_default: true, is_active: true, created_at: '2024-01-01T00:00:00Z', updated_at: '2024-01-01T00:00:00Z' },
 ];
 
 /**
@@ -270,7 +261,6 @@ let instanceStore: StoredInstance[] = seedInstances();
 let taskStore: StoredTask[] = seedTasks();
 let templateTaskStore: StoredTemplateTask[] = seedTemplateTasks();
 let nextInstanceId = 100;
-let nextTaskId = 900;
 let nextTemplateTaskId = 200;
 
 export function resetMockOnboarding(): void {
@@ -278,7 +268,6 @@ export function resetMockOnboarding(): void {
   taskStore = seedTasks();
   templateTaskStore = seedTemplateTasks();
   nextInstanceId = 100;
-  nextTaskId = 900;
   nextTemplateTaskId = 200;
 }
 

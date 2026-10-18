@@ -4,6 +4,7 @@ const AVATAR_SIZES = {
   20: 'h-5 w-5 text-[10px]',
   24: 'h-6 w-6 text-[11px]',
   26: 'h-[26px] w-[26px] text-[11px]',
+  28: 'h-7 w-7 text-[12px]',
   30: 'h-[30px] w-[30px] text-[12px]',
   32: 'h-8 w-8 text-[12px]',
   36: 'h-9 w-9 text-[13px]',

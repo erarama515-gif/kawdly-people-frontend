@@ -1,18 +1,30 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Pencil, Plus, Search, Trash2 } from 'lucide-react';
+import { Pencil, Plus, Search, Trash2, UserCheck } from 'lucide-react';
 import { cn } from '@/lib/cn';
 import { Card } from '@/components/ui/Card';
+import { SkeletonTable } from '@/components/ui/SkeletonTable';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { Button } from '@/components/ui/Button';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { Pagination } from '@/components/ui/Pagination';
+import { Select } from '@/components/ui/form';
 import { userFacingMessage } from '@/lib/api/errors';
+import {
+  useBranchList,
+  useDepartmentList,
+  useJobPositionList,
+} from '@/features/organization/api/queries';
 import { useDeleteJobPosting, useJobPostingList } from '../api/queries';
 import type { JobPostingListParams, JobPostingStatus } from '../api/resource';
 import type { JobPostingWire } from '../api/schema';
 import { JobPostingFormDialog } from './JobPostingFormDialog';
-import { pipelineStages } from '../data';
+import {
+  usePipelineStats,
+  useOfferCandidates,
+  useConvertToEmployee,
+} from '../api/pipelineQueries';
+import type { CandidateWire, ConvertToEmployeeInput } from '../api/pipelineQueries';
 
 /**
  * The Recruitment module's job-postings page: live data backed by
@@ -20,9 +32,12 @@ import { pipelineStages } from '../data';
  * `ConfirmDialog` + optimistic `useDeleteJobPosting`, and page controls via
  * the shared `Pagination`. Mirrors `EmployeesPage` exactly.
  *
- * The static `PipelineStage` mini-visualization is kept as-is — it is a
- * cosmetic widget unconnected to the job-postings CRUD (candidates pipeline
- * is out of scope for this task).
+ * The `PipelineStage` mini-visualization is backed entirely by real DB data
+ * via `usePipelineStats`. While the first fetch is in flight (or on error) it
+ * shows a dash per stage rather than a fabricated number.
+ *
+ * The "Convert to Employee" panel lists offer/hired-stage candidates and lets
+ * HR promote them with a single click via `useConvertToEmployee`.
  */
 
 const PER_PAGE = 10;
@@ -101,9 +116,14 @@ const FILTER_OPTIONS: Array<{ key: string; value: JobPostingStatus | 'all' }> = 
   { key: 'closed', value: 'closed' },
 ];
 
-// ─── Pipeline Visualization (static / cosmetic) ───────────────────────────────
+// ─── Pipeline Visualization (live data, graceful fallback) ────────────────────
 
-function Pipeline() {
+interface PipelineProps {
+  stages: Array<{ label: string; count: number | undefined }>;
+  isLoading: boolean;
+}
+
+function Pipeline({ stages, isLoading }: PipelineProps) {
   const { t } = useTranslation();
   return (
     <Card className="mb-8 px-5 py-5">
@@ -111,7 +131,7 @@ function Pipeline() {
         {t('recruitment.hiringPipeline')}
       </p>
       <div className="flex items-center gap-0">
-        {pipelineStages.map((stage, idx) => (
+        {stages.map((stage, idx) => (
           <div key={stage.label} className="flex items-center">
             <div
               className={cn(
@@ -122,19 +142,265 @@ function Pipeline() {
               <span
                 className={cn(
                   'nums font-mono text-[28px] font-bold leading-[1.1] tracking-[-0.04em]',
+                  isLoading && 'opacity-40',
                   idx === 0 ? 'text-navy' : 'text-ink',
                 )}
               >
-                {stage.count}
+                {stage.count !== undefined ? stage.count.toLocaleString() : '—'}
               </span>
               <span className="mt-0.5 text-caption text-ink-muted">{stage.label}</span>
             </div>
-            {idx < pipelineStages.length - 1 && (
+            {idx < stages.length - 1 && (
               <span className="mx-2 select-none text-[20px] font-light text-ink-faint">→</span>
             )}
           </div>
         ))}
       </div>
+    </Card>
+  );
+}
+
+// ─── Convert to Employee Dialog ───────────────────────────────────────────────
+
+interface ConvertDialogProps {
+  candidate: CandidateWire | undefined;
+  onClose: () => void;
+}
+
+function ConvertToEmployeeDialog({ candidate, onClose }: ConvertDialogProps) {
+  const { t } = useTranslation();
+  const convertMutation = useConvertToEmployee();
+
+  const today = new Date().toISOString().slice(0, 10);
+
+  const [form, setForm] = useState({
+    branch_id: '',
+    department_id: '',
+    job_position_id: '',
+    joining_date: today,
+    employment_type: 'full_time' as ConvertToEmployeeInput['employment_type'],
+    work_location: 'office' as ConvertToEmployeeInput['work_location'],
+  });
+
+  const { state: branchState } = useBranchList({ page: 1, perPage: 200 });
+  const branches = branchState.data?.data ?? [];
+  const { state: departmentState } = useDepartmentList({ page: 1, perPage: 200 });
+  const departments = departmentState.data?.data ?? [];
+  const { state: positionState } = useJobPositionList({
+    page: 1,
+    perPage: 200,
+    departmentId: form.department_id ? Number(form.department_id) : undefined,
+  });
+  const positions = positionState.data?.data ?? [];
+
+  if (!candidate) return null;
+
+  function handleChange(field: string, value: string) {
+    setForm((prev) => ({ ...prev, [field]: value }));
+  }
+
+  function handleDepartmentChange(value: string) {
+    // Changing department invalidates whatever position was previously
+    // selected — mirrors `EmployeeFormDialog`'s cascade reset.
+    setForm((prev) => ({ ...prev, department_id: value, job_position_id: '' }));
+  }
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!candidate) return;
+    const result = await convertMutation.mutate({
+      candidateId: candidate.id,
+      branch_id: Number(form.branch_id),
+      department_id: Number(form.department_id),
+      job_position_id: Number(form.job_position_id),
+      joining_date: form.joining_date,
+      employment_type: form.employment_type,
+      work_location: form.work_location,
+    });
+    if (result !== undefined || convertMutation.error === undefined) {
+      onClose();
+    }
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+      <Card className="w-full max-w-md p-6 shadow-xl">
+        <h2 className="mb-4 text-body-sm font-semibold text-ink">
+          {t('recruitment.convertToEmployee.title', {
+            name: `${candidate.first_name} ${candidate.last_name}`,
+            defaultValue: `Convert ${candidate.first_name} ${candidate.last_name} to Employee`,
+          })}
+        </h2>
+
+        <form onSubmit={(e) => void handleSubmit(e)} className="flex flex-col gap-3">
+          <label className="flex flex-col gap-1 text-caption text-ink-muted">
+            {t('employees.form.branch')}
+            <Select
+              required
+              value={form.branch_id}
+              onChange={(e) => handleChange('branch_id', e.target.value)}
+            >
+              <option value="">{t('common.selectPlaceholder')}</option>
+              {branches.map((branch) => (
+                <option key={branch.id} value={branch.id}>{branch.name}</option>
+              ))}
+            </Select>
+          </label>
+
+          <label className="flex flex-col gap-1 text-caption text-ink-muted">
+            {t('employees.form.department')}
+            <Select
+              required
+              value={form.department_id}
+              onChange={(e) => handleDepartmentChange(e.target.value)}
+            >
+              <option value="">{t('common.selectPlaceholder')}</option>
+              {departments.map((department) => (
+                <option key={department.id} value={department.id}>{department.name}</option>
+              ))}
+            </Select>
+          </label>
+
+          <label className="flex flex-col gap-1 text-caption text-ink-muted">
+            {t('employees.form.jobPosition')}
+            <Select
+              required
+              value={form.job_position_id}
+              onChange={(e) => handleChange('job_position_id', e.target.value)}
+            >
+              <option value="">{t('common.selectPlaceholder')}</option>
+              {positions.map((position) => (
+                <option key={position.id} value={position.id}>{position.title}</option>
+              ))}
+            </Select>
+          </label>
+
+          <label className="flex flex-col gap-1 text-caption text-ink-muted">
+            {t('recruitment.convertToEmployee.joiningDate', { defaultValue: 'Joining Date' })}
+            <input
+              required
+              type="date"
+              value={form.joining_date}
+              onChange={(e) => handleChange('joining_date', e.target.value)}
+              className="rounded border border-hairline px-2 py-1 text-body-sm text-ink focus:outline-none focus:ring-1 focus:ring-navy/40"
+            />
+          </label>
+
+          <label className="flex flex-col gap-1 text-caption text-ink-muted">
+            {t('recruitment.convertToEmployee.employmentType', { defaultValue: 'Employment Type' })}
+            <select
+              value={form.employment_type}
+              onChange={(e) => handleChange('employment_type', e.target.value)}
+              className="rounded border border-hairline px-2 py-1 text-body-sm text-ink focus:outline-none focus:ring-1 focus:ring-navy/40"
+            >
+              <option value="full_time">Full Time</option>
+              <option value="part_time">Part Time</option>
+              <option value="contract">Contract</option>
+              <option value="intern">Intern</option>
+            </select>
+          </label>
+
+          <label className="flex flex-col gap-1 text-caption text-ink-muted">
+            {t('recruitment.convertToEmployee.workLocation', { defaultValue: 'Work Location' })}
+            <select
+              value={form.work_location}
+              onChange={(e) => handleChange('work_location', e.target.value)}
+              className="rounded border border-hairline px-2 py-1 text-body-sm text-ink focus:outline-none focus:ring-1 focus:ring-navy/40"
+            >
+              <option value="office">Office</option>
+              <option value="remote">Remote</option>
+              <option value="hybrid">Hybrid</option>
+            </select>
+          </label>
+
+          {convertMutation.error ? (
+            <p className="text-body-sm text-coral">
+              {userFacingMessage(convertMutation.error) ||
+                t('recruitment.convertToEmployee.failed', { defaultValue: 'Conversion failed. Please try again.' })}
+            </p>
+          ) : null}
+
+          <div className="mt-2 flex justify-end gap-2">
+            <Button type="button" variant="secondary" onClick={onClose}>
+              {t('common.cancel')}
+            </Button>
+            <Button type="submit" variant="primary" disabled={convertMutation.isPending}>
+              {convertMutation.isPending
+                ? t('common.loading')
+                : t('recruitment.convertToEmployee.confirm', { defaultValue: 'Convert to Employee' })}
+            </Button>
+          </div>
+        </form>
+      </Card>
+    </div>
+  );
+}
+
+// ─── Offer/Hired Candidates Panel ─────────────────────────────────────────────
+
+function OfferCandidatesPanel() {
+  const { t } = useTranslation();
+  const { state } = useOfferCandidates();
+  const [convertTarget, setConvertTarget] = useState<CandidateWire | undefined>(undefined);
+
+  const candidates = state.data ?? [];
+
+  if (state.status === 'pending') {
+    return (
+      <Card className="mb-8 px-5 py-5">
+        <p className="text-caption font-semibold uppercase tracking-wide text-ink-faint">
+          {t('recruitment.offerPanel.title', { defaultValue: 'Ready to Convert' })}
+        </p>
+        <div className="mt-4 h-24 animate-pulse rounded bg-hairline" />
+      </Card>
+    );
+  }
+
+  if (candidates.length === 0) return null;
+
+  return (
+    <Card className="mb-8 px-5 py-5">
+      <p className="mb-4 text-caption font-semibold uppercase tracking-wide text-ink-faint">
+        {t('recruitment.offerPanel.title', { defaultValue: 'Ready to Convert' })}
+      </p>
+
+      <div className="flex flex-col divide-y divide-divider">
+        {candidates.map((candidate) => (
+          <div key={candidate.id} className="flex items-center justify-between gap-3 py-3">
+            <div className="min-w-0">
+              <p className="truncate text-body-sm font-semibold text-ink">
+                {candidate.first_name} {candidate.last_name}
+              </p>
+              <p className="truncate text-caption text-ink-muted">{candidate.email}</p>
+            </div>
+            <div className="flex shrink-0 items-center gap-2">
+              <span
+                className={cn(
+                  'rounded-full px-2.5 py-0.5 text-[11px] font-semibold',
+                  candidate.stage === 'offer'
+                    ? 'bg-emerald-50 text-emerald-700'
+                    : 'bg-blue-50 text-blue-700',
+                )}
+              >
+                {candidate.stage}
+              </span>
+              <Button
+                variant="secondary"
+                className="h-7 gap-1 px-2 text-[12px]"
+                onClick={() => setConvertTarget(candidate)}
+              >
+                <UserCheck className="h-3.5 w-3.5" strokeWidth={1.75} aria-hidden="true" />
+                {t('recruitment.convertToEmployee.action', { defaultValue: 'Convert' })}
+              </Button>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <ConvertToEmployeeDialog
+        candidate={convertTarget}
+        onClose={() => setConvertTarget(undefined)}
+      />
     </Card>
   );
 }
@@ -179,10 +445,24 @@ export function RecruitmentPage() {
   const { state: openState } = useJobPostingList({ page: 1, perPage: 1, status: 'open' });
   const { state: closedState } = useJobPostingList({ page: 1, perPage: 1, status: 'closed' });
 
+  // Pipeline stats — live from DB, falls back to the static mock while loading.
+  const { state: pipelineState } = usePipelineStats();
+
   const deleteMutation = useDeleteJobPosting(params);
 
   const postings = state.data?.data ?? [];
   const meta = state.data?.meta;
+
+  // Build the pipeline display array.
+  // When real data is available use it; while loading or on error show a dash
+  // per stage rather than any fabricated number (never fabricate statistics).
+  const liveStages = pipelineState.data?.stages;
+  const pipelineDisplayStages: Array<{ label: string; count: number | undefined }> = [
+    { label: 'Applied',   count: liveStages?.applied },
+    { label: 'Screening', count: liveStages?.screening },
+    { label: 'Interview', count: liveStages?.interview },
+    { label: 'Offer',     count: liveStages?.offer },
+  ];
 
   function openAddForm() {
     setEditTarget(undefined);
@@ -219,14 +499,20 @@ export function RecruitmentPage() {
         <StatCard label={t('recruitment.stat.closedPostings')} value={closedState.data?.meta.total} />
       </div>
 
-      {/* Pipeline (static, cosmetic) */}
-      <Pipeline />
+      {/* Pipeline — real data from usePipelineStats, static fallback while loading */}
+      <Pipeline
+        stages={pipelineDisplayStages}
+        isLoading={pipelineState.status === 'pending'}
+      />
+
+      {/* Offer/Hired candidates ready for conversion */}
+      <OfferCandidatesPanel />
 
       {/* Toolbar: search + status filters */}
       <div className="mb-4 flex flex-wrap items-center gap-3">
         {/* Search */}
         <label className="relative flex items-center">
-          <span className="pointer-events-none absolute left-3 text-ink-faint">
+          <span className="pointer-events-none absolute start-3 text-ink-faint">
             <Search className="h-3.5 w-3.5" strokeWidth={1.75} aria-hidden="true" />
           </span>
           <input
@@ -235,7 +521,7 @@ export function RecruitmentPage() {
             value={searchInput}
             onChange={(e) => setSearchInput(e.target.value)}
             className={cn(
-              'h-9 rounded-full border border-hairline bg-surface pl-8 pr-4 text-[13px] text-ink placeholder:text-ink-faint',
+              'h-9 rounded-full border border-hairline bg-surface ps-8 pe-4 text-[13px] text-ink placeholder:text-ink-faint',
               'focus:outline-none focus:ring-1 focus:ring-navy/40',
               'w-52',
             )}
@@ -274,7 +560,7 @@ export function RecruitmentPage() {
 
       {/* Initial load */}
       {state.status === 'pending' && postings.length === 0 ? (
-        <Card className="px-5 py-10 text-center text-body-sm text-ink-muted">{t('common.loading')}</Card>
+        <SkeletonTable />
       ) : null}
 
       {/* Empty state */}
