@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/Button';
 import { Field, Input, Select } from '@/components/ui/form';
 import { userFacingMessage } from '@/lib/api/errors';
 import type { ApiError } from '@/lib/api/errors';
+import { getCurrentUserId } from '@/auth/session';
 import { useEmployeeList } from '@/features/employees/api/queries';
 import { useCreateSuccessionPlan, useUpdateSuccessionPlan } from '../api/queries';
 import type { SuccessionPlanInput, SuccessionReadiness } from '../api/resource';
@@ -23,7 +24,7 @@ import type { SuccessionPlanWire } from '../api/schema';
  *  - `readiness` is the real backend enum: ready_now | ready_1_year | ready_2_years | development_needed.
  *  - `job_position_id` is a required int FK — shown as a number input for now
  *    (a dedicated job-position picker is a follow-up).
- *  - `updated_by` hardcoded to 1 as placeholder, like Contracts' `created_by: 1`.
+ *  - `updated_by` is the authenticated user id (`getCurrentUserId()`).
  *
  * Employee pickers use `useEmployeeList({ page:1, perPage:100 })` — exact same
  * pattern as `AttendanceFormDialog`.
@@ -84,8 +85,7 @@ function toSuccessionPlanInput(values: SuccessionPlanFormValues): SuccessionPlan
     readiness_score: values.readiness_score.trim() ? Number(values.readiness_score) : null,
     development_plan: values.development_plan.trim() || null,
     notes: values.notes.trim() || null,
-    // `updated_by` required by backend; placeholder until auth is wired.
-    updated_by: 1,
+    updated_by: getCurrentUserId(),
   };
 }
 

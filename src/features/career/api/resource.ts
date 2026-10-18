@@ -25,7 +25,8 @@ import type {
  *       required_competencies (req array), required_certifications (nullable array)
  *   - StoreSuccessionPlanRequest: job_position_id (req int), current_holder_id (nullable int),
  *       successor_id (req int), readiness (req enum), readiness_score (nullable numeric 0-100),
- *       development_plan (nullable str), notes (nullable str), updated_by (req int — hardcoded 1)
+ *       development_plan (nullable str), notes (nullable str),
+ *       updated_by (req int — authenticated user id; overwritten server-side)
  *
  * No `description` field exists on CareerPath — the old mock fabricated it; it is dropped.
  */
@@ -39,7 +40,8 @@ export interface CareerPathListParams {
 
 /** Shape of `StoreCareerPathRequest`'s validated fields. */
 export interface CareerPathInput {
-  company_id: number;
+  /** Injected by the backend's auth middleware; omit from form payloads. */
+  company_id?: number;
   name: string;
   job_family?: string | null;
 }

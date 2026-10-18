@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/Button';
 import { Field, Input, Select, Textarea } from '@/components/ui/form';
 import { userFacingMessage } from '@/lib/api/errors';
 import type { ApiError } from '@/lib/api/errors';
+import { getCurrentUserId } from '@/auth/session';
 import { useCreatePayrollRun, useUpdatePayrollRun } from '../api/queries';
 import type { PayrollRunInput, PayrollRunStatus } from '../api/resource';
 import type { PayrollRunWire } from '../api/schema';
@@ -22,8 +23,6 @@ import type { PayrollRunWire } from '../api/schema';
  *  - Save button is wired via HTML5 `form="payroll-run-form"` attribute.
  *  - `fieldErrorsFrom()` maps Laravel 422 `{errors:{field:[msg]}}` bodies to
  *    RHF `setError` calls.
- *  - `company_id` (1) and `created_by` (1) are hardcoded pending auth context.
- *
  * SKIPPED: /calculate and /approve actions — no auth context yet.
  */
 
@@ -84,8 +83,7 @@ function buildDefaultValues(run: PayrollRunWire | undefined): PayrollRunFormValu
 
 function toPayrollRunInput(values: PayrollRunFormValues): PayrollRunInput {
   return {
-    company_id: 1,
-    created_by: 1,
+    created_by: getCurrentUserId(),
     period_month: Number(values.period_month),
     period_year: Number(values.period_year),
     status: (values.status as PayrollRunStatus) || null,

@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/Button';
 import { Field, Input, Select, Textarea } from '@/components/ui/form';
 import { userFacingMessage } from '@/lib/api/errors';
 import type { ApiError } from '@/lib/api/errors';
+import { getCurrentUserId } from '@/auth/session';
 import { useEmployeeList } from '@/features/employees/api/queries';
 import { useCreateContract, useUpdateContract } from '../api/queries';
 import type { ContractInput, ContractStatus, ContractType } from '../api/resource';
@@ -82,8 +83,7 @@ function toContractInput(values: ContractFormValues): ContractInput {
     terms: values.terms.trim() || null,
     status: (values.status as ContractStatus) || null,
     signed_at: values.signed_at.trim() || null,
-    // `created_by` is required by the backend; placeholder until auth is wired.
-    created_by: 1,
+    created_by: getCurrentUserId(),
   };
 }
 

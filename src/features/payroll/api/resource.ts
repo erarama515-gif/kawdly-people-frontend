@@ -4,12 +4,18 @@ import type {
   PayrollRunWire,
   PayslipListWire,
   PayslipWire,
+  EmployeeSalaryListWire,
+  EmployeeSalaryWire,
+  PayslipItemListWire,
+  PayslipItemWire,
 } from './schema';
 
 /**
- * The Payroll module's remote resource contract for TWO resources:
- *   1. PayrollRun  — /api/v1/payroll-runs
- *   2. Payslip     — /api/v1/payslips
+ * The Payroll module's remote resource contract for FOUR resources:
+ *   1. PayrollRun     — /api/v1/payroll-runs
+ *   2. Payslip        — /api/v1/payslips
+ *   3. EmployeeSalary — /api/v1/employee-salaries
+ *   4. PayslipItem    — /api/v1/payslip-items
  *
  * Components never call these directly — they go through the query hooks in
  * `queries.ts`. Each resource has an HTTP implementation and a mock, with mock
@@ -21,7 +27,7 @@ import type {
  *       status (nullable enum: draft|calculating|calculated|reviewing|approved|posted|paid),
  *       total_gross (nullable int), total_deductions (nullable int), total_net (nullable int),
  *       employee_count (nullable int), notes (nullable str), is_locked (nullable bool),
- *       created_by (req int — hardcoded 1)
+ *       created_by (req int — authenticated user id; overwritten server-side)
  *   - StorePayslipRequest:
  *       payroll_run_id (req int), employee_id (req int),
  *       basic_salary (req int), gross_salary (req int), total_earnings (req int),
@@ -29,15 +35,22 @@ import type {
  *       working_days (nullable numeric), present_days (nullable numeric),
  *       absent_days (nullable numeric), overtime_hours (nullable numeric),
  *       overtime_amount (nullable int), status (nullable enum: draft|finalized|paid)
+ *   - StoreEmployeeSalaryRequest:
+ *       employee_id (req int/exists:employees), salary_structure_id (req int/exists:salary_structures),
+ *       effective_date (req date), components (req array), gross_salary (req int),
+ *       net_salary (req int), is_current (nullable bool)
+ *   - StorePayslipItemRequest:
+ *       payslip_id (req int/exists:payslips), salary_component_id (nullable int/exists:salary_components),
+ *       description (req str max:255), type (req enum: earning|deduction), amount (req int),
+ *       is_taxable (nullable bool), sort_order (nullable int)
  *
- * SKIPPED actions (same precedent as Loans skipping /approve):
- *   POST /api/v1/payroll-runs/{id}/calculate  — requires auth/session context
- *   POST /api/v1/payroll-runs/{id}/approve    — requires auth/session context
- * Wire both up as a follow-up once authentication is in place.
+ * Pipeline actions:
+ *   POST /api/v1/payroll-runs/{id}/calculate  — draft → calculated (runs the calc engine)
+ *   POST /api/v1/payroll-runs/{id}/approve    — calculated → approved (locks the run)
  *
- * OUT OF SCOPE for this task (separate follow-up):
- *   EmployeeSalary  (/api/v1/employee-salaries)
- *   PayslipItem     (/api/v1/payslip-items)
+ * PayslipItem permissions deliberately reuse `payroll.payslip.*` (line-items of
+ * a payslip) rather than having a dedicated `payslip_item.*` set — see
+ * backend/routes/api/payroll.php.
  */
 
 // ─── PayrollRun ───────────────────────────────────────────────────────────────
@@ -71,11 +84,20 @@ export interface PayrollRunListParams {
   page?: number;
   perPage?: number;
   status?: PayrollRunStatus | undefined;
+  /**
+   * Inclusive range filter on the pay period (`YYYY-MM` or `YYYY-MM-DD`),
+   * mapped to `period_from`/`period_to` on the wire. There is no single date
+   * column on `payroll_runs` — the backend compares the `(period_year,
+   * period_month)` tuple against these.
+   */
+  periodFrom?: string | undefined;
+  periodTo?: string | undefined;
 }
 
 /** Shape of `StorePayrollRunRequest`'s validated fields. */
 export interface PayrollRunInput {
-  company_id: number;
+  /** Injected by the backend's auth middleware; omit from form payloads. */
+  company_id?: number;
   period_month: number;
   period_year: number;
   status?: PayrollRunStatus | null;
@@ -97,6 +119,10 @@ export interface PayrollRunApi {
   create(context: FetchContext, input: PayrollRunInput): Promise<PayrollRunWire>;
   update(context: FetchContext, id: number, input: PayrollRunUpdateInput): Promise<PayrollRunWire>;
   remove(context: FetchContext, id: number): Promise<void>;
+  /** `POST /payroll-runs/{id}/calculate` — draft/calculated → calculated, computes payslips. */
+  calculate(context: FetchContext, id: number): Promise<PayrollRunWire>;
+  /** `POST /payroll-runs/{id}/approve` — calculated → approved, locks the run. */
+  approve(context: FetchContext, id: number): Promise<PayrollRunWire>;
 }
 
 export const payrollRunKeys = {
@@ -152,4 +178,87 @@ export interface PayslipApi {
 export const payslipKeys = {
   all: ['payslips'] as const satisfies QueryKey,
   list: (params: PayslipListParams) => ['payslips', 'list', params] as const satisfies QueryKey,
+};
+
+// ─── EmployeeSalary ───────────────────────────────────────────────────────────
+
+export interface EmployeeSalaryListParams {
+  page?: number;
+  perPage?: number;
+  employee_id?: number | undefined;
+  salary_structure_id?: number | undefined;
+  is_current?: boolean | undefined;
+}
+
+/**
+ * Shape of `StoreEmployeeSalaryRequest`'s validated fields. `components` is a
+ * required JSON array on the backend; the form does not expose a line-item
+ * editor for it yet, so the UI always submits `[]` rather than inventing a
+ * shape — the real line items live on SalaryComponent/PayslipItem instead.
+ */
+export interface EmployeeSalaryInput {
+  employee_id: number;
+  salary_structure_id: number;
+  effective_date: string;
+  components: unknown[];
+  gross_salary: number;
+  net_salary: number;
+  is_current?: boolean | null;
+}
+
+/** `UpdateEmployeeSalaryRequest` wraps the same fields in `sometimes` — any subset is valid. */
+export type EmployeeSalaryUpdateInput = Partial<EmployeeSalaryInput>;
+
+export interface EmployeeSalaryApi {
+  list(context: FetchContext, params: EmployeeSalaryListParams): Promise<EmployeeSalaryListWire>;
+  create(context: FetchContext, input: EmployeeSalaryInput): Promise<EmployeeSalaryWire>;
+  update(context: FetchContext, id: number, input: EmployeeSalaryUpdateInput): Promise<EmployeeSalaryWire>;
+  remove(context: FetchContext, id: number): Promise<void>;
+}
+
+export const employeeSalaryKeys = {
+  all: ['employee-salaries'] as const satisfies QueryKey,
+  list: (params: EmployeeSalaryListParams) =>
+    ['employee-salaries', 'list', params] as const satisfies QueryKey,
+};
+
+// ─── PayslipItem ──────────────────────────────────────────────────────────────
+
+/** Mirrors `SalaryComponentType` from the compensation module — same enum. */
+export type PayslipItemType = 'earning' | 'deduction';
+
+export interface PayslipItemListParams {
+  page?: number;
+  perPage?: number;
+  payslip_id?: number | undefined;
+  salary_component_id?: number | undefined;
+  type?: PayslipItemType | undefined;
+  is_taxable?: boolean | undefined;
+}
+
+/** Shape of `StorePayslipItemRequest`'s validated fields. */
+export interface PayslipItemInput {
+  payslip_id: number;
+  salary_component_id?: number | null;
+  description: string;
+  type: PayslipItemType;
+  amount: number;
+  is_taxable?: boolean | null;
+  sort_order?: number | null;
+}
+
+/** `UpdatePayslipItemRequest` wraps the same fields in `sometimes` — any subset is valid. */
+export type PayslipItemUpdateInput = Partial<PayslipItemInput>;
+
+export interface PayslipItemApi {
+  list(context: FetchContext, params: PayslipItemListParams): Promise<PayslipItemListWire>;
+  create(context: FetchContext, input: PayslipItemInput): Promise<PayslipItemWire>;
+  update(context: FetchContext, id: number, input: PayslipItemUpdateInput): Promise<PayslipItemWire>;
+  remove(context: FetchContext, id: number): Promise<void>;
+}
+
+export const payslipItemKeys = {
+  all: ['payslip-items'] as const satisfies QueryKey,
+  list: (params: PayslipItemListParams) =>
+    ['payslip-items', 'list', params] as const satisfies QueryKey,
 };

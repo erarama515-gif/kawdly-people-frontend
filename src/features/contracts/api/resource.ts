@@ -29,9 +29,9 @@ export interface ContractListParams {
 /**
  * Shape of `StoreContractRequest`'s validated fields.
  * Field names match Laravel column names verbatim (snake_case).
- * `created_by` is required by the backend — the UI passes `1` as a
- * placeholder until auth context is wired (same approach as Employees'
- * `company_id`).
+ * `created_by` is sent from the authenticated user id (`getCurrentUserId()`).
+ * The controller also overwrites it with `$request->user()->id`, so the value
+ * is authoritative server-side either way.
  */
 export interface ContractInput {
   employee_id: number;
@@ -51,11 +51,19 @@ export interface ContractInput {
 /** `UpdateContractRequest` wraps fields in `sometimes` — any subset is valid. */
 export type ContractUpdateInput = Partial<ContractInput>;
 
+/** Shape of `TerminateContractRequest`'s validated fields — both optional. */
+export interface ContractTerminateInput {
+  termination_date?: string | null;
+  reason?: string | null;
+}
+
 export interface ContractApi {
   list(context: FetchContext, params: ContractListParams): Promise<ContractListWire>;
   create(context: FetchContext, input: ContractInput): Promise<ContractWire>;
   update(context: FetchContext, id: number, input: ContractUpdateInput): Promise<ContractWire>;
   remove(context: FetchContext, id: number): Promise<void>;
+  /** `POST /contracts/{id}/terminate` — sets status=terminated, optionally end_date + a reason note. */
+  terminate(context: FetchContext, id: number, input: ContractTerminateInput): Promise<ContractWire>;
 }
 
 /** Cache keys. Every contracts read hangs off `all` so invalidation after a write is total. */
