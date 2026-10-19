@@ -29,8 +29,6 @@ import type { SalaryComponentWire } from '../api/schema';
  *  - `percentage_of`: optional native <select> fed by useSalaryComponentList filtered to same
  *    structure (only shown when calculation_type === 'percentage')
  *
- * `company_id` is hard-coded to 1 as a placeholder.
- *
  * Key collision avoidance: the i18n keys for the enum labels use distinct
  * parent paths — `compensation.typeOptions.*` and
  * `compensation.calculationTypeOptions.*` — not `compensation.form.type.*`
@@ -38,7 +36,6 @@ import type { SalaryComponentWire } from '../api/schema';
  */
 
 const REQUIRED = 'common.requiredField';
-const COMPANY_ID = 1;
 
 const COMPONENT_TYPES: readonly SalaryComponentType[] = ['earning', 'deduction'];
 const CALCULATION_TYPES: readonly SalaryComponentCalculationType[] = ['fixed', 'percentage', 'formula'];
@@ -92,7 +89,6 @@ function buildDefaultValues(
 
 function toInput(values: ComponentFormValues): SalaryComponentInput {
   return {
-    company_id: COMPANY_ID,
     salary_structure_id: Number(values.salary_structure_id),
     name: values.name,
     code: values.code.trim() || null,

@@ -1,6 +1,5 @@
 import { env } from '@/config/env';
-import { createHttpClient } from '@/lib/api/http';
-import type { HttpClient } from '@/lib/api/http';
+import { appHttpClient as http } from '@/lib/api/appHttpClient';
 import {
   mockSalaryStructureApi,
   mockSalaryComponentApi,
@@ -29,13 +28,6 @@ import type {
  * pointed at `/api/v1/salary-structures` and `/api/v1/salary-components`.
  * Mock is the active default (see `env.useMockApi`).
  */
-
-const http: HttpClient = createHttpClient({
-  baseUrl: env.apiBaseUrl || '/api/v1',
-  timeoutMs: env.requestTimeoutMs,
-  retries: env.requestRetries,
-  backoffMs: env.requestBackoffMs,
-});
 
 function requireData<T>(data: T | undefined, endpoint: string): T {
   if (data === undefined) throw new Error(`${endpoint} returned an empty body`);

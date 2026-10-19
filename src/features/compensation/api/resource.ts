@@ -32,7 +32,8 @@ export interface SalaryStructureListParams {
 
 /** Shape of `StoreSalaryStructureRequest`'s validated fields. */
 export interface SalaryStructureInput {
-  company_id: number;
+  /** Injected by the backend's auth middleware; omit from form payloads. */
+  company_id?: number;
   name: string;
   description?: string | null;
   is_default?: boolean | null;
@@ -70,7 +71,8 @@ export interface SalaryComponentListParams {
 
 /** Shape of `StoreSalaryComponentRequest`'s validated fields. */
 export interface SalaryComponentInput {
-  company_id: number;
+  /** Injected by the backend's auth middleware; omit from form payloads. */
+  company_id?: number;
   salary_structure_id: number;
   name: string;
   code?: string | null;

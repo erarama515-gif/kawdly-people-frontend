@@ -18,12 +18,9 @@ import type { SalaryStructureWire } from '../api/schema';
  * zod. Footer Save button uses `form="salary-structure-form"` HTML5 attribute
  * so the button can live outside the `<form>` JSX (Dialog footer is a
  * separate div).
- *
- * `company_id` is hard-coded to 1 as a placeholder (no auth context yet).
  */
 
 const REQUIRED = 'common.requiredField';
-const COMPANY_ID = 1;
 
 const structureFormSchema = z.object({
   name: z.string().trim().min(1, REQUIRED).max(255),
@@ -48,7 +45,6 @@ function buildDefaultValues(record: SalaryStructureWire | undefined): StructureF
 
 function toInput(values: StructureFormValues): SalaryStructureInput {
   return {
-    company_id: COMPANY_ID,
     name: values.name,
     description: values.description.trim() || null,
     is_default: values.is_default === 'true',

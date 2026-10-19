@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { Pencil, Plus, Search, Trash2 } from 'lucide-react';
 import { cn } from '@/lib/cn';
 import { Card } from '@/components/ui/Card';
+import { SkeletonTable } from '@/components/ui/SkeletonTable';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { Button } from '@/components/ui/Button';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
@@ -18,6 +19,11 @@ import type { SalaryStructureListParams, SalaryComponentListParams, SalaryCompon
 import type { SalaryStructureWire, SalaryComponentWire } from '../api/schema';
 import { SalaryStructureFormDialog } from './SalaryStructureFormDialog';
 import { SalaryComponentFormDialog } from './SalaryComponentFormDialog';
+import { EmployeeSalaryFormDialog } from './EmployeeSalaryFormDialog';
+import { useEmployeeList } from '@/features/employees/api/queries';
+import { useEmployeeSalaryList, useDeleteEmployeeSalary } from '@/features/payroll/api/queries';
+import type { EmployeeSalaryListParams } from '@/features/payroll/api/resource';
+import type { EmployeeSalaryWire } from '@/features/payroll/api/schema';
 
 /**
  * Compensation module live-data page.
@@ -41,6 +47,7 @@ import { SalaryComponentFormDialog } from './SalaryComponentFormDialog';
 
 const STRUCTURES_PER_PAGE = 10;
 const COMPONENTS_PER_PAGE = 10;
+const ASSIGNMENTS_PER_PAGE = 10;
 
 // ─── Stat Card ────────────────────────────────────────────────────────────────
 
@@ -140,7 +147,7 @@ function SearchInput({
 }) {
   return (
     <label className="relative flex items-center">
-      <span className="pointer-events-none absolute left-3 text-ink-faint">
+      <span className="pointer-events-none absolute start-3 text-ink-faint">
         <Search className="h-3.5 w-3.5" strokeWidth={1.75} aria-hidden="true" />
       </span>
       <input
@@ -149,7 +156,7 @@ function SearchInput({
         value={value}
         onChange={(e) => onChange(e.target.value)}
         className={cn(
-          'h-9 rounded-full border border-hairline bg-surface pl-8 pr-4 text-[13px] text-ink placeholder:text-ink-faint',
+          'h-9 rounded-full border border-hairline bg-surface ps-8 pe-4 text-[13px] text-ink placeholder:text-ink-faint',
           'focus:outline-none focus:ring-1 focus:ring-navy/40',
           'w-52',
         )}
@@ -236,7 +243,7 @@ function SalaryStructuresSection() {
 
       {/* Loading */}
       {state.status === 'pending' && records.length === 0 ? (
-        <Card className="px-5 py-8 text-center text-body-sm text-ink-muted">{t('common.loading')}</Card>
+        <SkeletonTable />
       ) : null}
 
       {/* Empty */}
@@ -469,7 +476,7 @@ function SalaryComponentsSection() {
 
       {/* Loading */}
       {state.status === 'pending' && records.length === 0 ? (
-        <Card className="px-5 py-8 text-center text-body-sm text-ink-muted">{t('common.loading')}</Card>
+        <SkeletonTable />
       ) : null}
 
       {/* Empty */}
@@ -602,6 +609,257 @@ function SalaryComponentsSection() {
   );
 }
 
+// ─── Employee Salary Assignments Section ──────────────────────────────────────
+
+function EmployeeSalaryAssignmentsSection() {
+  const { t } = useTranslation();
+
+  const [page, setPage] = useState(1);
+  const [employeeFilter, setEmployeeFilter] = useState<number | undefined>(undefined);
+  const [structureFilter, setStructureFilter] = useState<number | undefined>(undefined);
+  const [currentFilter, setCurrentFilter] = useState<'all' | 'current' | 'historical'>('all');
+
+  const [formOpen, setFormOpen] = useState(false);
+  const [editTarget, setEditTarget] = useState<EmployeeSalaryWire | undefined>(undefined);
+  const [deleteTarget, setDeleteTarget] = useState<EmployeeSalaryWire | undefined>(undefined);
+
+  useEffect(() => {
+    setPage(1);
+  }, [employeeFilter, structureFilter, currentFilter]);
+
+  const params = useMemo<EmployeeSalaryListParams>(
+    () => ({
+      page,
+      perPage: ASSIGNMENTS_PER_PAGE,
+      employee_id: employeeFilter,
+      salary_structure_id: structureFilter,
+      is_current: currentFilter === 'all' ? undefined : currentFilter === 'current',
+    }),
+    [page, employeeFilter, structureFilter, currentFilter],
+  );
+
+  const { state, refetch } = useEmployeeSalaryList(params);
+  const deleteMutation = useDeleteEmployeeSalary(params);
+
+  // Employees + structures for filter dropdowns and name resolution.
+  const { state: employeeState } = useEmployeeList({ page: 1, perPage: 100 });
+  const employees = employeeState.data?.data ?? [];
+  const { state: structureState } = useSalaryStructureList({ page: 1, perPage: 100 });
+  const structures = structureState.data?.data ?? [];
+
+  const records = state.data?.data ?? [];
+  const meta = state.data?.meta;
+
+  function openAddForm() {
+    setEditTarget(undefined);
+    setFormOpen(true);
+  }
+
+  function openEditForm(record: EmployeeSalaryWire) {
+    setEditTarget(record);
+    setFormOpen(true);
+  }
+
+  async function confirmDelete() {
+    if (!deleteTarget) return;
+    const result = await deleteMutation.mutate(deleteTarget.id);
+    if (result !== undefined || deleteMutation.error === undefined) setDeleteTarget(undefined);
+  }
+
+  const structureName = (id: number) => structures.find((s) => s.id === id)?.name ?? `#${id}`;
+
+  function employeeName(record: EmployeeSalaryWire): string {
+    if (record.employee) return `${record.employee.first_name} ${record.employee.last_name}`;
+    const emp = employees.find((e) => e.id === record.employee_id);
+    return emp ? `${emp.first_name} ${emp.last_name}` : `#${record.employee_id}`;
+  }
+
+  return (
+    <section className="flex flex-col gap-3">
+      {/* Section header */}
+      <div className="flex items-center justify-between gap-3">
+        <h2 className="text-body font-semibold text-ink">{t('compensation.employeeSalary.title')}</h2>
+        <Button variant="primary" onClick={openAddForm}>
+          <Plus className="h-3.5 w-3.5" strokeWidth={2} aria-hidden="true" />
+          {t('compensation.employeeSalary.add')}
+        </Button>
+      </div>
+
+      {/* Toolbar: filters */}
+      <div className="flex flex-wrap items-center gap-3">
+        <select
+          value={employeeFilter ?? ''}
+          onChange={(e) => setEmployeeFilter(e.target.value ? Number(e.target.value) : undefined)}
+          className="h-9 rounded-full border border-hairline bg-surface px-3 text-[13px] text-ink focus:outline-none focus:ring-1 focus:ring-navy/40"
+        >
+          <option value="">{t('compensation.employeeSalary.filterAllEmployees')}</option>
+          {employees.map((emp) => (
+            <option key={emp.id} value={emp.id}>
+              {emp.first_name} {emp.last_name} — {emp.employee_number}
+            </option>
+          ))}
+        </select>
+
+        <select
+          value={structureFilter ?? ''}
+          onChange={(e) => setStructureFilter(e.target.value ? Number(e.target.value) : undefined)}
+          className="h-9 rounded-full border border-hairline bg-surface px-3 text-[13px] text-ink focus:outline-none focus:ring-1 focus:ring-navy/40"
+        >
+          <option value="">{t('compensation.employeeSalary.filterAllStructures')}</option>
+          {structures.map((s) => (
+            <option key={s.id} value={s.id}>
+              {s.name}
+            </option>
+          ))}
+        </select>
+
+        <div className="flex items-center gap-1.5">
+          {(['all', 'current', 'historical'] as const).map((opt) => (
+            <button
+              key={opt}
+              type="button"
+              onClick={() => setCurrentFilter(opt)}
+              className={cn(
+                'rounded-full border px-3 py-1 text-[12px] font-semibold transition-colors',
+                currentFilter === opt
+                  ? 'border-navy bg-navy text-on-navy'
+                  : 'border-hairline bg-surface text-ink-muted hover:border-navy/40 hover:text-ink',
+              )}
+            >
+              {t(`compensation.employeeSalary.filter${opt === 'all' ? 'All' : opt === 'current' ? 'Current' : 'Historical'}`)}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Load failure */}
+      {state.error ? (
+        <Card className="flex items-center justify-between gap-3 px-5 py-3 text-body-sm text-coral">
+          <span>{userFacingMessage(state.error) || t('compensation.loadFailed')}</span>
+          <Button variant="secondary" onClick={() => void refetch()}>
+            {t('common.retry')}
+          </Button>
+        </Card>
+      ) : null}
+
+      {/* Loading */}
+      {state.status === 'pending' && records.length === 0 ? (
+        <SkeletonTable />
+      ) : null}
+
+      {/* Empty */}
+      {state.status !== 'pending' && records.length === 0 ? (
+        <Card className="px-5 py-8 text-center text-body-sm text-ink-muted">
+          {t('compensation.employeeSalary.empty')}
+        </Card>
+      ) : null}
+
+      {records.length > 0 ? (
+        <>
+          {/* Desktop table */}
+          <Card className="hidden overflow-hidden lg:block">
+            <div className="border-b border-divider px-5 py-2.5">
+              <div className="grid grid-cols-[1.2fr_1fr_110px_110px_110px_90px_auto] gap-4">
+                {(
+                  ['employee', 'structure', 'effectiveDate', 'gross', 'net', 'current', 'actions'] as const
+                ).map((col) => (
+                  <span
+                    key={col}
+                    className="text-caption font-semibold uppercase tracking-wide text-ink-faint"
+                  >
+                    {t(`compensation.employeeSalary.col.${col}`)}
+                  </span>
+                ))}
+              </div>
+            </div>
+
+            {records.map((rec, idx) => (
+              <div
+                key={rec.id}
+                className={cn(
+                  'grid grid-cols-[1.2fr_1fr_110px_110px_110px_90px_auto] items-center gap-4 px-5 py-3',
+                  idx < records.length - 1 && 'border-b border-divider',
+                  'transition-colors hover:bg-surface/60',
+                )}
+              >
+                <span className="truncate text-body-sm font-semibold text-ink">{employeeName(rec)}</span>
+                <span className="truncate text-body-sm text-ink-muted">
+                  {rec.salaryStructure?.name ?? structureName(rec.salary_structure_id)}
+                </span>
+                <span className="nums font-mono text-[12px] text-ink-muted">{rec.effective_date.slice(0, 10)}</span>
+                <span className="nums font-mono text-body-sm text-ink">{rec.gross_salary.toLocaleString()}</span>
+                <span className="nums font-mono text-body-sm text-ink">{rec.net_salary.toLocaleString()}</span>
+                <BoolPill value={rec.is_current} />
+                <RowActions onEdit={() => openEditForm(rec)} onDelete={() => setDeleteTarget(rec)} />
+              </div>
+            ))}
+          </Card>
+
+          {/* Mobile cards */}
+          <div className="flex flex-col gap-3 lg:hidden">
+            {records.map((rec) => (
+              <Card key={rec.id} className="flex flex-col gap-3 p-4">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="truncate text-body-sm font-semibold text-ink">{employeeName(rec)}</p>
+                    <p className="truncate text-caption text-ink-muted">
+                      {rec.salaryStructure?.name ?? structureName(rec.salary_structure_id)}
+                    </p>
+                  </div>
+                  <div className="flex shrink-0 flex-col items-end gap-1.5">
+                    <BoolPill value={rec.is_current} />
+                    <RowActions onEdit={() => openEditForm(rec)} onDelete={() => setDeleteTarget(rec)} />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3 border-t border-divider pt-3">
+                  <div className="flex flex-col gap-0.5">
+                    <span className="text-caption text-ink-faint">{t('compensation.employeeSalary.col.effectiveDate')}</span>
+                    <span className="nums font-mono text-body-sm text-ink">{rec.effective_date.slice(0, 10)}</span>
+                  </div>
+                  <div className="flex flex-col gap-0.5">
+                    <span className="text-caption text-ink-faint">{t('compensation.employeeSalary.col.gross')}</span>
+                    <span className="nums font-mono text-body-sm text-ink">{rec.gross_salary.toLocaleString()}</span>
+                  </div>
+                  <div className="flex flex-col gap-0.5">
+                    <span className="text-caption text-ink-faint">{t('compensation.employeeSalary.col.net')}</span>
+                    <span className="nums font-mono text-body-sm text-ink">{rec.net_salary.toLocaleString()}</span>
+                  </div>
+                </div>
+              </Card>
+            ))}
+          </div>
+
+          {meta ? (
+            <Pagination
+              currentPage={meta.current_page}
+              lastPage={meta.last_page}
+              total={meta.total}
+              perPage={meta.per_page}
+              onPageChange={setPage}
+            />
+          ) : null}
+        </>
+      ) : null}
+
+      <EmployeeSalaryFormDialog open={formOpen} onOpenChange={setFormOpen} record={editTarget} />
+
+      <ConfirmDialog
+        open={deleteTarget !== undefined}
+        onOpenChange={(open) => !open && setDeleteTarget(undefined)}
+        title={t('compensation.employeeSalary.deleteConfirm.title')}
+        description={
+          deleteTarget
+            ? t('compensation.employeeSalary.deleteConfirm.description', { name: employeeName(deleteTarget) })
+            : undefined
+        }
+        isLoading={deleteMutation.isPending}
+        onConfirm={() => void confirmDelete()}
+      />
+    </section>
+  );
+}
+
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export function CompensationPage() {
@@ -611,13 +869,14 @@ export function CompensationPage() {
   const { state: allStructuresState } = useSalaryStructureList({ page: 1, perPage: 1 });
   const { state: activeStructuresState } = useSalaryStructureList({ page: 1, perPage: 1, isActive: true });
   const { state: allComponentsState } = useSalaryComponentList({ page: 1, perPage: 1 });
+  const { state: allAssignmentsState } = useEmployeeSalaryList({ page: 1, perPage: 1 });
 
   return (
     <div className="flex flex-col gap-8">
       <PageHeader title={t('compensation.title')} />
 
       {/* Stat strip — all values from real meta.total */}
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-4">
         <StatCard
           label={t('compensation.stat.totalStructures')}
           value={allStructuresState.data?.meta.total}
@@ -631,11 +890,17 @@ export function CompensationPage() {
           label={t('compensation.stat.totalComponents')}
           value={allComponentsState.data?.meta.total}
         />
+        <StatCard
+          label={t('compensation.stat.totalAssignments')}
+          value={allAssignmentsState.data?.meta.total}
+        />
       </div>
 
       <SalaryStructuresSection />
 
       <SalaryComponentsSection />
+
+      <EmployeeSalaryAssignmentsSection />
     </div>
   );
 }
