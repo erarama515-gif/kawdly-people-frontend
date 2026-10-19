@@ -1,18 +1,25 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Pencil, Plus, Search, Trash2 } from 'lucide-react';
+import { ExportButton } from '@/components/ui/ExportButton';
+import type { ExportColumn } from '@/components/ui/ExportButton';
 import { cn } from '@/lib/cn';
 import { Card } from '@/components/ui/Card';
+import { SkeletonTable } from '@/components/ui/SkeletonTable';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { Avatar } from '@/components/ui/Avatar';
 import { Button } from '@/components/ui/Button';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { Pagination } from '@/components/ui/Pagination';
+import { SortableHeader } from '@/components/ui/SortableHeader';
+import { useSort, sortData } from '@/hooks/useSort';
 import { userFacingMessage } from '@/lib/api/errors';
 import { useDeleteAttendance, useAttendanceList } from '../api/queries';
 import type { AttendanceListParams, AttendanceStatus } from '../api/resource';
 import type { AttendanceWire } from '../api/schema';
 import { AttendanceFormDialog } from './AttendanceFormDialog';
+import { DateRangeFilter } from '@/components/ui/DateRangeFilter';
+import type { DateRange } from '@/components/ui/DateRangeFilter';
 
 /**
  * Attendance module live-data page. Mirrors `EmployeesPage` conventions:
@@ -134,6 +141,7 @@ export function AttendancePage() {
   const [searchInput, setSearchInput] = useState('');
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<AttendanceStatus | 'all'>('all');
+  const [dateRange, setDateRange] = useState<DateRange | null>(null);
   const [page, setPage] = useState(1);
 
   const [formOpen, setFormOpen] = useState(false);
@@ -149,7 +157,7 @@ export function AttendancePage() {
   // A new search/filter invalidates the current page number.
   useEffect(() => {
     setPage(1);
-  }, [search, statusFilter]);
+  }, [search, statusFilter, dateRange]);
 
   const params = useMemo<AttendanceListParams>(
     () => ({
@@ -157,8 +165,10 @@ export function AttendancePage() {
       perPage: PER_PAGE,
       search: search || undefined,
       status: statusFilter === 'all' ? undefined : statusFilter,
+      dateFrom: dateRange?.from,
+      dateTo: dateRange?.to,
     }),
-    [page, search, statusFilter],
+    [page, search, statusFilter, dateRange],
   );
 
   const { state, refetch } = useAttendanceList(params);
@@ -169,8 +179,42 @@ export function AttendancePage() {
 
   const deleteMutation = useDeleteAttendance(params);
 
-  const records = state.data?.data ?? [];
+  // Client-side sorting
+  type AttendanceSortCol = 'employee' | 'date' | 'checkIn' | 'checkOut' | 'hours' | 'late' | 'status';
+  const { sort, toggle: toggleSort } = useSort<AttendanceSortCol>();
+  const SORT_ACCESSORS: Record<AttendanceSortCol, (r: AttendanceWire) => string | number | undefined> = {
+    employee: (r) => `${r.employee?.first_name ?? ''} ${r.employee?.last_name ?? ''}`,
+    date:     (r) => r.date,
+    checkIn:  (r) => r.check_in ?? '',
+    checkOut: (r) => r.check_out ?? '',
+    hours:    (r) => (r.regular_hours ? parseFloat(r.regular_hours) : 0),
+    late:     (r) => r.late_minutes ?? 0,
+    status:   (r) => r.status,
+  };
+  const rawRecords = state.data?.data ?? [];
+  // Date range is now applied server-side via `params.dateFrom`/`dateTo` (see above).
+  const records = sortData(rawRecords, sort, SORT_ACCESSORS);
   const meta = state.data?.meta;
+
+  const exportColumns: ExportColumn[] = [
+    { key: 'employee', label: t('attendance.table.employee') },
+    { key: 'date', label: t('attendance.table.date') },
+    { key: 'checkIn', label: t('attendance.table.checkIn') },
+    { key: 'checkOut', label: t('attendance.table.checkOut') },
+    { key: 'hours', label: t('attendance.table.hours') },
+    { key: 'late', label: t('attendance.table.late') },
+    { key: 'status', label: t('attendance.table.status') },
+  ];
+
+  const exportData = records.map((r) => ({
+    employee: r.employee ? `${r.employee.first_name} ${r.employee.last_name}` : `#${r.employee_id}`,
+    date: formatDate(r.date),
+    checkIn: formatTime(r.check_in),
+    checkOut: formatTime(r.check_out),
+    hours: r.regular_hours ? parseFloat(r.regular_hours).toFixed(1) : '',
+    late: r.late_minutes && r.late_minutes > 0 ? `${r.late_minutes}m` : '',
+    status: t(`attendance.status.${r.status}`),
+  }));
 
   function openAddForm() {
     setEditTarget(undefined);
@@ -193,10 +237,13 @@ export function AttendancePage() {
       <PageHeader
         title={t('attendance.title')}
         actions={
-          <Button variant="primary" onClick={openAddForm}>
-            <Plus className="h-3.5 w-3.5" strokeWidth={2} aria-hidden="true" />
-            {t('attendance.addRecord')}
-          </Button>
+          <div className="flex items-center gap-2">
+            <ExportButton data={exportData} columns={exportColumns} filename="attendance" />
+            <Button variant="primary" onClick={openAddForm}>
+              <Plus className="h-3.5 w-3.5" strokeWidth={2} aria-hidden="true" />
+              {t('attendance.addRecord')}
+            </Button>
+          </div>
         }
       />
 
@@ -211,7 +258,7 @@ export function AttendancePage() {
       <div className="mb-4 flex flex-wrap items-center gap-3">
         {/* Search */}
         <label className="relative flex items-center">
-          <span className="pointer-events-none absolute left-3 text-ink-faint">
+          <span className="pointer-events-none absolute start-3 text-ink-faint">
             <Search className="h-3.5 w-3.5" strokeWidth={1.75} aria-hidden="true" />
           </span>
           <input
@@ -220,7 +267,7 @@ export function AttendancePage() {
             value={searchInput}
             onChange={(e) => setSearchInput(e.target.value)}
             className={cn(
-              'h-9 rounded-full border border-hairline bg-surface pl-8 pr-4 text-[13px] text-ink placeholder:text-ink-faint',
+              'h-9 rounded-full border border-hairline bg-surface ps-8 pe-4 text-[13px] text-ink placeholder:text-ink-faint',
               'focus:outline-none focus:ring-1 focus:ring-navy/40',
               'w-52',
             )}
@@ -245,6 +292,9 @@ export function AttendancePage() {
             </button>
           ))}
         </div>
+
+        {/* Date range filter */}
+        <DateRangeFilter value={dateRange} onChange={setDateRange} />
       </div>
 
       {/* Load failure */}
@@ -259,7 +309,7 @@ export function AttendancePage() {
 
       {/* Initial load */}
       {state.status === 'pending' && records.length === 0 ? (
-        <Card className="px-5 py-10 text-center text-body-sm text-ink-muted">{t('common.loading')}</Card>
+        <SkeletonTable />
       ) : null}
 
       {/* Empty state */}
@@ -275,9 +325,7 @@ export function AttendancePage() {
             <div className="border-b border-divider px-5 py-3">
               <div className="grid grid-cols-[2fr_90px_110px_110px_70px_70px_110px_auto] gap-4">
                 {(['employee', 'date', 'checkIn', 'checkOut', 'hours', 'late', 'status'] as const).map((col) => (
-                  <span key={col} className="text-caption font-semibold uppercase tracking-wide text-ink-faint">
-                    {t(`attendance.table.${col}`)}
-                  </span>
+                  <SortableHeader key={col} column={col} label={t(`attendance.table.${col}`)} sort={sort} onSort={toggleSort} />
                 ))}
                 <span className="text-caption font-semibold uppercase tracking-wide text-ink-faint">
                   {t('attendance.table.actions')}

@@ -158,6 +158,8 @@ export const mockAttendanceApi: AttendanceApi = {
     const filtered = store.filter((row) => {
       if (params.status && row.status !== params.status) return false;
       if (params.employeeId && row.employee_id !== params.employeeId) return false;
+      if (params.dateFrom && row.date < params.dateFrom) return false;
+      if (params.dateTo && row.date > params.dateTo) return false;
       if (!search) return true;
       const emp = EMPLOYEE_STUBS.find((e) => e.id === row.employee_id);
       if (!emp) return false;

@@ -1,6 +1,5 @@
 import { env } from '@/config/env';
-import { createHttpClient } from '@/lib/api/http';
-import type { HttpClient } from '@/lib/api/http';
+import { appHttpClient as http } from '@/lib/api/appHttpClient';
 import { mockAttendanceApi, resetMockAttendances, setMockFailureRate } from './mockApi';
 import { attendanceEnvelopeDecoder, attendanceListDecoder } from './schema';
 import type { AttendanceApi, AttendanceInput, AttendanceListParams, AttendanceUpdateInput } from './resource';
@@ -17,13 +16,6 @@ import type { AttendanceApi, AttendanceInput, AttendanceListParams, AttendanceUp
  * `undefined` three components deep.
  */
 
-const http: HttpClient = createHttpClient({
-  baseUrl: env.apiBaseUrl || '/api/v1',
-  timeoutMs: env.requestTimeoutMs,
-  retries: env.requestRetries,
-  backoffMs: env.requestBackoffMs,
-});
-
 const BASE = '/attendances';
 /** Relations needed to render the list table without a second round-trip. */
 const LIST_INCLUDE = 'employee';
@@ -37,6 +29,8 @@ export const httpAttendanceApi: AttendanceApi = {
         search: params.search || undefined,
         status: params.status,
         employee_id: params.employeeId,
+        date_from: params.dateFrom,
+        date_to: params.dateTo,
         include: LIST_INCLUDE,
       },
       signal,

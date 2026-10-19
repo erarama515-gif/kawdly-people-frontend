@@ -28,6 +28,9 @@ export interface AttendanceListParams {
   search?: string | undefined;
   status?: AttendanceStatus | undefined;
   employeeId?: number | undefined;
+  /** Inclusive range filter on `date`, mapped to `date_from`/`date_to` on the wire. */
+  dateFrom?: string | undefined;
+  dateTo?: string | undefined;
 }
 
 /** Shape of `StoreAttendanceRequest`'s validated fields. */
