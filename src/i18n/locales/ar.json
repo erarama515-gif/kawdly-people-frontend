@@ -687,6 +687,64 @@
       "employmentCert": "شهادة عمل",
       "salaryCert": "شهادة راتب",
       "experienceLetter": "خطاب خبرة"
+    },
+    "documentTypes": {
+      "title": "أنواع المستندات",
+      "subtitle": "إدارة أنواع المستندات التي يمكن للموظفين رفعها.",
+      "add": "إضافة نوع مستند",
+      "filterLabel": "الفئة",
+      "filterAll": "كل الفئات",
+      "empty": "لا توجد أنواع مستندات.",
+      "yes": "نعم",
+      "no": "لا",
+      "noCompany": "حسابك غير مرتبط بشركة، لذا لا يمكنك إنشاء أنواع مستندات.",
+      "columns": {
+        "name": "الاسم",
+        "category": "الفئة",
+        "hasExpiry": "لها تاريخ انتهاء",
+        "required": "مطلوبة",
+        "sortOrder": "ترتيب العرض",
+        "actions": "الإجراءات"
+      },
+      "categories": {
+        "identification": "إثبات هوية",
+        "contract": "عقد",
+        "certificate": "شهادة",
+        "license": "رخصة",
+        "other": "أخرى"
+      },
+      "actions": {
+        "edit": "تعديل نوع المستند",
+        "delete": "حذف نوع المستند"
+      },
+      "form": {
+        "addTitle": "إضافة نوع مستند",
+        "addDescription": "أنشئ نوع مستند جديدًا لشركتك.",
+        "editTitle": "تعديل نوع المستند",
+        "editDescription": "حدّث تفاصيل نوع المستند.",
+        "name": "الاسم",
+        "category": "الفئة",
+        "selectCategory": "اختر فئة",
+        "hasExpiry": "يتطلب تاريخ انتهاء",
+        "isRequired": "مطلوبة لكل موظف",
+        "sortOrder": "ترتيب العرض",
+        "sortOrderHint": "الأرقام الأصغر تظهر أولاً.",
+        "create": "إنشاء",
+        "save": "حفظ"
+      },
+      "validation": {
+        "nameRequired": "الاسم مطلوب.",
+        "nameMax": "يجب ألا يزيد الاسم عن 255 حرفًا.",
+        "categoryRequired": "الفئة مطلوبة.",
+        "sortOrderInvalid": "يجب أن يكون ترتيب العرض عددًا صحيحًا."
+      },
+      "deleteConfirm": {
+        "title": "حذف نوع المستند",
+        "description": "حذف \"{{name}}\"؟ لا يمكن التراجع عن هذا الإجراء.",
+        "inUse": "\"{{name}}\" لا يزال مستخدمًا في مستندات الموظفين. أعد تعيين تلك المستندات قبل حذفه.",
+        "failed": "تعذر حذف نوع المستند: {{message}}",
+        "submit": "حذف"
+      }
     }
   },
   "attendance": {
@@ -1979,7 +2037,8 @@
     "tabs": {
       "general": "الإعدادات العامة",
       "users": "إدارة المستخدمين",
-      "roles": "الأدوار والصلاحيات"
+      "roles": "الأدوار والصلاحيات",
+      "documentTypes": "أنواع المستندات"
     },
     "users": {
       "title": "المستخدمون",

@@ -48,6 +48,12 @@ function primaryRole(roles: string[]): Role {
 export interface SessionUser {
   /** Numeric `users.id` of the authenticated account (from `AuthUserWire.id`). */
   id: number;
+  /**
+   * `employees.company_id` when the account has a linked employee. Most
+   * company-scoped write payloads still need a company_id even though
+   * `BelongsToCompany` overwrites it server-side for non-privileged users.
+   */
+  companyId?: number;
   name: { ar: string; en: string };
   initials: { ar: string; en: string };
   email: string;

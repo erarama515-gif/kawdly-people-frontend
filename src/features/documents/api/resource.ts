@@ -33,6 +33,29 @@ export type DocumentTypeCategory =
   | 'license'
   | 'other';
 
+/** Query params accepted by `GET /document-types` (see `DocumentTypeController::$filterable`). */
+export interface DocumentTypeListParams {
+  page?: number;
+  perPage?: number;
+  search?: string | undefined;
+  category?: DocumentTypeCategory | undefined;
+  sort?: 'id' | 'name' | 'sort_order' | 'created_at' | undefined;
+  direction?: 'asc' | 'desc' | undefined;
+}
+
+/** Shape of `StoreDocumentTypeRequest`'s validated fields. */
+export interface DocumentTypeInput {
+  company_id: number;
+  name: string;
+  category: DocumentTypeCategory;
+  has_expiry?: boolean;
+  is_required?: boolean;
+  sort_order?: number | null;
+}
+
+/** `UpdateDocumentTypeRequest` omits `company_id`: the trait keeps the existing value. */
+export type DocumentTypeUpdateInput = Partial<Omit<DocumentTypeInput, 'company_id'>>;
+
 export interface EmployeeDocumentListParams {
   page?: number;
   perPage?: number;
@@ -66,8 +89,13 @@ export interface EmployeeDocumentApi {
   create(context: FetchContext, input: EmployeeDocumentInput): Promise<EmployeeDocumentWire>;
   update(context: FetchContext, id: number, input: EmployeeDocumentUpdateInput): Promise<EmployeeDocumentWire>;
   remove(context: FetchContext, id: number): Promise<void>;
-  /** Fetch the full document-type reference table (small, perPage:100). */
-  listDocumentTypes(context: FetchContext): Promise<DocumentTypeWire[]>;
+  /** Paginated document-type listing for the settings CRUD tab. */
+  listDocumentTypes(context: FetchContext, params: DocumentTypeListParams): Promise<DocumentTypeListWire>;
+  /** Fetch the full document-type reference table for dropdowns (small, perPage:100). */
+  listAllDocumentTypes(context: FetchContext): Promise<DocumentTypeWire[]>;
+  createDocumentType(context: FetchContext, input: DocumentTypeInput): Promise<DocumentTypeWire>;
+  updateDocumentType(context: FetchContext, id: number, input: DocumentTypeUpdateInput): Promise<DocumentTypeWire>;
+  removeDocumentType(context: FetchContext, id: number): Promise<void>;
   /** Fetch meta.total only for document-templates stat card (perPage:1). */
   countDocumentTemplates(context: FetchContext): Promise<number>;
 }
@@ -80,8 +108,15 @@ export const employeeDocumentKeys = {
   all: ['employeeDocuments'] as const satisfies QueryKey,
   list: (params: EmployeeDocumentListParams) =>
     ['employeeDocuments', 'list', params] as const satisfies QueryKey,
-  documentTypes: ['employeeDocuments', 'documentTypes'] as const satisfies QueryKey,
   templateCount: ['employeeDocuments', 'templateCount'] as const satisfies QueryKey,
+};
+
+/** Document types have their own root so mutations can invalidate them independently. */
+export const documentTypeKeys = {
+  all: ['documentTypes'] as const satisfies QueryKey,
+  list: (params: DocumentTypeListParams) =>
+    ['documentTypes', 'list', params] as const satisfies QueryKey,
+  dropdown: ['documentTypes', 'dropdown'] as const satisfies QueryKey,
 };
 
 /** Narrow DocumentTypeListWire type so the queries file can reference it. */

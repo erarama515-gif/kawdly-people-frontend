@@ -1,14 +1,18 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Pencil } from 'lucide-react';
+import { FileText, Pencil, Settings2, Shield, Users } from 'lucide-react';
 import { cn } from '@/lib/cn';
 import { Card } from '@/components/ui/Card';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { Button } from '@/components/ui/Button';
 import { userFacingMessage } from '@/lib/api/errors';
+import { useHasPermission } from '@/auth/session';
 import { useSettingList, useUpdateSetting } from '../api/queries';
 import type { SettingListParams } from '../api/resource';
 import type { SettingWire } from '../api/schema';
+import { UsersTab } from './UsersTab';
+import { RolesTab } from './RolesTab';
+import { DocumentTypesTab } from '@/features/documents/components/DocumentTypesTab';
 
 /**
  * SettingsPage — live-data, inline-edit version.
@@ -28,55 +32,61 @@ import type { SettingWire } from '../api/schema';
 // ─── Group + row metadata ─────────────────────────────────────────────────────
 //
 // The backend Setting model stores only group/key/value/type.
-// Human-readable labels and descriptions live here. i18n approach (b) was
-// chosen — see report for rationale. This map is keyed by `${group}::${key}`.
+// Human-readable labels and descriptions live here, driven by i18n keys so the
+// UI works in both English and Arabic. This map is keyed by `${group}::${key}`.
 
 interface RowMeta {
   label: string;
   description?: string;
 }
 
-const ROW_META: Record<string, RowMeta> = {
-  // General
-  'general::companyName':    { label: 'Company Name' },
-  'general::logo':           { label: 'Logo' },
-  'general::timezone':       { label: 'Timezone' },
-  'general::language':       { label: 'Default Language' },
-  'general::fiscalYearStart':{ label: 'Fiscal Year Start' },
+type TFunction = (key: string) => string;
 
-  // Attendance
-  'attendance::gracePeriod':       { label: 'Grace Period',       description: 'Lateness deducted only beyond this window' },
-  'attendance::overtimeThreshold': { label: 'Overtime Threshold', description: 'Hours after which overtime rate applies' },
-  'attendance::checkInMethods':    { label: 'Check-in Methods' },
-  'attendance::weekendDays':       { label: 'Weekend Days' },
+function getRowMeta(t: TFunction): Record<string, RowMeta> {
+  return {
+    // General
+    'general::companyName':    { label: t('settings.rows.general_companyName') },
+    'general::logo':           { label: t('settings.rows.general_logo') },
+    'general::timezone':       { label: t('settings.rows.general_timezone') },
+    'general::language':       { label: t('settings.rows.general_language') },
+    'general::fiscalYearStart':{ label: t('settings.rows.general_fiscalYearStart') },
 
-  // Leave
-  'leave::annualEntitlement': { label: 'Annual Entitlement', description: 'Per employee per year' },
-  'leave::carryForwardMax':   { label: 'Carry Forward Maximum', description: 'Unused leave allowed into next year' },
-  'leave::accrualMethod':     { label: 'Accrual Method' },
-  'leave::approvalLevels':    { label: 'Approval Levels' },
+    // Attendance
+    'attendance::gracePeriod':       { label: t('settings.rows.attendance_gracePeriod'),       description: t('settings.rows.attendance_gracePeriod_desc') },
+    'attendance::overtimeThreshold': { label: t('settings.rows.attendance_overtimeThreshold'), description: t('settings.rows.attendance_overtimeThreshold_desc') },
+    'attendance::checkInMethods':    { label: t('settings.rows.attendance_checkInMethods') },
+    'attendance::weekendDays':       { label: t('settings.rows.attendance_weekendDays') },
 
-  // Payroll
-  'payroll::payCycle':           { label: 'Pay Cycle' },
-  'payroll::currency':           { label: 'Currency' },
-  'payroll::taxEnabled':         { label: 'VAT / Tax Deduction', description: 'Enabled — 15% VAT applied to payslips' },
-  'payroll::payDay':             { label: 'Pay Day' },
-  'payroll::overtimeMultiplier': { label: 'Overtime Multiplier' },
+    // Leave
+    'leave::annualEntitlement': { label: t('settings.rows.leave_annualEntitlement'), description: t('settings.rows.leave_annualEntitlement_desc') },
+    'leave::carryForwardMax':   { label: t('settings.rows.leave_carryForwardMax'),   description: t('settings.rows.leave_carryForwardMax_desc') },
+    'leave::accrualMethod':     { label: t('settings.rows.leave_accrualMethod') },
+    'leave::approvalLevels':    { label: t('settings.rows.leave_approvalLevels') },
 
-  // Notifications
-  'notifications::emailNotifs':     { label: 'Email Notifications',   description: 'Leave approvals, payslips, contract alerts' },
-  'notifications::smsNotifs':       { label: 'SMS Notifications',     description: 'Urgent alerts only' },
-  'notifications::inAppNotifs':     { label: 'In-App Notifications',  description: 'Real-time bell icon alerts' },
-  'notifications::digestFrequency': { label: 'Digest Frequency' },
-};
+    // Payroll
+    'payroll::payCycle':           { label: t('settings.rows.payroll_payCycle') },
+    'payroll::currency':           { label: t('settings.rows.payroll_currency') },
+    'payroll::taxEnabled':         { label: t('settings.rows.payroll_taxEnabled'), description: t('settings.rows.payroll_taxEnabled_desc') },
+    'payroll::payDay':             { label: t('settings.rows.payroll_payDay') },
+    'payroll::overtimeMultiplier': { label: t('settings.rows.payroll_overtimeMultiplier') },
 
-const GROUP_TITLES: Record<string, string> = {
-  general:       'General',
-  attendance:    'Attendance',
-  leave:         'Leave',
-  payroll:       'Payroll',
-  notifications: 'Notifications',
-};
+    // Notifications
+    'notifications::emailNotifs':     { label: t('settings.rows.notifications_emailNotifs'),     description: t('settings.rows.notifications_emailNotifs_desc') },
+    'notifications::smsNotifs':       { label: t('settings.rows.notifications_smsNotifs'),       description: t('settings.rows.notifications_smsNotifs_desc') },
+    'notifications::inAppNotifs':     { label: t('settings.rows.notifications_inAppNotifs'),     description: t('settings.rows.notifications_inAppNotifs_desc') },
+    'notifications::digestFrequency': { label: t('settings.rows.notifications_digestFrequency') },
+  };
+}
+
+function getGroupTitles(t: TFunction): Record<string, string> {
+  return {
+    general:       t('settings.groups.general'),
+    attendance:    t('settings.groups.attendance'),
+    leave:         t('settings.groups.leave'),
+    payroll:       t('settings.groups.payroll'),
+    notifications: t('settings.groups.notifications'),
+  };
+}
 
 /** Canonical display order for groups */
 const GROUP_ORDER = ['general', 'attendance', 'leave', 'payroll', 'notifications'];
@@ -145,7 +155,7 @@ function InlineEditor({ row, onDone }: InlineEditorProps) {
           onChange={(e) => setDraft(e.target.value)}
           disabled={isPending}
           className={cn(
-            'rounded-[3px] border border-divider bg-white px-2.5 py-1 text-body-sm text-ink',
+            'rounded-[3px] border border-divider bg-surface px-2.5 py-1 text-body-sm text-ink',
             'focus:border-navy focus:outline-none focus:ring-1 focus:ring-navy/30',
             'disabled:opacity-60',
           )}
@@ -195,7 +205,8 @@ interface SettingItemProps {
 function SettingItem({ row, isLast }: SettingItemProps) {
   const { t } = useTranslation();
   const [editing, setEditing] = useState(false);
-  const meta = ROW_META[`${row.group}::${row.key}`];
+  const rowMeta = getRowMeta(t);
+  const meta = rowMeta[`${row.group}::${row.key}`];
   const label = meta?.label ?? row.key;
   const description = meta?.description;
 
@@ -246,7 +257,9 @@ function SettingItem({ row, isLast }: SettingItemProps) {
 // ─── Group card ───────────────────────────────────────────────────────────────
 
 function SettingGroupCard({ groupId, rows }: { groupId: string; rows: SettingWire[] }) {
-  const title = GROUP_TITLES[groupId] ?? groupId;
+  const { t } = useTranslation();
+  const groupTitles = getGroupTitles(t);
+  const title = groupTitles[groupId] ?? groupId;
   return (
     <Card className="overflow-hidden">
       <div className="border-b border-divider bg-surface px-5 py-3">
@@ -285,9 +298,9 @@ function SettingsSkeleton() {
   );
 }
 
-// ─── Page ─────────────────────────────────────────────────────────────────────
+// ─── General Settings Content ─────────────────────────────────────────────────
 
-export function SettingsPage() {
+function GeneralSettingsContent() {
   const { t } = useTranslation();
   const { state, refetch } = useSettingList(LIST_PARAMS);
 
@@ -300,9 +313,7 @@ export function SettingsPage() {
     .filter(({ rows }) => rows.length > 0);
 
   return (
-    <div className="flex flex-col">
-      <PageHeader title={t('settings.title')} />
-
+    <>
       {/* Loading */}
       {state.status === 'pending' && <SettingsSkeleton />}
 
@@ -324,6 +335,73 @@ export function SettingsPage() {
           ))}
         </div>
       )}
+    </>
+  );
+}
+
+// ─── Tab definitions ─────────────────────────────────────────────────────────
+
+type SettingsTabId = 'general' | 'users' | 'roles' | 'document-types';
+
+interface SettingsTabDef {
+  id: SettingsTabId;
+  labelKey: string;
+  icon: React.ReactNode;
+}
+
+const SETTINGS_TABS: SettingsTabDef[] = [
+  { id: 'general', labelKey: 'settings.tabs.general', icon: <Settings2 className="h-4 w-4" strokeWidth={1.75} /> },
+  { id: 'users',   labelKey: 'settings.tabs.users',   icon: <Users className="h-4 w-4" strokeWidth={1.75} /> },
+  { id: 'roles',   labelKey: 'settings.tabs.roles',   icon: <Shield className="h-4 w-4" strokeWidth={1.75} /> },
+  { id: 'document-types', labelKey: 'settings.tabs.documentTypes', icon: <FileText className="h-4 w-4" strokeWidth={1.75} /> },
+];
+
+// ─── Page ─────────────────────────────────────────────────────────────────────
+
+export function SettingsPage() {
+  const { t } = useTranslation();
+  const [activeTab, setActiveTab] = useState<SettingsTabId>('general');
+
+  // The backend guards every roles.* endpoint behind `roles.manage` (see
+  // RoleController) — hide the tab itself for sessions that don't have it,
+  // rather than let a user land on a tab that 403s on every request.
+  const canManageRoles = useHasPermission('roles.manage');
+  const canViewDocumentTypes = useHasPermission('document.document_type.view');
+  const visibleTabs = SETTINGS_TABS.filter(
+    (tab) =>
+      (tab.id !== 'roles' || canManageRoles) &&
+      (tab.id !== 'document-types' || canViewDocumentTypes),
+  );
+
+  return (
+    <div className="flex flex-col">
+      <PageHeader title={t('settings.title')} />
+
+      {/* Tab bar */}
+      <div className="mb-6 flex gap-1 border-b border-divider">
+        {visibleTabs.map((tab) => (
+          <button
+            key={tab.id}
+            type="button"
+            onClick={() => setActiveTab(tab.id)}
+            className={cn(
+              'flex items-center gap-2 border-b-2 px-4 py-2.5 text-body-sm font-medium transition-colors',
+              activeTab === tab.id
+                ? 'border-navy text-navy'
+                : 'border-transparent text-ink-muted hover:border-divider hover:text-ink',
+            )}
+          >
+            {tab.icon}
+            {t(tab.labelKey)}
+          </button>
+        ))}
+      </div>
+
+      {/* Tab content */}
+      {activeTab === 'general' && <GeneralSettingsContent />}
+      {activeTab === 'users' && <UsersTab />}
+      {activeTab === 'roles' && canManageRoles && <RolesTab />}
+      {activeTab === 'document-types' && canViewDocumentTypes && <DocumentTypesTab />}
 
       <div className="h-10" aria-hidden="true" />
     </div>

@@ -1,13 +1,17 @@
 import { useMutation, useQuery, useQueryClient } from '@/lib/query';
-import type { QueryState } from '@/lib/query';
+import type { QueryClient, QueryState } from '@/lib/query';
 import { employeeDocumentApi } from './client';
-import { employeeDocumentKeys } from './resource';
+import { documentTypeKeys, employeeDocumentKeys } from './resource';
 import type {
+  DocumentTypeInput,
+  DocumentTypeListParams,
+  DocumentTypeUpdateInput,
   EmployeeDocumentInput,
   EmployeeDocumentListParams,
   EmployeeDocumentUpdateInput,
 } from './resource';
 import type {
+  DocumentTypeListWire,
   EmployeeDocumentListWire,
   EmployeeDocumentWire,
   DocumentTypeWire,
@@ -110,12 +114,71 @@ export interface DocumentTypeListData {
 
 export function useDocumentTypeList(): DocumentTypeListData {
   const { state } = useQuery<DocumentTypeWire[]>({
-    queryKey: employeeDocumentKeys.documentTypes,
-    queryFn: (context) => employeeDocumentApi.listDocumentTypes(context),
+    queryKey: documentTypeKeys.dropdown,
+    queryFn: (context) => employeeDocumentApi.listAllDocumentTypes(context),
     staleTime: 300_000, // document types rarely change
   });
 
   return { state };
+}
+
+/** Paginated listing for the settings CRUD tab. */
+export interface DocumentTypePageData {
+  state: QueryState<DocumentTypeListWire>;
+  refetch: () => void;
+}
+
+export function useDocumentTypePage(params: DocumentTypeListParams): DocumentTypePageData {
+  const { state, refetch } = useQuery<DocumentTypeListWire>({
+    queryKey: documentTypeKeys.list(params),
+    queryFn: (context) => employeeDocumentApi.listDocumentTypes(context, params),
+    staleTime: 15_000,
+  });
+
+  return { state, refetch };
+}
+
+/** A document-type change also renames/removes the relation embedded in document lists. */
+function invalidateDocumentTypeCaches(client: QueryClient): void {
+  void client.invalidate({
+    predicate: (key) => key[0] === 'documentTypes' || key[0] === 'employeeDocuments',
+  });
+}
+
+export function useCreateDocumentType() {
+  const client = useQueryClient();
+
+  return useMutation<DocumentTypeInput, DocumentTypeWire>({
+    mutationFn: (input, { signal }) => employeeDocumentApi.createDocumentType({ signal }, input),
+    onSuccess: () => invalidateDocumentTypeCaches(client),
+  });
+}
+
+export interface UpdateDocumentTypeMutationInput extends DocumentTypeUpdateInput {
+  id: number;
+}
+
+export function useUpdateDocumentType() {
+  const client = useQueryClient();
+
+  return useMutation<UpdateDocumentTypeMutationInput, DocumentTypeWire>({
+    mutationFn: ({ id, ...input }, { signal }) =>
+      employeeDocumentApi.updateDocumentType({ signal }, id, input),
+    onSuccess: () => invalidateDocumentTypeCaches(client),
+  });
+}
+
+/** Resolves `true` on success so a void DELETE is distinguishable from a failure. */
+export function useDeleteDocumentType() {
+  const client = useQueryClient();
+
+  return useMutation<number, true>({
+    mutationFn: async (id, { signal }) => {
+      await employeeDocumentApi.removeDocumentType({ signal }, id);
+      return true;
+    },
+    onSuccess: () => invalidateDocumentTypeCaches(client),
+  });
 }
 
 /** Read-only hook for the Templates stat card (reads meta.total only). */

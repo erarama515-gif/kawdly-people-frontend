@@ -6,6 +6,7 @@ import {
   setMockDocumentFailureRate,
 } from './mockApi';
 import {
+  documentTypeEnvelopeDecoder,
   documentTypeListDecoder,
   documentTemplateCountDecoder,
   employeeDocumentEnvelopeDecoder,
@@ -17,7 +18,6 @@ import type {
   EmployeeDocumentListParams,
   EmployeeDocumentUpdateInput,
 } from './resource';
-import type { DocumentTypeWire } from './schema';
 
 /**
  * Real HTTP implementation of `EmployeeDocumentApi`, pointed at
@@ -79,17 +79,60 @@ export const httpEmployeeDocumentApi: EmployeeDocumentApi = {
     await http(`${BASE}/${id}`, { method: 'DELETE', signal, ignoreBody: true });
   },
 
-  async listDocumentTypes({ signal }) {
+  async listDocumentTypes({ signal }, params) {
     // Real Laravel endpoint: `Route::apiResource('document-types', ...)` in
     // `backend/routes/api/document.php` (index → `{ data, meta }`, permission
-    // `document.document_type.view`). Sorting by `sort_order` preserves the
-    // intended dropdown order — the backend defaults to `id DESC`.
+    // `document.document_type.view`). `category` is one of the controller's
+    // `$filterable` fields; sorting by `sort_order` preserves the intended
+    // order because the backend defaults to `id DESC`.
+    const { data } = await http(DOC_TYPES_BASE, {
+      query: {
+        page: params.page,
+        per_page: params.perPage,
+        search: params.search || undefined,
+        category: params.category,
+        sort: params.sort,
+        direction: params.direction,
+      },
+      signal,
+      schema: documentTypeListDecoder,
+    });
+    return requireData(data, 'GET /document-types');
+  },
+
+  async listAllDocumentTypes({ signal }) {
+    // Dropdowns need every type in display order; the settings tab uses the
+    // paginated `listDocumentTypes` above instead.
     const { data } = await http(DOC_TYPES_BASE, {
       query: { per_page: 100, sort: 'sort_order', direction: 'asc' },
       signal,
       schema: documentTypeListDecoder,
     });
-    return requireData(data, 'GET /document-types').data as DocumentTypeWire[];
+    return requireData(data, 'GET /document-types').data;
+  },
+
+  async createDocumentType({ signal }, input) {
+    const { data } = await http(DOC_TYPES_BASE, {
+      method: 'POST',
+      body: input,
+      signal,
+      schema: documentTypeEnvelopeDecoder,
+    });
+    return requireData(data, 'POST /document-types').data;
+  },
+
+  async updateDocumentType({ signal }, id, input) {
+    const { data } = await http(`${DOC_TYPES_BASE}/${id}`, {
+      method: 'PATCH',
+      body: input,
+      signal,
+      schema: documentTypeEnvelopeDecoder,
+    });
+    return requireData(data, `PATCH /document-types/${id}`).data;
+  },
+
+  async removeDocumentType({ signal }, id) {
+    await http(`${DOC_TYPES_BASE}/${id}`, { method: 'DELETE', signal, ignoreBody: true });
   },
 
   async countDocumentTemplates({ signal }) {

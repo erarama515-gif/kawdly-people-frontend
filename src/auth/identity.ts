@@ -28,6 +28,7 @@ export function deriveDisplayIdentity(user: AuthUserWire): SessionUser {
 
   return {
     id: user.id,
+    ...(employee ? { companyId: employee.company_id } : {}),
     name: { en: nameEn, ar: nameAr },
     initials: { en: initialsOf(nameEn), ar: initialsOf(nameAr) },
     email: user.email,

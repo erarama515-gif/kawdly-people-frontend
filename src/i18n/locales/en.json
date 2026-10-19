@@ -687,6 +687,64 @@
       "employmentCert": "Employment Certificate",
       "salaryCert": "Salary Certificate",
       "experienceLetter": "Experience Letter"
+    },
+    "documentTypes": {
+      "title": "Document Types",
+      "subtitle": "Manage the document types employees can upload.",
+      "add": "Add Document Type",
+      "filterLabel": "Category",
+      "filterAll": "All categories",
+      "empty": "No document types found.",
+      "yes": "Yes",
+      "no": "No",
+      "noCompany": "Your account is not linked to a company, so you cannot create document types.",
+      "columns": {
+        "name": "Name",
+        "category": "Category",
+        "hasExpiry": "Has Expiry",
+        "required": "Required",
+        "sortOrder": "Sort Order",
+        "actions": "Actions"
+      },
+      "categories": {
+        "identification": "Identification",
+        "contract": "Contract",
+        "certificate": "Certificate",
+        "license": "License",
+        "other": "Other"
+      },
+      "actions": {
+        "edit": "Edit document type",
+        "delete": "Delete document type"
+      },
+      "form": {
+        "addTitle": "Add Document Type",
+        "addDescription": "Create a new document type for your company.",
+        "editTitle": "Edit Document Type",
+        "editDescription": "Update this document type's details.",
+        "name": "Name",
+        "category": "Category",
+        "selectCategory": "Select a category",
+        "hasExpiry": "Requires an expiry date",
+        "isRequired": "Required for every employee",
+        "sortOrder": "Sort order",
+        "sortOrderHint": "Lower numbers appear first.",
+        "create": "Create",
+        "save": "Save"
+      },
+      "validation": {
+        "nameRequired": "Name is required.",
+        "nameMax": "Name must be 255 characters or fewer.",
+        "categoryRequired": "Category is required.",
+        "sortOrderInvalid": "Sort order must be a whole number."
+      },
+      "deleteConfirm": {
+        "title": "Delete Document Type",
+        "description": "Delete \"{{name}}\"? This action cannot be undone.",
+        "inUse": "\"{{name}}\" is still used by employee documents. Reassign those documents before deleting it.",
+        "failed": "Could not delete the document type: {{message}}",
+        "submit": "Delete"
+      }
     }
   },
   "attendance": {
@@ -1979,7 +2037,8 @@
     "tabs": {
       "general": "General Settings",
       "users": "User Management",
-      "roles": "Roles & Permissions"
+      "roles": "Roles & Permissions",
+      "documentTypes": "Document Types"
     },
     "users": {
       "title": "Users",

@@ -2,6 +2,8 @@ import { ApiError } from '@/lib/api/errors';
 import type { FetchContext } from '@/lib/query';
 import { pravatar } from '@/features/dashboard/model';
 import {
+  documentTypeDecoder,
+  documentTypeListDecoder,
   employeeDocumentDecoder,
   employeeDocumentListDecoder,
 } from './schema';
@@ -11,6 +13,8 @@ import type {
   DocumentTypeWire,
 } from './schema';
 import type {
+  DocumentTypeCategory,
+  DocumentTypeListParams,
   EmployeeDocumentApi,
   EmployeeDocumentStatus,
 } from './resource';
@@ -39,15 +43,50 @@ import type {
 // `src/config/env.ts`. Nothing outside this file consumes these rows.
 
 export const MOCK_DOCUMENT_TYPES: DocumentTypeWire[] = [
-  { id: 1, name: 'National ID',          category: 'identification', has_expiry: true,  is_required: true,  sort_order: 1 },
-  { id: 2, name: 'Passport',             category: 'identification', has_expiry: true,  is_required: true,  sort_order: 2 },
-  { id: 3, name: 'Work Permit',          category: 'license',        has_expiry: true,  is_required: true,  sort_order: 3 },
-  { id: 4, name: 'Residence Permit',     category: 'identification', has_expiry: true,  is_required: false, sort_order: 4 },
-  { id: 5, name: 'Employment Contract',  category: 'contract',       has_expiry: true,  is_required: true,  sort_order: 5 },
-  { id: 6, name: 'NDA',                  category: 'contract',       has_expiry: false, is_required: false, sort_order: 6 },
-  { id: 7, name: 'Degree Certificate',   category: 'certificate',    has_expiry: false, is_required: false, sort_order: 7 },
-  { id: 8, name: 'Driving License',      category: 'license',        has_expiry: true,  is_required: false, sort_order: 8 },
+  { id: 1, company_id: 1, name: 'National ID',         category: 'identification', has_expiry: true,  is_required: true,  sort_order: 1 },
+  { id: 2, company_id: 1, name: 'Passport',            category: 'identification', has_expiry: true,  is_required: true,  sort_order: 2 },
+  { id: 3, company_id: 1, name: 'Work Permit',         category: 'license',        has_expiry: true,  is_required: true,  sort_order: 3 },
+  { id: 4, company_id: 1, name: 'Residence Permit',    category: 'identification', has_expiry: true,  is_required: false, sort_order: 4 },
+  { id: 5, company_id: 1, name: 'Employment Contract', category: 'contract',       has_expiry: true,  is_required: true,  sort_order: 5 },
+  { id: 6, company_id: 1, name: 'NDA',                 category: 'contract',       has_expiry: false, is_required: false, sort_order: 6 },
+  { id: 7, company_id: 1, name: 'Degree Certificate',  category: 'certificate',    has_expiry: false, is_required: false, sort_order: 7 },
+  { id: 8, company_id: 1, name: 'Driving License',     category: 'license',        has_expiry: true,  is_required: false, sort_order: 8 },
 ];
+
+/**
+ * Mutable document-type store for the CRUD tab. Kept separate from
+ * `MOCK_DOCUMENT_TYPES` (the immutable seed) so `reset()` can restore it.
+ */
+interface StoredDocumentType {
+  id: number;
+  company_id: number;
+  name: string;
+  category: DocumentTypeCategory;
+  has_expiry: boolean;
+  is_required: boolean;
+  sort_order: number;
+  created_at: string;
+  updated_at: string;
+}
+
+const DOCUMENT_TYPE_STAMP = '2026-10-06T00:00:00.000Z';
+
+function toStoredDocumentType(row: DocumentTypeWire): StoredDocumentType {
+  return {
+    id: row.id,
+    company_id: row.company_id ?? 1,
+    name: row.name,
+    category: row.category ?? 'other',
+    has_expiry: row.has_expiry ?? false,
+    is_required: row.is_required ?? false,
+    sort_order: row.sort_order ?? 0,
+    created_at: row.created_at ?? DOCUMENT_TYPE_STAMP,
+    updated_at: row.updated_at ?? DOCUMENT_TYPE_STAMP,
+  };
+}
+
+let documentTypes: StoredDocumentType[] = MOCK_DOCUMENT_TYPES.map(toStoredDocumentType);
+let nextDocumentTypeId = 1000;
 
 // ─── Internal store shape ─────────────────────────────────────────────────────
 
@@ -109,8 +148,8 @@ function generateFiller(count: number, startId: number): StoredEmployeeDocument[
   for (let index = 0; index < count; index += 1) {
     const id = startId + index;
     const empId = EMPLOYEE_IDS[index % EMPLOYEE_IDS.length];
-    const docTypeId = (index % MOCK_DOCUMENT_TYPES.length) + 1;
-    const docType = MOCK_DOCUMENT_TYPES[docTypeId - 1];
+    const docTypeId = (index % documentTypes.length) + 1;
+    const docType = documentTypes[docTypeId - 1];
     const status = STATUSES[index % STATUSES.length];
 
     // Spread issue dates around the past 3 years
@@ -212,6 +251,8 @@ let store: StoredEmployeeDocument[] = seed();
 let nextId = 1000;
 
 export function resetMockEmployeeDocuments(): void {
+  documentTypes = MOCK_DOCUMENT_TYPES.map(toStoredDocumentType);
+  nextDocumentTypeId = 1000;
   store = seed();
   nextId = 1000;
 }
@@ -246,7 +287,7 @@ export const mockEmployeeDocumentApi: EmployeeDocumentApi = {
       if (params.documentTypeId && row.document_type_id !== params.documentTypeId) return false;
       if (!search) return true;
       const emp = EMPLOYEE_STUBS.find((e) => e.id === row.employee_id);
-      const docType = MOCK_DOCUMENT_TYPES.find((dt) => dt.id === row.document_type_id);
+      const docType = documentTypes.find((dt) => dt.id === row.document_type_id);
       const haystack = [
         emp ? `${emp.first_name} ${emp.last_name} ${emp.employee_number}` : '',
         docType?.name ?? '',
@@ -331,9 +372,89 @@ export const mockEmployeeDocumentApi: EmployeeDocumentApi = {
     store = store.filter((item) => item.id !== id);
   },
 
-  async listDocumentTypes(context) {
+  async listDocumentTypes(context, params) {
     await simulate(context, READ_LATENCY_MS);
-    return structuredClone(MOCK_DOCUMENT_TYPES);
+
+    const search = params.search?.trim().toLowerCase();
+    const filtered = documentTypes.filter((row) => {
+      if (params.category && row.category !== params.category) return false;
+      if (search && !row.name.toLowerCase().includes(search)) return false;
+      return true;
+    });
+
+    const sorted = [...filtered].sort((a, b) =>
+      compareDocumentTypes(a, b, params.sort ?? 'sort_order', params.direction ?? 'asc'),
+    );
+
+    const perPage = params.perPage && params.perPage > 0 ? Math.min(params.perPage, 200) : 25;
+    const currentPage = params.page && params.page > 0 ? params.page : 1;
+    const total = sorted.length;
+    const lastPage = Math.max(1, Math.ceil(total / perPage));
+    const safePage = Math.min(currentPage, lastPage);
+    const start = (safePage - 1) * perPage;
+    const page = sorted.slice(start, start + perPage);
+
+    return documentTypeListDecoder.decode(
+      structuredClone({
+        data: page.map(toDocumentTypeWire),
+        meta: { current_page: safePage, per_page: perPage, total, last_page: lastPage },
+      }),
+    );
+  },
+
+  async listAllDocumentTypes(context) {
+    await simulate(context, READ_LATENCY_MS);
+    const sorted = [...documentTypes].sort(
+      (a, b) => a.sort_order - b.sort_order || a.name.localeCompare(b.name),
+    );
+    return structuredClone(sorted.map(toDocumentTypeWire));
+  },
+
+  async createDocumentType(context, input) {
+    await simulate(context, WRITE_LATENCY_MS);
+    const stamp = new Date().toISOString();
+    const row: StoredDocumentType = {
+      id: nextDocumentTypeId,
+      company_id: input.company_id,
+      name: input.name,
+      category: input.category,
+      has_expiry: input.has_expiry ?? false,
+      is_required: input.is_required ?? false,
+      sort_order: input.sort_order ?? 0,
+      created_at: stamp,
+      updated_at: stamp,
+    };
+    nextDocumentTypeId += 1;
+    documentTypes = [...documentTypes, row];
+    return documentTypeDecoder.decode(structuredClone(toDocumentTypeWire(row)));
+  },
+
+  async updateDocumentType(context, id, input) {
+    await simulate(context, WRITE_LATENCY_MS);
+    const row = findDocumentTypeOrThrow(id);
+    const updated: StoredDocumentType = {
+      ...row,
+      name: input.name ?? row.name,
+      category: input.category ?? row.category,
+      has_expiry: input.has_expiry ?? row.has_expiry,
+      is_required: input.is_required ?? row.is_required,
+      sort_order: input.sort_order === null ? row.sort_order : (input.sort_order ?? row.sort_order),
+      updated_at: new Date().toISOString(),
+    };
+    documentTypes = documentTypes.map((item) => (item.id === id ? updated : item));
+    return documentTypeDecoder.decode(structuredClone(toDocumentTypeWire(updated)));
+  },
+
+  async removeDocumentType(context, id) {
+    await simulate(context, WRITE_LATENCY_MS);
+    findDocumentTypeOrThrow(id);
+    // Mirrors the backend's RESTRICT foreign key on
+    // employee_documents.document_type_id: a type that is still referenced
+    // cannot be deleted until those documents are reassigned.
+    if (store.some((doc) => doc.document_type_id === id)) {
+      throw new ApiError('http', 'Document type is still in use', { status: 409 });
+    }
+    documentTypes = documentTypes.filter((item) => item.id !== id);
   },
 
   async countDocumentTemplates(context) {
@@ -345,7 +466,7 @@ export const mockEmployeeDocumentApi: EmployeeDocumentApi = {
 
 function toWire(row: StoredEmployeeDocument): EmployeeDocumentWire {
   const emp = EMPLOYEE_STUBS.find((e) => e.id === row.employee_id);
-  const docType = MOCK_DOCUMENT_TYPES.find((dt) => dt.id === row.document_type_id);
+  const docType = documentTypes.find((dt) => dt.id === row.document_type_id);
   return {
     ...row,
     employee: emp ? { ...emp } : undefined,
@@ -358,6 +479,50 @@ function toWire(row: StoredEmployeeDocument): EmployeeDocumentWire {
 function findOrThrow(id: number): StoredEmployeeDocument {
   const row = store.find((item) => item.id === id);
   if (!row) throw new ApiError('http', `EmployeeDocument ${id} not found`, { status: 404 });
+  return row;
+}
+
+function toDocumentTypeWire(row: StoredDocumentType): DocumentTypeWire {
+  return {
+    id: row.id,
+    company_id: row.company_id,
+    name: row.name,
+    category: row.category,
+    has_expiry: row.has_expiry,
+    is_required: row.is_required,
+    sort_order: row.sort_order,
+    created_at: row.created_at,
+    updated_at: row.updated_at,
+  };
+}
+
+function compareDocumentTypes(
+  a: StoredDocumentType,
+  b: StoredDocumentType,
+  sort: NonNullable<DocumentTypeListParams['sort']>,
+  direction: NonNullable<DocumentTypeListParams['direction']>,
+): number {
+  let comparison: number;
+  switch (sort) {
+    case 'name':
+      comparison = a.name.localeCompare(b.name);
+      break;
+    case 'created_at':
+      comparison = a.created_at.localeCompare(b.created_at);
+      break;
+    case 'id':
+      comparison = a.id - b.id;
+      break;
+    default:
+      comparison = a.sort_order - b.sort_order || a.name.localeCompare(b.name);
+      break;
+  }
+  return direction === 'desc' ? -comparison : comparison;
+}
+
+function findDocumentTypeOrThrow(id: number): StoredDocumentType {
+  const row = documentTypes.find((item) => item.id === id);
+  if (!row) throw new ApiError('http', `DocumentType ${id} not found`, { status: 404 });
   return row;
 }
 

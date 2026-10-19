@@ -106,6 +106,9 @@ export const documentTypeListDecoder = object({
 
 export type DocumentTypeListWire = ReturnType<typeof documentTypeListDecoder.decode>;
 
+export const documentTypeEnvelopeDecoder = object({ data: documentTypeDecoder });
+export type DocumentTypeEnvelopeWire = ReturnType<typeof documentTypeEnvelopeDecoder.decode>;
+
 // ─── DocumentTemplate (count only) ────────────────────────────────────────────
 
 export const documentTemplateCountDecoder = object({
