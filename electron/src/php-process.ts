@@ -3,21 +3,29 @@
  *
  * Shape of the child, and why each part is the way it is:
  *
- *   <php.exe> -d variables_order=EGPCS -S 127.0.0.1:<port> <framework>/resources/server.php
+ *   <php.exe> -d variables_order=EGPCS -S 127.0.0.1:<port> -t <backend>/public \
+ *       <electron>/resources/desktop-server.php
  *   cwd = <backend>/public
  *
  * 1. cwd is `<backend>/public`, NOT the backend root (E1 finding, and the single
  *    most expensive scar on this surface). Laravel's own `artisan serve` does the
  *    same — `ServeCommand::startProcess()` passes `public_path()` as the working
- *    directory — because the router script resolves the document root as
- *    `getcwd()` (`resources/server.php:3`). Run it from the backend root and every
- *    static asset 404s while PHP still answers, which looks like a frontend bug.
+ *    directory. Run it from the backend root and every static asset 404s while
+ *    PHP still answers, which looks like a frontend bug.
  *
- * 2. There is deliberately **no `-t` flag**. `artisan serve` does not pass one
- *    either: PHP's built-in server uses the working directory as the document
- *    root. `-t public` would resolve against the cwd and point PHP at
- *    `<backend>/public/public`, which does not exist. The document root is passed
- *    explicitly anyway (see DOC_ROOT_FLAG) so the intent is readable.
+ * 2. `-t` IS passed, as an absolute path. It is redundant with cwd by design: it
+ *    documents intent and survives anyone "tidying up" the cwd. It must never be
+ *    the literal string `public`, which would resolve against the cwd and point
+ *    PHP at `<backend>/public/public`.
+ *
+ * 2b. The router script is OURS (T4), not Laravel's
+ *    `Illuminate/Foundation/resources/server.php`, and it deliberately lives
+ *    outside the document root — `php -S` accepts any readable path for the
+ *    router argument, and keeping it out of `public/` means it can never be
+ *    served as a file. The stock router cannot fix the deep-link 404 because the
+ *    damage ($_SERVER rewritten to point at `public/app/index.html`) is done by
+ *    php -S before any router runs; see resources/desktop-server.php for the full
+ *    mechanism. Swapping this back to the stock script silently reintroduces F14.
  *
  * 3. `-d variables_order=EGPCS` is load-bearing, not cosmetic. Laravel's `env()`
  *    reads `$_SERVER`/`$_ENV` (`Illuminate\Support\Env` → Dotenv's ServerConst and
@@ -51,17 +59,7 @@ import { spawn, execFile, type ChildProcess } from 'node:child_process';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 
-/** Relative location of Laravel's built-in-server router script. */
-const ROUTER_SCRIPT = path.join(
-  'vendor',
-  'laravel',
-  'framework',
-  'src',
-  'Illuminate',
-  'Foundation',
-  'resources',
-  'server.php',
-);
+import { requireRouterScript } from './router-script';
 
 const BIND_HOST = '127.0.0.1';
 
@@ -166,15 +164,17 @@ function ensureDir(dir: string): void {
  */
 export function spawnPhp(opts: SpawnPhpOptions): PhpProcessHandle {
   const docRoot = path.join(opts.backendPath, 'public');
-  const routerScript = path.join(opts.backendPath, ROUTER_SCRIPT);
+  // Throws if the file is missing — see requireRouterScript() for why a missing
+  // router is far worse than a missing binary: the server still starts.
+  const routerScript = requireRouterScript();
   const logDir = path.join(opts.userDataPath, 'logs');
 
   if (!fs.existsSync(opts.phpBinaryPath)) {
     throw new Error(`spawnPhp: PHP binary not found at ${opts.phpBinaryPath}`);
   }
-  if (!fs.existsSync(routerScript)) {
+  if (!fs.existsSync(path.join(docRoot, 'index.php'))) {
     throw new Error(
-      `spawnPhp: Laravel's built-in-server router not found at ${routerScript}. ` +
+      `spawnPhp: Laravel front controller not found at ${path.join(docRoot, 'index.php')}. ` +
         'Has `composer install` run in the backend?',
     );
   }
@@ -194,6 +194,7 @@ export function spawnPhp(opts: SpawnPhpOptions): PhpProcessHandle {
     // string "public" (which would resolve to <backend>/public/public).
     '-t',
     docRoot,
+    // Our router (T4). Absolute, and intentionally outside docRoot.
     routerScript,
   ];
 
