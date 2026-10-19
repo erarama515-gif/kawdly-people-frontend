@@ -11,10 +11,15 @@ import type { SessionUser } from './session';
  * `Employee` row — e.g. `test@example.com`) have neither, so this is
  * best-effort: when a language-specific name truly isn't available, both
  * `ar` and `en` fall back to the same string rather than leaving a field
- * blank. `photo` is always a real string — `HeroHeader` renders it directly
- * as an `<img src>` with no further fallback, so an employee photo is used
- * when present and a deterministic placeholder otherwise (same placeholder
- * service already used throughout the dashboard's mock data).
+ * blank.
+ *
+ * `photo` is only set when the linked employee actually has one. It used to
+ * fall back to a generated avatar-service URL, which meant every session —
+ * including `test@example.com`, which has no employee row — fetched an image
+ * over the network. That broke the offline-first desktop build and tripped the
+ * `img-src 'self' data:` CSP. `initials` is already computed right here, and
+ * `<Avatar>` renders it whenever `photo` is absent, so the placeholder was
+ * never needed.
  */
 export function deriveDisplayIdentity(user: AuthUserWire): SessionUser {
   const employee = user.employee;
@@ -32,7 +37,8 @@ export function deriveDisplayIdentity(user: AuthUserWire): SessionUser {
     name: { en: nameEn, ar: nameAr },
     initials: { en: initialsOf(nameEn), ar: initialsOf(nameAr) },
     email: user.email,
-    photo: employee?.photo ?? placeholderPhoto(user.email),
+    // Conditional spread, not `photo: x ?? undefined`: `exactOptionalPropertyTypes`.
+    ...(employee?.photo ? { photo: employee.photo } : {}),
   };
 }
 
@@ -41,9 +47,4 @@ function initialsOf(name: string): string {
   const letters = parts.slice(0, 2).map((part) => part[0] ?? '');
   const initials = letters.join('').toUpperCase();
   return initials || '?';
-}
-
-/** Deterministic per-user placeholder avatar — same service used by dashboard mock data. */
-function placeholderPhoto(email: string): string {
-  return `https://i.pravatar.cc/200?u=${encodeURIComponent(email)}`;
 }

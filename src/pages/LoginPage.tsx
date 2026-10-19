@@ -18,7 +18,7 @@ import { OrgChartBg } from './OrgChartBg';
  * - "Kawdly People" text logo (no icon).
  * - Password visibility toggle.
  * - "Forgot password?" link.
- * - RTL layout with IBM Plex Sans Arabic.
+ * - RTL layout on the --font-sans system stack (T3.5: no webfont at runtime).
  */
 
 const REQUIRED = 'common.requiredField';
@@ -87,7 +87,7 @@ export function LoginPage() {
       dir="rtl"
       lang="ar"
       className="relative flex min-h-screen items-center justify-center overflow-hidden px-4 py-14"
-      style={{ background: '#f4f5f7', fontFamily: "'IBM Plex Sans Arabic', 'IBM Plex Sans', sans-serif" }}
+      style={{ background: '#f4f5f7', fontFamily: 'var(--font-sans)' }}
     >
       {/* Decorative org-chart network */}
       <OrgChartBg />
@@ -113,7 +113,7 @@ export function LoginPage() {
           noValidate
         >
           {/* Brand */}
-          <div dir="ltr" className="self-start" style={{ fontSize: 20, fontWeight: 700, letterSpacing: '-.01em', lineHeight: 1, color: '#0f1f35', fontFamily: "'IBM Plex Sans', sans-serif" }}>
+          <div dir="ltr" className="self-start" style={{ fontSize: 20, fontWeight: 700, letterSpacing: '-.01em', lineHeight: 1, color: '#0f1f35', fontFamily: 'var(--font-sans)' }}>
             Kawdly <span style={{ color: '#4a6074', fontWeight: 600 }}>People</span>
           </div>
 
@@ -157,7 +157,12 @@ export function LoginPage() {
               border: `1px solid ${errors.email ? '#e4714e' : '#c9d0d9'}`,
               borderRadius: 2,
               padding: '0 14px',
-              font: "400 15px 'IBM Plex Sans', sans-serif",
+              /* Longhands, not the `font` shorthand: the shorthand would have to
+                 inline the family list, and we want the --font-sans token. */
+              fontWeight: 400,
+              fontSize: 15,
+              lineHeight: 'normal',
+              fontFamily: 'var(--font-sans)',
               color: '#0f1f35',
               background: '#fff',
               textAlign: 'right',
@@ -206,7 +211,10 @@ export function LoginPage() {
                 border: `1px solid ${errors.password ? '#e4714e' : '#c9d0d9'}`,
                 borderRadius: 2,
                 padding: '0 14px 0 46px',
-                font: "400 15px 'IBM Plex Sans', sans-serif",
+                fontWeight: 400,
+                fontSize: 15,
+                lineHeight: 'normal',
+                fontFamily: 'var(--font-sans)',
                 color: '#0f1f35',
                 background: '#fff',
                 textAlign: 'right',
@@ -271,7 +279,10 @@ export function LoginPage() {
               borderRadius: 2,
               background: '#0f4a73',
               color: '#fff',
-              font: "600 15px 'IBM Plex Sans Arabic', sans-serif",
+              fontWeight: 600,
+              fontSize: 15,
+              lineHeight: 'normal',
+              fontFamily: 'var(--font-sans)',
               cursor: isSubmitting ? 'not-allowed' : 'pointer',
               boxShadow: 'inset 0 1px 0 rgba(255,255,255,.12), 0 1px 2px rgba(15,31,53,.18)',
               transition: 'background .15s',

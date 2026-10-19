@@ -63,6 +63,22 @@
     --color-on-navy-border-50: rgba(255, 255, 255, 0.5);
     --color-on-navy-border-60: rgba(255, 255, 255, 0.6);
     --color-on-navy-fill-12: rgba(255, 255, 255, 0.12);
+
+    /* === Typography ========================================================
+       Pure system stack, no webfont. The app ships as an offline-first
+       Electron shell, so a runtime fetch from Google's font CDN was both a
+       CSP violation (style-src 'self') and a product-requirement violation.
+       'Noto Sans Arabic' covers the Arabic-first UI where Segoe UI does not.
+       Bundling the real IBM Plex woff2 files is deferred to T11.
+       Single source of truth: tailwind.config.ts fontFamily.sans reads this
+       token, so `font-sans` and raw `font-family: var(--font-sans)` agree. */
+    --font-sans: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial,
+      'Noto Sans', 'Noto Sans Arabic', sans-serif;
+
+    /* JetBrains Mono came from the same (removed) Google Fonts request, so the
+       data/numeral face is a system mono stack for the same reason. */
+    --font-mono: ui-monospace, 'Cascadia Mono', 'Segoe UI Mono', 'SFMono-Regular',
+      Menlo, Consolas, monospace;
   }
 
   /* ── Dark theme ─────────────────────────────────────────────────────────── */
@@ -123,7 +139,7 @@
     direction: ltr;
     unicode-bidi: isolate;
     font-variant-numeric: tabular-nums;
-    font-family: 'JetBrains Mono', ui-monospace, 'SFMono-Regular', monospace;
+    font-family: var(--font-mono);
   }
 }
 

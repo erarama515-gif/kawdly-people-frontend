@@ -26,6 +26,7 @@ function positiveInt(value: string | undefined, fallback: number): number {
  */
 interface KawdlyRuntimeConfig {
   readonly apiBaseUrl?: string;
+  readonly mode?: string;
 }
 
 /**
@@ -50,6 +51,23 @@ const apiBaseUrl =
   runtimeConfig?.apiBaseUrl?.trim() ?? import.meta.env.VITE_API_BASE_URL?.trim() ?? '';
 const mockExplicitlyRequested = import.meta.env.VITE_USE_MOCK_API === 'true';
 
+/**
+ * Router base path.
+ *
+ * The desktop build is served from `http://127.0.0.1:<port>/app/` (Laravel's
+ * `public/app`), so every real URL carries an `/app` prefix that means nothing
+ * to React Router. Without a basename the post-login redirect to `/app/`
+ * matched no route and fell through to `*` → "Page not found" (F5).
+ *
+ * `'/'` is React Router's own default for `basename`, so the plain web build —
+ * where `__KAWDLY_CONFIG__` is absent and the app is served from the domain
+ * root — behaves exactly as before. (`undefined` would mean the same thing, but
+ * `exactOptionalPropertyTypes` makes an optional-but-present `undefined`
+ * unassignable to `BrowserRouterProps.basename`, and a conditional prop spread
+ * in `main.tsx` would hide the intent for no benefit.)
+ */
+const spaBase = runtimeConfig?.mode === 'desktop' ? '/app' : '/';
+
 // Guard rail: a *production* build must never silently fall back to fabricated
 // mock data just because VITE_API_BASE_URL was left unset by a misconfigured
 // deploy pipeline. Mock data is only acceptable in prod if someone explicitly
@@ -66,6 +84,8 @@ if (import.meta.env.PROD && apiBaseUrl === '' && !mockExplicitlyRequested) {
 export const env = {
   isDev: import.meta.env.DEV,
   apiBaseUrl,
+  /** `basename` for `<BrowserRouter>` — see `spaBase` above. */
+  spaBase,
   /**
    * Mock is the default in dev whenever there is no API to talk to. Real HTTP
    * is used as soon as a base URL is configured, so a dev build pointed at a

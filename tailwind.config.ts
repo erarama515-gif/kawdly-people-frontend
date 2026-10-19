@@ -44,10 +44,12 @@ const config: Config = {
         'on-navy-fill-12': 'var(--color-on-navy-fill-12)',
       },
       fontFamily: {
-        /* Language: IBM Plex Sans; Arabic text falls through to Plex Sans Arabic. */
-        sans: ['"IBM Plex Sans"', '"IBM Plex Sans Arabic"', 'system-ui', '-apple-system', 'Segoe UI', 'sans-serif'],
+        /* System stack only — see --font-sans in src/styles/globals.css for why
+           the webfont was dropped. Keeping the list in CSS (not here) means the
+           inline `font-family: var(--font-sans)` call sites cannot drift. */
+        sans: ['var(--font-sans)'],
         /* Data numerals read as mono with tabular figures. */
-        mono: ['"JetBrains Mono"', 'ui-monospace', 'SFMono-Regular', 'monospace'],
+        mono: ['var(--font-mono)'],
       },
       fontSize: {
         /* Ledger type scale */
@@ -59,7 +61,7 @@ const config: Config = {
         'body-sm': ['13px', { lineHeight: '1.4', fontWeight: '500' }],
         caption: ['12px', { lineHeight: '1.3', fontWeight: '500' }],
         'caption-sm': ['11px', { lineHeight: '1.3', fontWeight: '500' }],
-        /* Data numerals (JetBrains Mono) */
+        /* Data numerals (font-mono) */
         'data-xl': ['60px', { lineHeight: '1', fontWeight: '700', letterSpacing: '-0.06em' }],
         'data-lg': ['44px', { lineHeight: '1', fontWeight: '700', letterSpacing: '-0.05em' }],
         'data-md': ['26px', { lineHeight: '1', fontWeight: '700', letterSpacing: '-0.04em' }],

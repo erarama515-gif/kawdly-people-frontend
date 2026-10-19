@@ -2,6 +2,7 @@ import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { BrowserRouter } from 'react-router-dom';
 import App from './App';
+import { env } from './config/env';
 import { QueryClientProvider } from './lib/query';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import './i18n';
@@ -21,7 +22,7 @@ createRoot(container).render(
   <StrictMode>
     <ErrorBoundary>
       <QueryClientProvider>
-        <BrowserRouter>
+        <BrowserRouter basename={env.spaBase}>
           <App />
         </BrowserRouter>
       </QueryClientProvider>

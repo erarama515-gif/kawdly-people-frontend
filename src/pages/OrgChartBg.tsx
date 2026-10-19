@@ -17,7 +17,9 @@ export function OrgChartBg() {
       className="pointer-events-none absolute left-1/2 top-1/2 max-w-none"
       style={{ marginLeft: -1200, marginTop: -600 }}
     >
-      <style>{`text{font-family:'IBM Plex Sans Arabic',sans-serif;fill:#5b6778;text-anchor:middle}.m{font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:1.2px}`}</style>
+      {/* Fonts come from the --font-sans token (system stack) — never a webfont;
+          this SVG also renders inside the offline-first Electron shell. */}
+      <style>{`text{font-family:var(--font-sans);fill:#5b6778;text-anchor:middle}.m{font-family:ui-monospace,'Cascadia Mono','Segoe UI Mono','SFMono-Regular',monospace;font-size:10px;letter-spacing:1.2px}`}</style>
       <g transform="translate(1200 600)" strokeWidth="1">
         {/* Main connectors */}
         <g stroke="#c3ccd6">

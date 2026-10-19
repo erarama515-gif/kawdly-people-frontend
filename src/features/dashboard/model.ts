@@ -38,7 +38,26 @@ export interface PersonAvatar {
   photo?: string;
 }
 
-export const pravatar = (img: number, size = 100) => `https://i.pravatar.cc/${size}?img=${img}`;
+/**
+ * @deprecated Returns no photo at all — kept only so the ~110 mock-fixture call
+ * sites keep compiling.
+ *
+ * This used to build an `https://i.pravatar.cc/...` URL. Every avatar in the
+ * mock dataset therefore hit a third-party image host at render time, which
+ * (a) is blocked by the desktop CSP (`img-src 'self' data:`), (b) cannot work
+ * in an offline-first app, and (c) leaked the browsing of a local HR dataset to
+ * a public service. Returning `''` makes `<Avatar>` fall back to initials,
+ * which is what the mock data should have shown all along.
+ *
+ * TODO(T9): delete this function and the `photo:` keys that call it when the
+ * mock fixtures are replaced by the real seeded dataset. Any *new* fixture must
+ * simply omit `photo`.
+ *
+ * `''` rather than `undefined` on purpose: `PersonAvatar.photo` is optional and
+ * `exactOptionalPropertyTypes` is on, so an explicit `undefined` would not be
+ * assignable at the call sites. `''` is falsy, which is all `<Avatar>` checks.
+ */
+export const pravatar = (_img: number, _size = 100): string => '';
 
 export interface DecisionQueueRow {
   id: QueueId;

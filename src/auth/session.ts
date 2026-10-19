@@ -57,7 +57,13 @@ export interface SessionUser {
   name: { ar: string; en: string };
   initials: { ar: string; en: string };
   email: string;
-  photo: string;
+  /**
+   * Real employee photo, or absent. Deliberately optional: there is no
+   * synthesised placeholder URL any more (it used to be a network avatar
+   * service, which an offline-first desktop build cannot reach), so consumers
+   * must pass this straight to `<Avatar>` and let it draw `initials`.
+   */
+  photo?: string;
 }
 
 export type AuthStatus = 'idle' | 'authenticating' | 'authenticated' | 'unauthenticated';
