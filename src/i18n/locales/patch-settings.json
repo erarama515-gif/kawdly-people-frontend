@@ -1,0 +1,96 @@
+{
+  "en": {
+    "settings": {
+      "groups": {
+        "general": "General",
+        "attendance": "Attendance",
+        "leave": "Leave",
+        "payroll": "Payroll",
+        "notifications": "Notifications"
+      },
+      "rows": {
+        "general_companyName": "Company Name",
+        "general_logo": "Logo",
+        "general_timezone": "Timezone",
+        "general_language": "Default Language",
+        "general_fiscalYearStart": "Fiscal Year Start",
+
+        "attendance_gracePeriod": "Grace Period",
+        "attendance_gracePeriod_desc": "Lateness deducted only beyond this window",
+        "attendance_overtimeThreshold": "Overtime Threshold",
+        "attendance_overtimeThreshold_desc": "Hours after which overtime rate applies",
+        "attendance_checkInMethods": "Check-in Methods",
+        "attendance_weekendDays": "Weekend Days",
+
+        "leave_annualEntitlement": "Annual Entitlement",
+        "leave_annualEntitlement_desc": "Per employee per year",
+        "leave_carryForwardMax": "Carry Forward Maximum",
+        "leave_carryForwardMax_desc": "Unused leave allowed into next year",
+        "leave_accrualMethod": "Accrual Method",
+        "leave_approvalLevels": "Approval Levels",
+
+        "payroll_payCycle": "Pay Cycle",
+        "payroll_currency": "Currency",
+        "payroll_taxEnabled": "VAT / Tax Deduction",
+        "payroll_taxEnabled_desc": "Enabled — 15% VAT applied to payslips",
+        "payroll_payDay": "Pay Day",
+        "payroll_overtimeMultiplier": "Overtime Multiplier",
+
+        "notifications_emailNotifs": "Email Notifications",
+        "notifications_emailNotifs_desc": "Leave approvals, payslips, contract alerts",
+        "notifications_smsNotifs": "SMS Notifications",
+        "notifications_smsNotifs_desc": "Urgent alerts only",
+        "notifications_inAppNotifs": "In-App Notifications",
+        "notifications_inAppNotifs_desc": "Real-time bell icon alerts",
+        "notifications_digestFrequency": "Digest Frequency"
+      }
+    }
+  },
+  "ar": {
+    "settings": {
+      "groups": {
+        "general": "عام",
+        "attendance": "الحضور",
+        "leave": "الإجازات",
+        "payroll": "الرواتب",
+        "notifications": "الإشعارات"
+      },
+      "rows": {
+        "general_companyName": "اسم الشركة",
+        "general_logo": "الشعار",
+        "general_timezone": "المنطقة الزمنية",
+        "general_language": "اللغة الافتراضية",
+        "general_fiscalYearStart": "بداية السنة المالية",
+
+        "attendance_gracePeriod": "فترة السماح",
+        "attendance_gracePeriod_desc": "يُحتسب التأخر فقط بعد تجاوز هذه الفترة",
+        "attendance_overtimeThreshold": "حد العمل الإضافي",
+        "attendance_overtimeThreshold_desc": "الساعات التي تُطبَّق بعدها نسبة العمل الإضافي",
+        "attendance_checkInMethods": "طرق تسجيل الحضور",
+        "attendance_weekendDays": "أيام نهاية الأسبوع",
+
+        "leave_annualEntitlement": "الاستحقاق السنوي",
+        "leave_annualEntitlement_desc": "لكل موظف في السنة",
+        "leave_carryForwardMax": "الحد الأقصى للترحيل",
+        "leave_carryForwardMax_desc": "الإجازات غير المستخدمة المسموح بترحيلها للعام القادم",
+        "leave_accrualMethod": "طريقة استحقاق الإجازة",
+        "leave_approvalLevels": "مستويات الموافقة",
+
+        "payroll_payCycle": "دورة الرواتب",
+        "payroll_currency": "العملة",
+        "payroll_taxEnabled": "ضريبة القيمة المضافة / الاستقطاع الضريبي",
+        "payroll_taxEnabled_desc": "مفعّل — يُطبَّق 15% ضريبة قيمة مضافة على قسائم الرواتب",
+        "payroll_payDay": "يوم صرف الراتب",
+        "payroll_overtimeMultiplier": "معامل العمل الإضافي",
+
+        "notifications_emailNotifs": "إشعارات البريد الإلكتروني",
+        "notifications_emailNotifs_desc": "موافقات الإجازات وقسائم الرواتب وتنبيهات العقود",
+        "notifications_smsNotifs": "إشعارات الرسائل القصيرة",
+        "notifications_smsNotifs_desc": "التنبيهات العاجلة فقط",
+        "notifications_inAppNotifs": "الإشعارات داخل التطبيق",
+        "notifications_inAppNotifs_desc": "تنبيهات الجرس الفوري",
+        "notifications_digestFrequency": "تكرار الملخص"
+      }
+    }
+  }
+}
