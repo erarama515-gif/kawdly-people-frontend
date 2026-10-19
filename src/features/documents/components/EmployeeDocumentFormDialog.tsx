@@ -1,5 +1,10 @@
+/*
+ * i18n keys used in this file (add to en.json / ar.json):
+ *   documents.form.uploadFile  — "Upload File"
+ */
+
 import { useEffect, useMemo } from 'react';
-import { useForm } from 'react-hook-form';
+import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useTranslation } from 'react-i18next';
@@ -7,6 +12,8 @@ import type { TFunction } from 'i18next';
 import { Dialog, DialogContent, DialogClose } from '@/components/ui/Dialog';
 import { Button } from '@/components/ui/Button';
 import { Field, Input, Select } from '@/components/ui/form';
+import { FileUpload } from '@/components/ui/FileUpload';
+import type { UploadedFile } from '@/components/ui/FileUpload';
 import { userFacingMessage } from '@/lib/api/errors';
 import type { ApiError } from '@/lib/api/errors';
 import { useEmployeeList } from '@/features/employees/api/queries';
@@ -40,6 +47,8 @@ const documentFormSchema = z.object({
   employee_id: z.string().min(1, REQUIRED),
   document_type_id: z.string().min(1, REQUIRED),
   title: z.string().min(1, REQUIRED),
+  // file_path / file_name / mime_type / file_size are populated by the
+  // FileUpload component after a successful upload; the user cannot edit them.
   file_path: z.string().min(1, REQUIRED),
   file_name: z.string().min(1, REQUIRED),
   file_size: z.string(),
@@ -155,6 +164,8 @@ export function EmployeeDocumentFormDialog({
     handleSubmit,
     reset,
     setError,
+    setValue,
+    control,
     formState: { errors },
   } = useForm<DocumentFormValues>({
     resolver,
@@ -244,29 +255,28 @@ export function EmployeeDocumentFormDialog({
             <Input id="title" invalid={!!errors.title} {...register('title')} />
           </Field>
 
-          <div className="grid grid-cols-2 gap-4">
-            {/* File path */}
-            <Field label={t('documents.form.filePath')} htmlFor="file_path" required error={translate(t, errors.file_path?.message)}>
-              <Input id="file_path" invalid={!!errors.file_path} placeholder="/uploads/doc.pdf" {...register('file_path')} />
-            </Field>
-
-            {/* File name */}
-            <Field label={t('documents.form.fileName')} htmlFor="file_name" required error={translate(t, errors.file_name?.message)}>
-              <Input id="file_name" invalid={!!errors.file_name} placeholder="document.pdf" {...register('file_name')} />
-            </Field>
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            {/* MIME type */}
-            <Field label={t('documents.form.mimeType')} htmlFor="mime_type" error={translate(t, errors.mime_type?.message)}>
-              <Input id="mime_type" invalid={!!errors.mime_type} placeholder="application/pdf" {...register('mime_type')} />
-            </Field>
-
-            {/* File size */}
-            <Field label={t('documents.form.fileSize')} htmlFor="file_size" error={translate(t, errors.file_size?.message)}>
-              <Input id="file_size" type="number" min="0" invalid={!!errors.file_size} {...register('file_size')} />
-            </Field>
-          </div>
+          {/* File upload — replaces the old file_path / file_name / mime_type /
+              file_size text inputs. The FileUpload component POSTs to
+              /api/v1/uploads and, on success, populates all four fields via
+              setValue so they are included in the final submit payload. */}
+          <Field label={t('documents.form.uploadFile')} htmlFor="file_upload" required error={translate(t, errors.file_path?.message)}>
+            <Controller
+              name="file_path"
+              control={control}
+              render={({ field }) => (
+                <FileUpload
+                  accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.xlsx,.xls,.csv"
+                  invalid={!!errors.file_path}
+                  onUpload={(uploaded: UploadedFile) => {
+                    field.onChange(uploaded.path);
+                    setValue('file_name', uploaded.original_name, { shouldValidate: true });
+                    setValue('mime_type', uploaded.mime_type);
+                    setValue('file_size', String(uploaded.size));
+                  }}
+                />
+              )}
+            />
+          </Field>
 
           <div className="grid grid-cols-2 gap-4">
             {/* Issue date */}

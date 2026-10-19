@@ -1,13 +1,18 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Pencil, Plus, Search, Trash2 } from 'lucide-react';
+import { FileText, Pencil, Plus, Search, Trash2 } from 'lucide-react';
+import { ExportButton } from '@/components/ui/ExportButton';
+import type { ExportColumn } from '@/components/ui/ExportButton';
 import { cn } from '@/lib/cn';
 import { Card } from '@/components/ui/Card';
+import { SkeletonTable } from '@/components/ui/SkeletonTable';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { Avatar } from '@/components/ui/Avatar';
 import { Button } from '@/components/ui/Button';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { Pagination } from '@/components/ui/Pagination';
+import { SortableHeader } from '@/components/ui/SortableHeader';
+import { useSort, sortData } from '@/hooks/useSort';
 import { userFacingMessage } from '@/lib/api/errors';
 import {
   useEmployeeDocumentList,
@@ -18,6 +23,7 @@ import {
 import type { EmployeeDocumentListParams, EmployeeDocumentStatus } from '../api/resource';
 import type { EmployeeDocumentWire } from '../api/schema';
 import { EmployeeDocumentFormDialog } from './EmployeeDocumentFormDialog';
+import { LetterGenerator } from './LetterGenerator';
 
 /**
  * Documents module live-data page. Mirrors `AttendancePage` conventions:
@@ -171,6 +177,7 @@ export function DocumentsPage() {
   const [formOpen, setFormOpen] = useState(false);
   const [editTarget, setEditTarget] = useState<EmployeeDocumentWire | undefined>(undefined);
   const [deleteTarget, setDeleteTarget] = useState<EmployeeDocumentWire | undefined>(undefined);
+  const [letterOpen, setLetterOpen] = useState(false);
 
   // Debounce the free-text search so every keystroke doesn't fire a request.
   useEffect(() => {
@@ -214,8 +221,38 @@ export function DocumentsPage() {
 
   const deleteMutation = useDeleteEmployeeDocument(params);
 
-  const records = state.data?.data ?? [];
+  // Client-side sorting
+  type DocSortCol = 'employee' | 'documentType' | 'documentNumber' | 'issueDate' | 'expiryDate' | 'status';
+  const { sort, toggle: toggleSort } = useSort<DocSortCol>();
+  const SORT_ACCESSORS: Record<DocSortCol, (d: EmployeeDocumentWire) => string | number | undefined> = {
+    employee:       (d) => `${d.employee?.first_name ?? ''} ${d.employee?.last_name ?? ''}`,
+    documentType:   (d) => d.document_type?.name ?? docTypeMap[d.document_type_id] ?? '',
+    documentNumber: (d) => d.document_number ?? '',
+    issueDate:      (d) => d.issue_date ?? '',
+    expiryDate:     (d) => d.expiry_date ?? '',
+    status:         (d) => d.status ?? '',
+  };
+  const rawRecords = state.data?.data ?? [];
+  const records = sortData(rawRecords, sort, SORT_ACCESSORS);
   const meta = state.data?.meta;
+
+  const exportColumns: ExportColumn[] = [
+    { key: 'employee', label: t('documents.table.employee') },
+    { key: 'documentType', label: t('documents.table.documentType') },
+    { key: 'documentNumber', label: t('documents.table.documentNumber') },
+    { key: 'issueDate', label: t('documents.table.issueDate') },
+    { key: 'expiryDate', label: t('documents.table.expiryDate') },
+    { key: 'status', label: t('documents.table.status') },
+  ];
+
+  const exportData = records.map((d) => ({
+    employee: `${d.employee?.first_name ?? ''} ${d.employee?.last_name ?? ''}`.trim(),
+    documentType: d.document_type?.name ?? docTypeMap[d.document_type_id] ?? '',
+    documentNumber: d.document_number ?? '',
+    issueDate: formatDate(d.issue_date),
+    expiryDate: formatDate(d.expiry_date),
+    status: d.status ? t(`documents.statusOptions.${d.status}`) : '',
+  }));
 
   function openAddForm() {
     setEditTarget(undefined);
@@ -238,10 +275,17 @@ export function DocumentsPage() {
       <PageHeader
         title={t('documents.title')}
         actions={
-          <Button variant="primary" onClick={openAddForm}>
-            <Plus className="h-3.5 w-3.5" strokeWidth={2} aria-hidden="true" />
-            {t('documents.addDocument')}
-          </Button>
+          <div className="flex items-center gap-2">
+            <ExportButton data={exportData} columns={exportColumns} filename="documents" />
+            <Button variant="secondary" onClick={() => setLetterOpen(true)}>
+              <FileText className="h-3.5 w-3.5" strokeWidth={1.75} aria-hidden="true" />
+              {t('documents.generateLetter')}
+            </Button>
+            <Button variant="primary" onClick={openAddForm}>
+              <Plus className="h-3.5 w-3.5" strokeWidth={2} aria-hidden="true" />
+              {t('documents.addDocument')}
+            </Button>
+          </div>
         }
       />
 
@@ -258,7 +302,7 @@ export function DocumentsPage() {
       <div className="mb-4 flex flex-wrap items-center gap-3">
         {/* Search */}
         <label className="relative flex items-center">
-          <span className="pointer-events-none absolute left-3 text-ink-faint">
+          <span className="pointer-events-none absolute start-3 text-ink-faint">
             <Search className="h-3.5 w-3.5" strokeWidth={1.75} aria-hidden="true" />
           </span>
           <input
@@ -267,7 +311,7 @@ export function DocumentsPage() {
             value={searchInput}
             onChange={(e) => setSearchInput(e.target.value)}
             className={cn(
-              'h-9 rounded-full border border-hairline bg-surface pl-8 pr-4 text-[13px] text-ink placeholder:text-ink-faint',
+              'h-9 rounded-full border border-hairline bg-surface ps-8 pe-4 text-[13px] text-ink placeholder:text-ink-faint',
               'focus:outline-none focus:ring-1 focus:ring-navy/40',
               'w-52',
             )}
@@ -308,7 +352,7 @@ export function DocumentsPage() {
 
       {/* Initial load */}
       {state.status === 'pending' && records.length === 0 ? (
-        <Card className="px-5 py-10 text-center text-body-sm text-ink-muted">{t('common.loading')}</Card>
+        <SkeletonTable />
       ) : null}
 
       {/* Empty state */}
@@ -325,12 +369,7 @@ export function DocumentsPage() {
               <div className="grid grid-cols-[2.5fr_1.5fr_1.5fr_1fr_1fr_1fr_auto] items-center gap-4">
                 {(['employee', 'documentType', 'documentNumber', 'issueDate', 'expiryDate', 'status'] as const).map(
                   (col) => (
-                    <span
-                      key={col}
-                      className="text-caption font-semibold uppercase tracking-wide text-ink-faint"
-                    >
-                      {t(`documents.table.${col}`)}
-                    </span>
+                    <SortableHeader key={col} column={col} label={t(`documents.table.${col}`)} sort={sort} onSort={toggleSort} />
                   ),
                 )}
                 <span className="text-caption font-semibold uppercase tracking-wide text-ink-faint">
@@ -373,7 +412,7 @@ export function DocumentsPage() {
 
                 {/* Document type */}
                 <span className="truncate text-body-sm text-ink-muted">
-                  {doc.documentType?.name ?? docTypeMap[doc.document_type_id] ?? `#${doc.document_type_id}`}
+                  {doc.document_type?.name ?? docTypeMap[doc.document_type_id] ?? `#${doc.document_type_id}`}
                 </span>
 
                 {/* Document number */}
@@ -447,7 +486,7 @@ export function DocumentsPage() {
                   <div className="flex flex-col gap-0.5">
                     <span className="text-caption text-ink-faint">{t('documents.table.documentType')}</span>
                     <span className="truncate text-[12px] text-ink">
-                      {doc.documentType?.name ?? docTypeMap[doc.document_type_id] ?? `#${doc.document_type_id}`}
+                      {doc.document_type?.name ?? docTypeMap[doc.document_type_id] ?? `#${doc.document_type_id}`}
                     </span>
                   </div>
                   <div className="flex flex-col gap-0.5">
@@ -513,6 +552,8 @@ export function DocumentsPage() {
         isLoading={deleteMutation.isPending}
         onConfirm={() => void confirmDelete()}
       />
+
+      <LetterGenerator open={letterOpen} onOpenChange={setLetterOpen} />
     </div>
   );
 }
