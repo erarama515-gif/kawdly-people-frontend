@@ -23,11 +23,21 @@
  * point: the first-run code path users hit is the one exercised every day here,
  * not one that only ever executes on a stranger's machine.
  *
+ * ---------------------------------------------------------------------------
+ * What T6 added here
+ * ---------------------------------------------------------------------------
+ * One fire-and-forget call to `maybeNotifyUpdate` once the window is on screen.
+ * It is NOT awaited and NOT part of the sequence above, which is the whole
+ * design: a release feed that is slow, unreachable or wrong must not be able to
+ * delay — or fail — someone opening their HR records. See update-check.ts for
+ * why this notifies instead of installing.
+ *
  * Deliberately NOT here (later sessions):
  *   crash supervision / restart and orphan reaping across app restarts
  *   log rotation
  *   Vite dev-server mode with HMR
- *   auto-update checks (T6; the installer-side skeleton only)
+ *   downloading or installing an update (design §7 decision 4 keeps that in v2,
+ *     behind code signing, which the zero-card policy puts outside Phase 1)
  */
 
 import { app, BrowserWindow, dialog, session, shell } from 'electron';
@@ -48,6 +58,7 @@ import { spawnPhp, type PhpProcessHandle } from './php-process';
 import { pickFreePort } from './port';
 import { BackendNotReadyError, waitForBackend } from './readiness';
 import { SPLASH_STATUS_ELEMENT_ID, splashHtml, toDataUrl } from './ui-html';
+import { maybeNotifyUpdate } from './update-check';
 
 const BIND_HOST = '127.0.0.1';
 
@@ -536,6 +547,24 @@ async function startup(): Promise<void> {
 
     setSplashStatus('جاري تحميل الواجهة…');
     mainWindow = createMainWindow(port, origin);
+
+    /**
+     * Last, after the window is actually on screen, and NOT awaited.
+     *
+     * Registered after the listener inside `createMainWindow`, so it runs once
+     * the splash is gone and there is a real window to sit in front of. A
+     * rejection here is swallowed on purpose — `maybeNotifyUpdate` already
+     * logs every failure path, and an update check is never a reason to reach
+     * `reportFatal` and quit the app.
+     */
+    mainWindow.once('ready-to-show', () => {
+      void maybeNotifyUpdate({
+        currentVersion: appVersion,
+        userDataPath: paths.userDataPath,
+      }).catch((error: unknown) => {
+        console.warn(`[update] check failed: ${String(error)}`);
+      });
+    });
   } catch (error) {
     await reportFatal(error, logDir);
   }

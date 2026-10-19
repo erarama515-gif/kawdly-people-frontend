@@ -148,7 +148,24 @@ nsis:
 
 artifactName: ${productName} Setup ${version}.${ext}
 
-# Auto-update is session T6. No publish provider is configured, so no
-# latest.yml is emitted and electron-builder will not try to reach a release
-# host during the build. Wiring GitHub Releases here is T6's first step.
+# No publish provider, and after T6 this is a settled decision rather than a
+# placeholder.
+#
+# Releases are published on the Kawdly website and downloaded by hand. The app
+# only CHECKS for a newer version and opens the download page — see
+# electron/src/update-check.ts for the full reasoning. Three things ruled out
+# the GitHub Releases + electron-updater route:
+#
+#   1. Design §7 decision 4 locks "manual installers for v1", and §4.7 makes the
+#      v2 auto-updater conditional on SIGNED artifacts. Signing is T5b, which the
+#      Phase 1 zero-card policy forbids — so that precondition is unreachable,
+#      not merely pending.
+#   2. The three repositories are PRIVATE. electron-updater's GitHub provider
+#      would need a token to download, and a token shipped in the app is plain
+#      text inside the asar for every beta user.
+#   3. `files:` above excludes node_modules, so electron-updater would resolve in
+#      dev and throw MODULE_NOT_FOUND in the packaged build.
+#
+# Consequence: no latest.yml is emitted and the build never contacts a release
+# host. Revisit only together with code signing.
 publish: null

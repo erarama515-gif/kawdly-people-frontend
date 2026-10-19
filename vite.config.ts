@@ -12,7 +12,12 @@ export default defineConfig({
   server: {
     port: Number(process.env.PORT) || 5173,
     proxy: {
-      '/api': 'http://127.0.0.1:8000',
+      // 8100, NOT Laravel's default 8000. On this project's dev machine 8000 is
+      // owned by an unrelated Tourism ERP, so a browser dev session pointed
+      // there silently talks to someone else's API and the failures look like
+      // auth bugs. The desktop shell never uses this proxy at all — it serves
+      // the SPA from the bundled PHP on 8790-8793.
+      '/api': 'http://127.0.0.1:8100',
     },
   },
   build: {
