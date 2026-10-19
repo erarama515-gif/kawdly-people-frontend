@@ -6,3 +6,7 @@ dist-ssr
 *.log
 .vite
 test-evidence/
+.env.local
+.env.*.local
+.claude/
+Dockerfile
