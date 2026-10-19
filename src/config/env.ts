@@ -19,7 +19,35 @@ function positiveInt(value: string | undefined, fallback: number): number {
   return Number.isFinite(parsed) && parsed > 0 ? Math.floor(parsed) : fallback;
 }
 
-const apiBaseUrl = import.meta.env.VITE_API_BASE_URL?.trim() ?? '';
+/**
+ * Shape of the object the Electron preload exposes on the window. Only the part
+ * this module consumes is declared; the full contract lives in
+ * `electron/src/desktop-config.ts`.
+ */
+interface KawdlyRuntimeConfig {
+  readonly apiBaseUrl?: string;
+}
+
+/**
+ * Runtime config wins over build-time config.
+ *
+ * The desktop build is a single static bundle served by a local PHP server on a
+ * port that is only known at launch, so nothing about "where the API is" can be
+ * baked in at `vite build` time. The Electron preload therefore publishes the
+ * answer on `window.__KAWDLY_CONFIG__` *synchronously, before any module runs* —
+ * which is why this read can happen here, at module-evaluation time, where the
+ * value is already needed by the HTTP client's constructor.
+ *
+ * `globalThis` rather than `window` so the expression is also safe under a
+ * non-DOM evaluation (tests, any future SSR/prerender step). In a plain web build
+ * the key is simply absent and the `??` chain falls through to the Vite env var,
+ * so this is a no-op there.
+ */
+const runtimeConfig = (globalThis as { __KAWDLY_CONFIG__?: KawdlyRuntimeConfig })
+  .__KAWDLY_CONFIG__;
+
+const apiBaseUrl =
+  runtimeConfig?.apiBaseUrl?.trim() ?? import.meta.env.VITE_API_BASE_URL?.trim() ?? '';
 const mockExplicitlyRequested = import.meta.env.VITE_USE_MOCK_API === 'true';
 
 // Guard rail: a *production* build must never silently fall back to fabricated

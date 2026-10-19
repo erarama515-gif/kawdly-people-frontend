@@ -8,15 +8,30 @@
   // step). Wiring it into the root references is a one-line change at that point.
   "extends": "../tsconfig.node.json",
   "compilerOptions": {
-    "composite": true,
-    "tsBuildInfoFile": "../node_modules/.tmp/tsconfig.electron.tsbuildinfo",
+    /* `composite` was set in T1 and is deliberately REMOVED in T3. A composite
+       project may not disable emit, which made `tsc -p electron/tsconfig.json
+       --noEmit` (the npm "typecheck:desktop" gate) a hard TS6304 error. composite
+       bought nothing here because this project is intentionally absent from the
+       root "references" list, so `tsc -b` never treats it as a dependency.
+       `incremental` keeps the build cache; `declaration` went with composite since
+       nothing consumes .d.ts files from the main process.
+       It must be switched off EXPLICITLY: `composite: true` is inherited from
+       ../tsconfig.node.json (which needs it, because the root `tsc -b` references
+       that project), and simply omitting the key here leaves it enabled.
+
+       `incremental` is off for the same reason, after being measured: with a
+       tsbuildinfo present but dist/ deleted, `tsc -p` exits 0 and emits NOTHING,
+       so `electron:dev` would launch a stale or absent main.js. A full compile of
+       this project is ~1s — not worth the footgun. */
+    "composite": false,
+    "incremental": false,
 
     /* Emit: this is the one TS project in the repo that produces runtime JS. */
     "noEmit": false,
     "outDir": "dist",
     "rootDir": "src",
     "sourceMap": true,
-    "declaration": true,
+    "declaration": false,
 
     /* CommonJS, because Electron's sandboxed preload cannot be an ES module and the
        root package.json declares "type": "module". electron/package.json re-declares

@@ -3,11 +3,27 @@
   "private": true,
   "version": "0.1.0",
   "type": "module",
+  "main": "electron/dist/main.js",
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
     "typecheck": "tsc -b",
-    "preview": "vite preview"
+    "typecheck:desktop": "tsc -p electron/tsconfig.json --noEmit",
+    "preview": "vite preview",
+    "build:desktop": "tsc -b && vite build --base=/app/ --outDir ../backend/public/app --emptyOutDir",
+    "electron:build": "npm run build:desktop && npx tsc -p electron/tsconfig.json",
+    "electron:dev": "npm run electron:build && electron electron/dist/main.js"
+  },
+  "build": {
+    "appId": "com.kawdly.people",
+    "productName": "Kawdly People",
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "electron/dist/**/*",
+      "package.json"
+    ]
   },
   "dependencies": {
     "@hookform/resolvers": "^5.9.1",
@@ -40,7 +56,8 @@
     "@types/react-dom": "^18.3.7",
     "@vitejs/plugin-react": "^5.0.4",
     "autoprefixer": "^10.4.21",
-    "electron": "^44.9.0",
+    "electron": "44.9.0",
+    "electron-builder": "26.15.3",
     "playwright": "^1.63.0",
     "postcss": "^8.5.6",
     "tailwindcss": "^3.4.19",
