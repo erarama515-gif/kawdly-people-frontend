@@ -1,11 +1,14 @@
 import { env } from '@/config/env';
-import { createHttpClient } from '@/lib/api/http';
-import type { HttpClient } from '@/lib/api/http';
+import { appHttpClient as http } from '@/lib/api/appHttpClient';
 import {
   mockPayrollRunApi,
   mockPayslipApi,
+  mockEmployeeSalaryApi,
+  mockPayslipItemApi,
   resetMockPayrollRuns,
   resetMockPayslips,
+  resetMockEmployeeSalaries,
+  resetMockPayslipItems,
   setMockPayrollFailureRate,
 } from './mockApi';
 import {
@@ -13,6 +16,10 @@ import {
   payrollRunListDecoder,
   payslipEnvelopeDecoder,
   payslipListDecoder,
+  employeeSalaryEnvelopeDecoder,
+  employeeSalaryListDecoder,
+  payslipItemEnvelopeDecoder,
+  payslipItemListDecoder,
 } from './schema';
 import type {
   PayrollRunApi,
@@ -23,6 +30,14 @@ import type {
   PayslipInput,
   PayslipListParams,
   PayslipUpdateInput,
+  EmployeeSalaryApi,
+  EmployeeSalaryInput,
+  EmployeeSalaryListParams,
+  EmployeeSalaryUpdateInput,
+  PayslipItemApi,
+  PayslipItemInput,
+  PayslipItemListParams,
+  PayslipItemUpdateInput,
 } from './resource';
 
 /**
@@ -34,18 +49,9 @@ import type {
  *
  * Mock is the active default (see bottom of file) until `VITE_API_BASE_URL` is set.
  *
- * NOTE: `POST /api/v1/payroll-runs/{id}/calculate` and `/approve` exist on the
- * backend but are not wired here — they require auth/session context that is
- * not available yet. Wire them up as a follow-up once authentication lands
- * (same approach as Loans skipping `/approve`).
+ * `calculate`/`approve` both return `{ data: <payrollRun> }` with the run's
+ * status/totals updated server-side from the authenticated user.
  */
-
-const http: HttpClient = createHttpClient({
-  baseUrl: env.apiBaseUrl || '/api/v1',
-  timeoutMs: env.requestTimeoutMs,
-  retries: env.requestRetries,
-  backoffMs: env.requestBackoffMs,
-});
 
 function requireData<T>(data: T | undefined, endpoint: string): T {
   if (data === undefined) throw new Error(`${endpoint} returned an empty body`);
@@ -63,6 +69,8 @@ export const httpPayrollRunApi: PayrollRunApi = {
         page: params.page,
         per_page: params.perPage,
         status: params.status,
+        period_from: params.periodFrom,
+        period_to: params.periodTo,
       },
       signal,
       schema: payrollRunListDecoder,
@@ -92,6 +100,26 @@ export const httpPayrollRunApi: PayrollRunApi = {
 
   async remove({ signal }, id) {
     await http(`${PAYROLL_RUN_BASE}/${id}`, { method: 'DELETE', signal, ignoreBody: true });
+  },
+
+  async calculate({ signal }, id) {
+    const { data } = await http(`${PAYROLL_RUN_BASE}/${id}/calculate`, {
+      method: 'POST',
+      body: {},
+      signal,
+      schema: payrollRunEnvelopeDecoder,
+    });
+    return requireData(data, `POST /payroll-runs/${id}/calculate`).data;
+  },
+
+  async approve({ signal }, id) {
+    const { data } = await http(`${PAYROLL_RUN_BASE}/${id}/approve`, {
+      method: 'POST',
+      body: {},
+      signal,
+      schema: payrollRunEnvelopeDecoder,
+    });
+    return requireData(data, `POST /payroll-runs/${id}/approve`).data;
   },
 };
 
@@ -142,21 +170,123 @@ export const httpPayslipApi: PayslipApi = {
   },
 };
 
+// ─── EmployeeSalary HTTP ──────────────────────────────────────────────────────
+
+const EMPLOYEE_SALARY_BASE = '/employee-salaries';
+/** Relations needed to render the list table without a second round-trip. */
+const EMPLOYEE_SALARY_LIST_INCLUDE = 'employee,salaryStructure';
+
+export const httpEmployeeSalaryApi: EmployeeSalaryApi = {
+  async list({ signal }, params) {
+    const { data } = await http(EMPLOYEE_SALARY_BASE, {
+      query: {
+        page: params.page,
+        per_page: params.perPage,
+        employee_id: params.employee_id,
+        salary_structure_id: params.salary_structure_id,
+        is_current: params.is_current,
+        include: EMPLOYEE_SALARY_LIST_INCLUDE,
+      },
+      signal,
+      schema: employeeSalaryListDecoder,
+    });
+    return requireData(data, 'GET /employee-salaries');
+  },
+
+  async create({ signal }, input: EmployeeSalaryInput) {
+    const { data } = await http(EMPLOYEE_SALARY_BASE, {
+      method: 'POST',
+      body: input,
+      signal,
+      schema: employeeSalaryEnvelopeDecoder,
+    });
+    return requireData(data, 'POST /employee-salaries').data;
+  },
+
+  async update({ signal }, id, input: EmployeeSalaryUpdateInput) {
+    const { data } = await http(`${EMPLOYEE_SALARY_BASE}/${id}`, {
+      method: 'PATCH',
+      body: input,
+      signal,
+      schema: employeeSalaryEnvelopeDecoder,
+    });
+    return requireData(data, `PATCH /employee-salaries/${id}`).data;
+  },
+
+  async remove({ signal }, id) {
+    await http(`${EMPLOYEE_SALARY_BASE}/${id}`, { method: 'DELETE', signal, ignoreBody: true });
+  },
+};
+
+// ─── PayslipItem HTTP ─────────────────────────────────────────────────────────
+
+const PAYSLIP_ITEM_BASE = '/payslip-items';
+
+export const httpPayslipItemApi: PayslipItemApi = {
+  async list({ signal }, params) {
+    const { data } = await http(PAYSLIP_ITEM_BASE, {
+      query: {
+        page: params.page,
+        per_page: params.perPage,
+        payslip_id: params.payslip_id,
+        salary_component_id: params.salary_component_id,
+        type: params.type,
+        is_taxable: params.is_taxable,
+      },
+      signal,
+      schema: payslipItemListDecoder,
+    });
+    return requireData(data, 'GET /payslip-items');
+  },
+
+  async create({ signal }, input: PayslipItemInput) {
+    const { data } = await http(PAYSLIP_ITEM_BASE, {
+      method: 'POST',
+      body: input,
+      signal,
+      schema: payslipItemEnvelopeDecoder,
+    });
+    return requireData(data, 'POST /payslip-items').data;
+  },
+
+  async update({ signal }, id, input: PayslipItemUpdateInput) {
+    const { data } = await http(`${PAYSLIP_ITEM_BASE}/${id}`, {
+      method: 'PATCH',
+      body: input,
+      signal,
+      schema: payslipItemEnvelopeDecoder,
+    });
+    return requireData(data, `PATCH /payslip-items/${id}`).data;
+  },
+
+  async remove({ signal }, id) {
+    await http(`${PAYSLIP_ITEM_BASE}/${id}`, { method: 'DELETE', signal, ignoreBody: true });
+  },
+};
+
 // ─── Active transports (mock is default) ─────────────────────────────────────
 
 export const payrollRunApi: PayrollRunApi = env.useMockApi ? mockPayrollRunApi : httpPayrollRunApi;
 export const payslipApi: PayslipApi = env.useMockApi ? mockPayslipApi : httpPayslipApi;
+export const employeeSalaryApi: EmployeeSalaryApi = env.useMockApi
+  ? mockEmployeeSalaryApi
+  : httpEmployeeSalaryApi;
+export const payslipItemApi: PayslipItemApi = env.useMockApi ? mockPayslipItemApi : httpPayslipItemApi;
 
 if (env.isDev && env.useMockApi) {
   // Review affordance for loading/error/rollback states:
-  //   __payrollMock.setFailureRate(1)   // force every request to fail
-  //   __payrollMock.resetRuns()         // restore payroll-run seed data
-  //   __payrollMock.resetPayslips()     // restore payslip seed data
+  //   __payrollMock.setFailureRate(1)       // force every request to fail
+  //   __payrollMock.resetRuns()             // restore payroll-run seed data
+  //   __payrollMock.resetPayslips()         // restore payslip seed data
+  //   __payrollMock.resetEmployeeSalaries() // restore employee-salary seed data
+  //   __payrollMock.resetPayslipItems()     // restore payslip-item seed data
   Object.defineProperty(window, '__payrollMock', {
     value: {
       setFailureRate: setMockPayrollFailureRate,
       resetRuns: resetMockPayrollRuns,
       resetPayslips: resetMockPayslips,
+      resetEmployeeSalaries: resetMockEmployeeSalaries,
+      resetPayslipItems: resetMockPayslipItems,
     },
     configurable: true,
   });
@@ -169,4 +299,10 @@ export type {
   PayslipInput,
   PayslipUpdateInput,
   PayslipListParams,
+  EmployeeSalaryInput,
+  EmployeeSalaryUpdateInput,
+  EmployeeSalaryListParams,
+  PayslipItemInput,
+  PayslipItemUpdateInput,
+  PayslipItemListParams,
 };

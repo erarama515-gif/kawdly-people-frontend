@@ -1,9 +1,11 @@
-import { array, bool, literalUnion, num, object, optional, str } from '@/lib/api/decode';
+import { array, bool, literalUnion, num, object, optional, passthrough, str } from '@/lib/api/decode';
 
 /**
- * Wire schemas for the Payroll module — two resources:
- *   1. PayrollRun  (/api/v1/payroll-runs)
- *   2. Payslip     (/api/v1/payslips)
+ * Wire schemas for the Payroll module — four resources:
+ *   1. PayrollRun     (/api/v1/payroll-runs)
+ *   2. Payslip        (/api/v1/payslips)
+ *   3. EmployeeSalary (/api/v1/employee-salaries)
+ *   4. PayslipItem    (/api/v1/payslip-items)
  *
  * Field names match Laravel DB columns verbatim (snake_case). The `index`
  * envelope is the app's custom `{ data, meta }` pager.
@@ -89,10 +91,10 @@ export const payslipDecoder = object({
   total_earnings: num(),
   total_deductions: num(),
   net_salary: num(),
-  working_days: optional(num()),
-  present_days: optional(num()),
-  absent_days: optional(num()),
-  overtime_hours: optional(num()),
+  working_days: optional(str()),
+  present_days: optional(str()),
+  absent_days: optional(str()),
+  overtime_hours: optional(str()),
   overtime_amount: optional(num()),
   status: optional(payslipStatusDecoder),
   created_at: optional(str()),
@@ -113,3 +115,78 @@ export type PayslipListWire = ReturnType<typeof payslipListDecoder.decode>;
 
 export const payslipEnvelopeDecoder = object({ data: payslipDecoder });
 export type PayslipEnvelopeWire = ReturnType<typeof payslipEnvelopeDecoder.decode>;
+
+// ─── EmployeeSalary ───────────────────────────────────────────────────────────
+
+/** Minimal salary-structure ref embedded when `include=salaryStructure` is passed. */
+const salaryStructureRefDecoder = object({
+  id: num(),
+  name: str(),
+});
+
+export const employeeSalaryDecoder = object({
+  id: num(),
+  employee_id: num(),
+  salary_structure_id: num(),
+  effective_date: str(),
+  /** Free-form JSON array; not rendered as a line-item editor yet. */
+  components: optional(passthrough<unknown[]>('array')),
+  gross_salary: num(),
+  net_salary: num(),
+  is_current: optional(bool()),
+  created_at: optional(str()),
+  updated_at: optional(str()),
+  /** Eager-loaded via `include=employee`. */
+  employee: optional(employeeRefDecoder),
+  /** Eager-loaded via `include=salaryStructure`. */
+  salaryStructure: optional(salaryStructureRefDecoder),
+});
+
+export type EmployeeSalaryWire = ReturnType<typeof employeeSalaryDecoder.decode>;
+
+export const employeeSalaryListDecoder = object({
+  data: array(employeeSalaryDecoder),
+  meta: pageMetaDecoder,
+});
+
+export type EmployeeSalaryListWire = ReturnType<typeof employeeSalaryListDecoder.decode>;
+
+export const employeeSalaryEnvelopeDecoder = object({ data: employeeSalaryDecoder });
+export type EmployeeSalaryEnvelopeWire = ReturnType<typeof employeeSalaryEnvelopeDecoder.decode>;
+
+// ─── PayslipItem ──────────────────────────────────────────────────────────────
+
+export const payslipItemTypeDecoder = literalUnion(['earning', 'deduction'] as const);
+
+/** Minimal salary-component ref embedded when `include=salaryComponent` is passed. */
+const salaryComponentRefDecoder = object({
+  id: num(),
+  name: str(),
+});
+
+export const payslipItemDecoder = object({
+  id: num(),
+  payslip_id: num(),
+  salary_component_id: optional(num()),
+  description: str(),
+  type: payslipItemTypeDecoder,
+  amount: num(),
+  is_taxable: optional(bool()),
+  sort_order: optional(num()),
+  created_at: optional(str()),
+  updated_at: optional(str()),
+  /** Eager-loaded via `include=salaryComponent`. */
+  salaryComponent: optional(salaryComponentRefDecoder),
+});
+
+export type PayslipItemWire = ReturnType<typeof payslipItemDecoder.decode>;
+
+export const payslipItemListDecoder = object({
+  data: array(payslipItemDecoder),
+  meta: pageMetaDecoder,
+});
+
+export type PayslipItemListWire = ReturnType<typeof payslipItemListDecoder.decode>;
+
+export const payslipItemEnvelopeDecoder = object({ data: payslipItemDecoder });
+export type PayslipItemEnvelopeWire = ReturnType<typeof payslipItemEnvelopeDecoder.decode>;
