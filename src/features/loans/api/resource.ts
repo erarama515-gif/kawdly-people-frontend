@@ -58,6 +58,8 @@ export interface LoanApi {
   create(context: FetchContext, input: LoanInput): Promise<LoanWire>;
   update(context: FetchContext, id: number, input: LoanUpdateInput): Promise<LoanWire>;
   remove(context: FetchContext, id: number): Promise<void>;
+  /** `POST /loans/{id}/approve` — pending → active, stamps approved_by/approved_at server-side. */
+  approve(context: FetchContext, id: number): Promise<LoanWire>;
 }
 
 /** Cache keys. Every loan read hangs off `all` so invalidation after a write is total. */

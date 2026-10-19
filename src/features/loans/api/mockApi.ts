@@ -347,6 +347,23 @@ export const mockLoanApi: LoanApi = {
     findOrThrow(id);
     store = store.filter((item) => item.id !== id);
   },
+
+  async approve(context, id) {
+    await simulate(context, WRITE_LATENCY_MS);
+    const row = findOrThrow(id);
+    if (row.status !== 'pending') {
+      throw new ApiError('http', `Loan ${id} is not pending approval`, { status: 422 });
+    }
+    const updated: StoredLoan = {
+      ...row,
+      status: 'active',
+      approved_by: 1,
+      approved_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    };
+    store = store.map((item) => (item.id === id ? updated : item));
+    return loanDecoder.decode(structuredClone(toWire(updated)));
+  },
 };
 
 function toWire(row: StoredLoan): LoanWire {

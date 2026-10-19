@@ -44,6 +44,18 @@ export function useCreateLoan() {
   });
 }
 
+/** Approves a pending loan (`POST /loans/{id}/approve`), then invalidates every cached list. */
+export function useApproveLoan() {
+  const client = useQueryClient();
+
+  return useMutation<number, LoanWire>({
+    mutationFn: (id, { signal }) => loanApi.approve({ signal }, id),
+    onSuccess: () => {
+      void client.invalidate({ predicate: isLoanKey });
+    },
+  });
+}
+
 export interface UpdateLoanInput extends LoanUpdateInput {
   id: number;
 }

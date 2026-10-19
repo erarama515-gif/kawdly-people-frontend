@@ -1,6 +1,5 @@
 import { env } from '@/config/env';
-import { createHttpClient } from '@/lib/api/http';
-import type { HttpClient } from '@/lib/api/http';
+import { appHttpClient as http } from '@/lib/api/appHttpClient';
 import { mockLoanApi, resetMockLoans, setMockLoanFailureRate } from './mockApi';
 import { loanEnvelopeDecoder, loanListDecoder } from './schema';
 import type { LoanApi, LoanInput, LoanListParams, LoanUpdateInput } from './resource';
@@ -11,19 +10,10 @@ import type { LoanApi, LoanInput, LoanListParams, LoanUpdateInput } from './reso
  *  - `index` returns the app's custom `{ data, meta }` pager
  *  - `show`/`store`/`update` return `{ data: <loan> }`
  *  - `destroy` returns 204 with an empty body
- *
- * NOTE: `POST /api/v1/loans/{loan}/approve` exists on the backend but is not
- * wired here — it requires auth/session context that is not available yet.
- * Wire it up as a follow-up once authentication is in place (same approach as
- * Attendance skipping `/correct`).
+ *  - `approve` (`POST /loans/{id}/approve`) returns `{ data: <loan> }` with
+ *    status flipped to `active` and `approved_by`/`approved_at` stamped
+ *    server-side from the authenticated user.
  */
-
-const http: HttpClient = createHttpClient({
-  baseUrl: env.apiBaseUrl || '/api/v1',
-  timeoutMs: env.requestTimeoutMs,
-  retries: env.requestRetries,
-  backoffMs: env.requestBackoffMs,
-});
 
 const BASE = '/loans';
 /** Relations needed to render the list table without a second round-trip. */
@@ -68,6 +58,16 @@ export const httpLoanApi: LoanApi = {
 
   async remove({ signal }, id) {
     await http(`${BASE}/${id}`, { method: 'DELETE', signal, ignoreBody: true });
+  },
+
+  async approve({ signal }, id) {
+    const { data } = await http(`${BASE}/${id}/approve`, {
+      method: 'POST',
+      body: {},
+      signal,
+      schema: loanEnvelopeDecoder,
+    });
+    return requireData(data, `POST /loans/${id}/approve`).data;
   },
 };
 
