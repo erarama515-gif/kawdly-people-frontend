@@ -107,8 +107,8 @@ export const onboardingTemplateDecoder = object({
   id: num(),
   name: str(),
   type: onboardingTypeDecoder,
-  is_default: optional(num()),
-  is_active: optional(num()),
+  is_default: optional(bool()),
+  is_active: optional(bool()),
   created_at: optional(str()),
   updated_at: optional(str()),
 });

@@ -1,6 +1,5 @@
 import { env } from '@/config/env';
-import { createHttpClient } from '@/lib/api/http';
-import type { HttpClient } from '@/lib/api/http';
+import { appHttpClient as http } from '@/lib/api/appHttpClient';
 import {
   mockOnboardingInstanceApi,
   mockOnboardingTaskApi,
@@ -46,13 +45,6 @@ import type {
  * the same precedent as Loans skipping /approve and Payroll-run skipping
  * /calculate+/approve.
  */
-
-const http: HttpClient = createHttpClient({
-  baseUrl: env.apiBaseUrl || '/api/v1',
-  timeoutMs: env.requestTimeoutMs,
-  retries: env.requestRetries,
-  backoffMs: env.requestBackoffMs,
-});
 
 const INSTANCES_BASE = '/onboarding-instances';
 const TASKS_BASE = '/onboarding-tasks';

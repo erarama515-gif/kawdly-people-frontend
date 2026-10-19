@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { Pencil, Plus, Search, Trash2, ChevronDown, ChevronUp } from 'lucide-react';
 import { cn } from '@/lib/cn';
 import { Card } from '@/components/ui/Card';
+import { SkeletonTable } from '@/components/ui/SkeletonTable';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { Avatar } from '@/components/ui/Avatar';
 import { Button } from '@/components/ui/Button';
@@ -343,7 +344,7 @@ function OnboardingCard({
       <div className="flex items-center justify-between border-t border-divider pt-3">
         <div>
           <span className="text-caption text-ink-faint">{t('onboarding.startDate')}</span>
-          <span className="ml-2 text-caption font-semibold text-ink">
+          <span className="ms-2 text-caption font-semibold text-ink">
             {formatDate(instance.started_at)}
           </span>
         </div>
@@ -575,7 +576,7 @@ export function OnboardingPage() {
       <div className="mb-4 flex flex-wrap items-center gap-3">
         {/* Search */}
         <label className="relative flex items-center">
-          <span className="pointer-events-none absolute left-3 text-ink-faint">
+          <span className="pointer-events-none absolute start-3 text-ink-faint">
             <Search className="h-3.5 w-3.5" strokeWidth={1.75} aria-hidden="true" />
           </span>
           <input
@@ -584,7 +585,7 @@ export function OnboardingPage() {
             value={searchInput}
             onChange={(e) => setSearchInput(e.target.value)}
             className={cn(
-              'h-9 rounded-full border border-hairline bg-surface pl-8 pr-4 text-[13px] text-ink placeholder:text-ink-faint',
+              'h-9 rounded-full border border-hairline bg-surface ps-8 pe-4 text-[13px] text-ink placeholder:text-ink-faint',
               'focus:outline-none focus:ring-1 focus:ring-navy/40',
               'w-52',
             )}
@@ -646,7 +647,7 @@ export function OnboardingPage() {
 
       {/* Initial load */}
       {state.status === 'pending' && instances.length === 0 ? (
-        <Card className="px-5 py-10 text-center text-body-sm text-ink-muted">{t('common.loading')}</Card>
+        <SkeletonTable />
       ) : null}
 
       {/* Empty state */}
@@ -757,7 +758,7 @@ export function OnboardingPage() {
 
         {/* Loading */}
         {selectedTemplateId !== undefined && ttState.status === 'pending' && templateTasks.length === 0 ? (
-          <Card className="px-5 py-8 text-center text-body-sm text-ink-muted">{t('common.loading')}</Card>
+          <SkeletonTable />
         ) : null}
 
         {/* Empty state */}
