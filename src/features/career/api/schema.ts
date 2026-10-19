@@ -122,7 +122,7 @@ export const successionPlanDecoder = object({
   current_holder_id: optional(num()),
   successor_id: num(),
   readiness: successionReadinessDecoder,
-  readiness_score: optional(num()),
+  readiness_score: optional(str()),
   development_plan: optional(str()),
   notes: optional(str()),
   updated_by: num(),

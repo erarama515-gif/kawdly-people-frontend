@@ -17,8 +17,6 @@ import type { CareerPathWire } from '../api/schema';
  * Add/Edit modal for one career path.
  *
  * Fields: `name` (required), `job_family` (optional).
- * `company_id` is hardcoded to 1 as a placeholder until auth context is wired —
- * mirrors how ContractFormDialog hardcodes `created_by: 1`.
  *
  * NOTE: No `description` field — it does not exist on the real backend
  * (`StoreCareerPathRequest`). The old mock fabricated it; it is dropped.
@@ -48,8 +46,6 @@ function buildDefaultValues(path: CareerPathWire | undefined): CareerPathFormVal
 
 function toCareerPathInput(values: CareerPathFormValues): CareerPathInput {
   return {
-    // Hardcoded company_id = 1 as placeholder until auth context is wired.
-    company_id: 1,
     name: values.name.trim(),
     job_family: values.job_family.trim() || null,
   };

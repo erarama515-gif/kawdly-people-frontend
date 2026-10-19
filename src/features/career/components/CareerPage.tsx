@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { Pencil, Plus, Trash2 } from 'lucide-react';
 import { cn } from '@/lib/cn';
 import { Card } from '@/components/ui/Card';
+import { SkeletonTable } from '@/components/ui/SkeletonTable';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { Avatar } from '@/components/ui/Avatar';
 import { Button } from '@/components/ui/Button';
@@ -59,7 +60,7 @@ const READINESS_STYLES: Record<SuccessionReadiness, string> = {
   ready_now:          'bg-emerald-50 text-emerald-700',
   ready_1_year:       'bg-amber-50 text-amber-700',
   ready_2_years:      'bg-sky-50 text-sky-700',
-  development_needed: 'bg-gray-100 text-gray-600',
+  development_needed: 'bg-surface text-ink-muted border border-divider',
 };
 
 function ReadinessBadge({ readiness }: { readiness: SuccessionReadiness }) {
@@ -326,7 +327,7 @@ export function CareerPage() {
 
         {/* Initial load */}
         {pathState.status === 'pending' && paths.length === 0 ? (
-          <Card className="px-5 py-10 text-center text-body-sm text-ink-muted">{t('common.loading')}</Card>
+          <SkeletonTable />
         ) : null}
 
         {/* Empty state */}
@@ -384,7 +385,7 @@ export function CareerPage() {
 
         {/* Initial load */}
         {planState.status === 'pending' && plans.length === 0 ? (
-          <Card className="px-5 py-10 text-center text-body-sm text-ink-muted">{t('common.loading')}</Card>
+          <SkeletonTable />
         ) : null}
 
         {/* Empty state */}
@@ -613,7 +614,7 @@ export function CareerPage() {
 
         {/* Initial load */}
         {levelState.status === 'pending' && levels.length === 0 ? (
-          <Card className="px-5 py-10 text-center text-body-sm text-ink-muted">{t('common.loading')}</Card>
+          <SkeletonTable />
         ) : null}
 
         {/* Empty state */}
