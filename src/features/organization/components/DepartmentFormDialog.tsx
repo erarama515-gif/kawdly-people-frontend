@@ -9,8 +9,9 @@ import { Button } from '@/components/ui/Button';
 import { Field, Input, Select } from '@/components/ui/form';
 import { userFacingMessage } from '@/lib/api/errors';
 import type { ApiError } from '@/lib/api/errors';
+import { toast } from '@/components/ui/Toast';
 import { useEmployeeList } from '@/features/employees/api/queries';
-import { useDepartmentList, useCreateDepartment, useUpdateDepartment } from '../api/queries';
+import { useDepartmentList, useCreateDepartment, useUpdateDepartment, useCostCenterList } from '../api/queries';
 import type { DepartmentInput } from '../api/resource';
 import type { DepartmentWire } from '../api/schema';
 
@@ -19,14 +20,12 @@ import type { DepartmentWire } from '../api/schema';
  * zod — same library combination as EmployeeFormDialog and AttendanceFormDialog.
  *
  * Confirmed fields from StoreDepartmentRequest.php:
- *   company_id (required, hardcoded 1)
  *   parent_id  (nullable FK → departments — native select, excludes self)
  *   name       (required)
  *   code       (nullable)
  *   head_employee_id (nullable FK → employees — native select with "Vacant")
  *   level / path / sort_order / is_active (all nullable)
- *
- * cost_center_id is intentionally omitted — cost-centers resource not yet built.
+ *   cost_center_id (nullable FK → cost_centers — native select, "— No cost center —")
  *
  * Employee picker: `useEmployeeList({ page: 1, perPage: 100 })` feeding
  *   "First Last — EMP-NUMBER" labels, per the cross-feature convention.
@@ -35,13 +34,13 @@ import type { DepartmentWire } from '../api/schema';
  */
 
 const REQUIRED = 'common.requiredField';
-const COMPANY_ID = 1;
 
 const departmentFormSchema = z.object({
   name: z.string().min(1, REQUIRED).max(255),
   code: z.string().max(20),
   parent_id: z.string(),
   head_employee_id: z.string(),
+  cost_center_id: z.string(),
   level: z.string(),
   sort_order: z.string(),
   is_active: z.string(),
@@ -56,6 +55,7 @@ function buildDefaultValues(dept: DepartmentWire | undefined): DepartmentFormVal
       code: '',
       parent_id: '',
       head_employee_id: '',
+      cost_center_id: '',
       level: '',
       sort_order: '',
       is_active: 'true',
@@ -66,6 +66,7 @@ function buildDefaultValues(dept: DepartmentWire | undefined): DepartmentFormVal
     code: dept.code ?? '',
     parent_id: dept.parent_id !== undefined ? String(dept.parent_id) : '',
     head_employee_id: dept.head_employee_id !== undefined ? String(dept.head_employee_id) : '',
+    cost_center_id: dept.cost_center_id !== undefined ? String(dept.cost_center_id) : '',
     level: dept.level !== undefined ? String(dept.level) : '',
     sort_order: dept.sort_order !== undefined ? String(dept.sort_order) : '',
     is_active: dept.is_active === false ? 'false' : 'true',
@@ -74,11 +75,11 @@ function buildDefaultValues(dept: DepartmentWire | undefined): DepartmentFormVal
 
 function toDepartmentInput(values: DepartmentFormValues): DepartmentInput {
   return {
-    company_id: COMPANY_ID,
     name: values.name.trim(),
     code: values.code.trim() || null,
     parent_id: values.parent_id ? Number(values.parent_id) : null,
     head_employee_id: values.head_employee_id ? Number(values.head_employee_id) : null,
+    cost_center_id: values.cost_center_id ? Number(values.cost_center_id) : null,
     level: values.level ? Number(values.level) : null,
     sort_order: values.sort_order ? Number(values.sort_order) : null,
     is_active: values.is_active === 'false' ? false : true,
@@ -127,6 +128,10 @@ export function DepartmentFormDialog({ open, onOpenChange, dept }: DepartmentFor
   // Exclude the record being edited to prevent self-parenting
   const parentOptions = allDepartments.filter((d) => d.id !== dept?.id);
 
+  // Cost center picker: full unpaginated list (cost centers are small)
+  const { state: costCenterListState } = useCostCenterList({ page: 1, perPage: 200 });
+  const costCenters = costCenterListState.data?.data ?? [];
+
   const resolver = useMemo(() => zodResolver(departmentFormSchema), []);
 
   const {
@@ -160,10 +165,12 @@ export function DepartmentFormDialog({ open, onOpenChange, dept }: DepartmentFor
       : await createMutation.mutate(input);
 
     if (result) {
+      toast.success('common.saved');
       handleOpenChange(false);
       return;
     }
 
+    toast.error('common.operationFailed');
     const fieldErrors = fieldErrorsFrom(isEdit ? updateMutation.error : createMutation.error);
     for (const [field, message] of Object.entries(fieldErrors)) {
       setError(field as keyof DepartmentFormValues, { type: 'server', message });
@@ -240,6 +247,22 @@ export function DepartmentFormDialog({ open, onOpenChange, dept }: DepartmentFor
               {employees.map((emp) => (
                 <option key={emp.id} value={emp.id}>
                   {emp.first_name} {emp.last_name} — {emp.employee_number}
+                </option>
+              ))}
+            </Select>
+          </Field>
+
+          {/* Cost center picker */}
+          <Field
+            label={t('organization.department.form.costCenter')}
+            htmlFor="dept_cost_center_id"
+            error={translate(t, errors.cost_center_id?.message)}
+          >
+            <Select id="dept_cost_center_id" invalid={!!errors.cost_center_id} {...register('cost_center_id')}>
+              <option value="">{t('organization.department.form.noCostCenter')}</option>
+              {costCenters.map((cc) => (
+                <option key={cc.id} value={cc.id}>
+                  {cc.name}{cc.code ? ` (${cc.code})` : ''}
                 </option>
               ))}
             </Select>

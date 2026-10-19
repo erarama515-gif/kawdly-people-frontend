@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Pencil, Plus, Search, Trash2 } from 'lucide-react';
+import { LayoutList, Network, Pencil, Plus, Search, Trash2 } from 'lucide-react';
 import { cn } from '@/lib/cn';
 import { Card } from '@/components/ui/Card';
+import { SkeletonTable } from '@/components/ui/SkeletonTable';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { Avatar } from '@/components/ui/Avatar';
 import { Button } from '@/components/ui/Button';
@@ -19,18 +20,46 @@ import {
   useDeleteBranch,
   useJobPositionList,
   useDeleteJobPosition,
+  useJobGradeList,
+  useDeleteJobGrade,
+  useJobLevelList,
+  useDeleteJobLevel,
+  useCostCenterList,
+  useDeleteCostCenter,
 } from '../api/queries';
-import type { DepartmentListParams, CompanyListParams, BranchListParams, JobPositionListParams } from '../api/resource';
-import type { DepartmentWire, CompanyWire, BranchWire, JobPositionWire } from '../api/schema';
+import type {
+  DepartmentListParams,
+  CompanyListParams,
+  BranchListParams,
+  JobPositionListParams,
+  JobGradeListParams,
+  JobLevelListParams,
+  CostCenterListParams,
+} from '../api/resource';
+import type {
+  DepartmentWire,
+  CompanyWire,
+  BranchWire,
+  JobPositionWire,
+  JobGradeWire,
+  JobLevelWire,
+  CostCenterWire,
+} from '../api/schema';
 import { DepartmentFormDialog } from './DepartmentFormDialog';
 import { CompanyFormDialog } from './CompanyFormDialog';
 import { BranchFormDialog } from './BranchFormDialog';
 import { JobPositionFormDialog } from './JobPositionFormDialog';
+import { JobGradeFormDialog } from './JobGradeFormDialog';
+import { JobLevelFormDialog } from './JobLevelFormDialog';
+import { CostCenterFormDialog } from './CostCenterFormDialog';
+import { toast } from '@/components/ui/Toast';
+import { OrgChart } from './OrgChart';
 
 /**
  * Organization module live-data page.
  *
- * Four stacked CRUD sections: Companies, Branches, Departments, Job Positions.
+ * Seven stacked CRUD sections: Companies, Branches, Departments, Job
+ * Positions, Job Grades, Job Levels, Cost Centers.
  * Stat strip at top shows honest backend counts (perPage:1 queries).
  * Each section manages its own page/search/filter state independently.
  */
@@ -117,7 +146,7 @@ function SearchInput({ value, onChange, placeholder }: {
 }) {
   return (
     <label className="relative flex items-center">
-      <span className="pointer-events-none absolute left-3 text-ink-faint">
+      <span className="pointer-events-none absolute start-3 text-ink-faint">
         <Search className="h-3.5 w-3.5" strokeWidth={1.75} aria-hidden="true" />
       </span>
       <input
@@ -126,7 +155,7 @@ function SearchInput({ value, onChange, placeholder }: {
         value={value}
         onChange={(e) => onChange(e.target.value)}
         className={cn(
-          'h-9 rounded-full border border-hairline bg-surface pl-8 pr-4 text-[13px] text-ink placeholder:text-ink-faint',
+          'h-9 rounded-full border border-hairline bg-surface ps-8 pe-4 text-[13px] text-ink placeholder:text-ink-faint',
           'focus:outline-none focus:ring-1 focus:ring-navy/40',
           'w-52',
         )}
@@ -153,10 +182,53 @@ function SectionHeader({ title, addLabel, onAdd }: {
   );
 }
 
+// ─── View Toggle ─────────────────────────────────────────────────────────────
+
+type OrgView = 'list' | 'chart';
+
+function ViewToggle({ view, onChange }: { view: OrgView; onChange: (v: OrgView) => void }) {
+  const { t } = useTranslation();
+  return (
+    <div className="inline-flex rounded-full border border-hairline bg-surface p-0.5 shadow-sm">
+      <button
+        type="button"
+        onClick={() => onChange('list')}
+        className={cn(
+          'inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[13px] font-medium transition-colors',
+          view === 'list'
+            ? 'bg-navy text-white shadow-sm'
+            : 'text-ink-muted hover:text-ink',
+        )}
+        aria-pressed={view === 'list'}
+      >
+        <LayoutList className="h-3.5 w-3.5" strokeWidth={1.75} aria-hidden="true" />
+        {t('organization.listView')}
+      </button>
+      <button
+        type="button"
+        onClick={() => onChange('chart')}
+        className={cn(
+          'inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[13px] font-medium transition-colors',
+          view === 'chart'
+            ? 'bg-navy text-white shadow-sm'
+            : 'text-ink-muted hover:text-ink',
+        )}
+        aria-pressed={view === 'chart'}
+      >
+        <Network className="h-3.5 w-3.5" strokeWidth={1.75} aria-hidden="true" />
+        {t('organization.chartView')}
+      </button>
+    </div>
+  );
+}
+
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export function OrganizationPage() {
   const { t } = useTranslation();
+
+  // ── View mode (list vs chart) ─────────────────────────────────────────────
+  const [view, setView] = useState<OrgView>('list');
 
   // ── Department state ─────────────────────────────────────────────────────────
   const [deptSearchInput, setDeptSearchInput] = useState('');
@@ -284,30 +356,167 @@ export function OrganizationPage() {
   const { state: deptPickerState } = useDepartmentList({ page: 1, perPage: 200 });
   const allDepartments = deptPickerState.data?.data ?? [];
 
+  // ── JobGrade state ───────────────────────────────────────────────────────────
+  const [jgSearchInput, setJgSearchInput] = useState('');
+  const [jgSearch, setJgSearch] = useState('');
+  const [jgPage, setJgPage] = useState(1);
+  const [jgFormOpen, setJgFormOpen] = useState(false);
+  const [editJg, setEditJg] = useState<JobGradeWire | undefined>(undefined);
+  const [deleteJg, setDeleteJg] = useState<JobGradeWire | undefined>(undefined);
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => setJgSearch(jgSearchInput.trim()), 300);
+    return () => window.clearTimeout(timer);
+  }, [jgSearchInput]);
+
+  useEffect(() => { setJgPage(1); }, [jgSearch]);
+
+  const jgParams = useMemo<JobGradeListParams>(
+    () => ({ page: jgPage, perPage: PER_PAGE, search: jgSearch || undefined }),
+    [jgPage, jgSearch],
+  );
+
+  const { state: jgState, refetch: refetchJg } = useJobGradeList(jgParams);
+  const { state: totalJgState } = useJobGradeList({ page: 1, perPage: 1 });
+  const deleteJgMutation = useDeleteJobGrade(jgParams);
+  const jobGrades = jgState.data?.data ?? [];
+  const jgMeta = jgState.data?.meta;
+
+  // ── JobLevel state ───────────────────────────────────────────────────────────
+  const [jlSearchInput, setJlSearchInput] = useState('');
+  const [jlSearch, setJlSearch] = useState('');
+  const [jlPage, setJlPage] = useState(1);
+  const [jlFormOpen, setJlFormOpen] = useState(false);
+  const [editJl, setEditJl] = useState<JobLevelWire | undefined>(undefined);
+  const [deleteJl, setDeleteJl] = useState<JobLevelWire | undefined>(undefined);
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => setJlSearch(jlSearchInput.trim()), 300);
+    return () => window.clearTimeout(timer);
+  }, [jlSearchInput]);
+
+  useEffect(() => { setJlPage(1); }, [jlSearch]);
+
+  const jlParams = useMemo<JobLevelListParams>(
+    () => ({ page: jlPage, perPage: PER_PAGE, search: jlSearch || undefined }),
+    [jlPage, jlSearch],
+  );
+
+  const { state: jlState, refetch: refetchJl } = useJobLevelList(jlParams);
+  const { state: totalJlState } = useJobLevelList({ page: 1, perPage: 1 });
+  const deleteJlMutation = useDeleteJobLevel(jlParams);
+  const jobLevels = jlState.data?.data ?? [];
+  const jlMeta = jlState.data?.meta;
+
+  // ── CostCenter state ─────────────────────────────────────────────────────────
+  const [ccSearchInput, setCcSearchInput] = useState('');
+  const [ccSearch, setCcSearch] = useState('');
+  const [ccPage, setCcPage] = useState(1);
+  const [ccFormOpen, setCcFormOpen] = useState(false);
+  const [editCc, setEditCc] = useState<CostCenterWire | undefined>(undefined);
+  const [deleteCc, setDeleteCc] = useState<CostCenterWire | undefined>(undefined);
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => setCcSearch(ccSearchInput.trim()), 300);
+    return () => window.clearTimeout(timer);
+  }, [ccSearchInput]);
+
+  useEffect(() => { setCcPage(1); }, [ccSearch]);
+
+  const ccParams = useMemo<CostCenterListParams>(
+    () => ({ page: ccPage, perPage: PER_PAGE }),
+    [ccPage],
+  );
+
+  const { state: ccState, refetch: refetchCc } = useCostCenterList(ccParams);
+  const { state: totalCcState } = useCostCenterList({ page: 1, perPage: 1 });
+  const deleteCcMutation = useDeleteCostCenter(ccParams);
+  const allCostCenters = ccState.data?.data ?? [];
+  const costCenters = ccSearch
+    ? allCostCenters.filter((cc) =>
+        cc.name.toLowerCase().includes(ccSearch.toLowerCase()) ||
+        (cc.code ?? '').toLowerCase().includes(ccSearch.toLowerCase()),
+      )
+    : allCostCenters;
+  const ccMeta = ccState.data?.meta;
+
   // ── Actions ───────────────────────────────────────────────────────────────────
 
   async function confirmDeleteDept() {
     if (!deleteDept) return;
     const result = await deleteDeptMutation.mutate(deleteDept.id);
-    if (result !== undefined || deleteDeptMutation.error === undefined) setDeleteDept(undefined);
+    if (result !== undefined || deleteDeptMutation.error === undefined) {
+      toast.success('common.deleted');
+      setDeleteDept(undefined);
+    } else {
+      toast.error('common.operationFailed');
+    }
   }
 
   async function confirmDeleteCompany() {
     if (!deleteCompany) return;
     const result = await deleteCompanyMutation.mutate(deleteCompany.id);
-    if (result !== undefined || deleteCompanyMutation.error === undefined) setDeleteCompany(undefined);
+    if (result !== undefined || deleteCompanyMutation.error === undefined) {
+      toast.success('common.deleted');
+      setDeleteCompany(undefined);
+    } else {
+      toast.error('common.operationFailed');
+    }
   }
 
   async function confirmDeleteBranch() {
     if (!deleteBranch) return;
     const result = await deleteBranchMutation.mutate(deleteBranch.id);
-    if (result !== undefined || deleteBranchMutation.error === undefined) setDeleteBranch(undefined);
+    if (result !== undefined || deleteBranchMutation.error === undefined) {
+      toast.success('common.deleted');
+      setDeleteBranch(undefined);
+    } else {
+      toast.error('common.operationFailed');
+    }
   }
 
   async function confirmDeleteJp() {
     if (!deleteJp) return;
     const result = await deleteJpMutation.mutate(deleteJp.id);
-    if (result !== undefined || deleteJpMutation.error === undefined) setDeleteJp(undefined);
+    if (result !== undefined || deleteJpMutation.error === undefined) {
+      toast.success('common.deleted');
+      setDeleteJp(undefined);
+    } else {
+      toast.error('common.operationFailed');
+    }
+  }
+
+  async function confirmDeleteJg() {
+    if (!deleteJg) return;
+    const result = await deleteJgMutation.mutate(deleteJg.id);
+    if (result !== undefined || deleteJgMutation.error === undefined) {
+      toast.success('common.deleted');
+      setDeleteJg(undefined);
+    } else {
+      toast.error('common.operationFailed');
+    }
+  }
+
+  async function confirmDeleteJl() {
+    if (!deleteJl) return;
+    const result = await deleteJlMutation.mutate(deleteJl.id);
+    if (result !== undefined || deleteJlMutation.error === undefined) {
+      toast.success('common.deleted');
+      setDeleteJl(undefined);
+    } else {
+      toast.error('common.operationFailed');
+    }
+  }
+
+  async function confirmDeleteCc() {
+    if (!deleteCc) return;
+    const result = await deleteCcMutation.mutate(deleteCc.id);
+    if (result !== undefined || deleteCcMutation.error === undefined) {
+      toast.success('common.deleted');
+      setDeleteCc(undefined);
+    } else {
+      toast.error('common.operationFailed');
+    }
   }
 
   // ─── Render ───────────────────────────────────────────────────────────────────
@@ -325,12 +534,34 @@ export function OrganizationPage() {
       />
 
       {/* Stat strip — all honest backend counts */}
-      <div className="mb-8 grid grid-cols-2 gap-3 sm:grid-cols-4">
+      <div className="mb-6 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-7">
         <StatCard label={t('organization.stat.companies')} value={totalCompanyState.data?.meta.total} />
         <StatCard label={t('organization.stat.branches')} value={totalBranchState.data?.meta.total} />
         <StatCard label={t('organization.stat.departments')} value={totalDeptState.data?.meta.total} />
         <StatCard label={t('organization.stat.positions')} value={totalJpState.data?.meta.total} />
+        <StatCard label={t('organization.stat.jobGrades')} value={totalJgState.data?.meta.total} />
+        <StatCard label={t('organization.stat.jobLevels')} value={totalJlState.data?.meta.total} />
+        <StatCard label={t('organization.stat.costCenters')} value={totalCcState.data?.meta.total} />
       </div>
+
+      {/* View toggle — List vs Org Chart */}
+      <div className="mb-8 flex items-center justify-between gap-4">
+        <h2 className="text-body font-semibold text-ink">
+          {view === 'chart' ? t('organization.orgChart') : t('organization.title')}
+        </h2>
+        <ViewToggle view={view} onChange={setView} />
+      </div>
+
+      {/* ═══ Org Chart View ══════════════════════════════════════════════════ */}
+      {view === 'chart' && (
+        <div className="mb-8">
+          <OrgChart />
+        </div>
+      )}
+
+      {/* ═══ List View (existing CRUD sections) ══════════════════════════════ */}
+      {view === 'list' && (
+        <>
 
       {/* ═══ Section 1: Companies ═══════════════════════════════════════════════ */}
       <SectionHeader
@@ -357,7 +588,7 @@ export function OrganizationPage() {
       ) : null}
 
       {companyState.status === 'pending' && companies.length === 0 ? (
-        <Card className="mb-4 px-5 py-10 text-center text-body-sm text-ink-muted">{t('common.loading')}</Card>
+        <SkeletonTable />
       ) : null}
 
       {companyState.status !== 'pending' && companies.length === 0 && !companyState.error ? (
@@ -494,7 +725,7 @@ export function OrganizationPage() {
       ) : null}
 
       {branchState.status === 'pending' && branches.length === 0 ? (
-        <Card className="mb-4 px-5 py-10 text-center text-body-sm text-ink-muted">{t('common.loading')}</Card>
+        <SkeletonTable />
       ) : null}
 
       {branchState.status !== 'pending' && branches.length === 0 && !branchState.error ? (
@@ -612,7 +843,7 @@ export function OrganizationPage() {
       ) : null}
 
       {deptState.status === 'pending' && departments.length === 0 ? (
-        <Card className="mb-4 px-5 py-10 text-center text-body-sm text-ink-muted">{t('common.loading')}</Card>
+        <SkeletonTable />
       ) : null}
 
       {deptState.status !== 'pending' && departments.length === 0 && !deptState.error ? (
@@ -798,7 +1029,7 @@ export function OrganizationPage() {
       ) : null}
 
       {jpState.status === 'pending' && jobPositions.length === 0 ? (
-        <Card className="mb-4 px-5 py-10 text-center text-body-sm text-ink-muted">{t('common.loading')}</Card>
+        <SkeletonTable />
       ) : null}
 
       {jpState.status !== 'pending' && jobPositions.length === 0 && !jpState.error ? (
@@ -889,16 +1120,334 @@ export function OrganizationPage() {
           </div>
 
           {jpMeta ? (
+            <div className="mb-8">
+              <Pagination
+                currentPage={jpMeta.current_page}
+                lastPage={jpMeta.last_page}
+                total={jpMeta.total}
+                perPage={jpMeta.per_page}
+                onPageChange={setJpPage}
+              />
+            </div>
+          ) : <div className="mb-8" />}
+        </>
+      )}
+
+      {jobPositions.length === 0 && <div className="mb-8" />}
+
+      {/* ═══ Section 5: Job Grades ═══════════════════════════════════════════════ */}
+      <SectionHeader
+        title={t('organization.jobGradesSectionTitle')}
+        addLabel={t('organization.addJobGrade')}
+        onAdd={() => { setEditJg(undefined); setJgFormOpen(true); }}
+      />
+
+      <div className="mb-4 flex flex-wrap items-center gap-3">
+        <SearchInput
+          value={jgSearchInput}
+          onChange={setJgSearchInput}
+          placeholder={t('organization.searchPlaceholder')}
+        />
+      </div>
+
+      {jgState.error ? (
+        <Card className="mb-4 flex items-center justify-between gap-3 px-5 py-3 text-body-sm text-coral">
+          <span>{userFacingMessage(jgState.error) || t('organization.loadFailed')}</span>
+          <Button variant="secondary" onClick={() => void refetchJg()}>
+            {t('common.retry')}
+          </Button>
+        </Card>
+      ) : null}
+
+      {jgState.status === 'pending' && jobGrades.length === 0 ? (
+        <SkeletonTable />
+      ) : null}
+
+      {jgState.status !== 'pending' && jobGrades.length === 0 && !jgState.error ? (
+        <Card className="mb-4 px-5 py-10 text-center text-body-sm text-ink-muted">{t('organization.emptySearch')}</Card>
+      ) : null}
+
+      {jobGrades.length > 0 && (
+        <>
+          {/* Job Grades table — desktop */}
+          <Card className="mb-4 hidden lg:block">
+            <div className="border-b border-divider px-5 py-3">
+              <div className="grid grid-cols-[2fr_1fr_2fr_100px_auto] gap-4">
+                {(['jobGrade.table.name', 'jobGrade.table.code', 'jobGrade.table.salaryRange', 'jobGrade.table.sortOrder', 'jobGrade.table.actions'] as const).map((key) => (
+                  <span key={key} className="text-caption font-semibold uppercase tracking-wide text-ink-faint">
+                    {t(`organization.${key}`)}
+                  </span>
+                ))}
+              </div>
+            </div>
+            {jobGrades.map((jg, idx) => (
+              <div
+                key={jg.id}
+                className={cn(
+                  'grid grid-cols-[2fr_1fr_2fr_100px_auto] items-center gap-4 px-5 py-3',
+                  idx < jobGrades.length - 1 && 'border-b border-divider',
+                  'transition-colors hover:bg-surface/60',
+                )}
+              >
+                <p className="truncate text-body-sm font-semibold text-ink">{jg.name}</p>
+                <p className="truncate text-body-sm text-ink">{jg.code ?? '—'}</p>
+                <p className="nums truncate font-mono text-body-sm text-ink">
+                  {jg.min_salary ?? '—'} / {jg.mid_salary ?? '—'} / {jg.max_salary ?? '—'}
+                </p>
+                <p className="nums font-mono text-body-sm text-ink">{jg.sort_order ?? '—'}</p>
+                <RowActions
+                  onEdit={() => { setEditJg(jg); setJgFormOpen(true); }}
+                  onDelete={() => setDeleteJg(jg)}
+                  editLabel={t('organization.jobGrade.editAction')}
+                  deleteLabel={t('organization.jobGrade.deleteAction')}
+                />
+              </div>
+            ))}
+          </Card>
+
+          {/* Job Grades cards — mobile */}
+          <div className="mb-4 flex flex-col gap-3 lg:hidden">
+            {jobGrades.map((jg) => (
+              <Card key={jg.id} className="flex flex-col gap-3 p-4">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="truncate text-body-sm font-semibold text-ink">{jg.name}</p>
+                    {jg.code ? <p className="truncate text-caption text-ink-muted">{jg.code}</p> : null}
+                  </div>
+                  <RowActions
+                    onEdit={() => { setEditJg(jg); setJgFormOpen(true); }}
+                    onDelete={() => setDeleteJg(jg)}
+                    editLabel={t('organization.jobGrade.editAction')}
+                    deleteLabel={t('organization.jobGrade.deleteAction')}
+                  />
+                </div>
+                <div className="border-t border-divider pt-3 text-body-sm text-ink-muted">
+                  {jg.min_salary ?? '—'} / {jg.mid_salary ?? '—'} / {jg.max_salary ?? '—'}
+                </div>
+              </Card>
+            ))}
+          </div>
+
+          {jgMeta ? (
+            <div className="mb-8">
+              <Pagination
+                currentPage={jgMeta.current_page}
+                lastPage={jgMeta.last_page}
+                total={jgMeta.total}
+                perPage={jgMeta.per_page}
+                onPageChange={setJgPage}
+              />
+            </div>
+          ) : <div className="mb-8" />}
+        </>
+      )}
+
+      {jobGrades.length === 0 && <div className="mb-8" />}
+
+      {/* ═══ Section 6: Job Levels ═══════════════════════════════════════════════ */}
+      <SectionHeader
+        title={t('organization.jobLevelsSectionTitle')}
+        addLabel={t('organization.addJobLevel')}
+        onAdd={() => { setEditJl(undefined); setJlFormOpen(true); }}
+      />
+
+      <div className="mb-4 flex flex-wrap items-center gap-3">
+        <SearchInput
+          value={jlSearchInput}
+          onChange={setJlSearchInput}
+          placeholder={t('organization.searchPlaceholder')}
+        />
+      </div>
+
+      {jlState.error ? (
+        <Card className="mb-4 flex items-center justify-between gap-3 px-5 py-3 text-body-sm text-coral">
+          <span>{userFacingMessage(jlState.error) || t('organization.loadFailed')}</span>
+          <Button variant="secondary" onClick={() => void refetchJl()}>
+            {t('common.retry')}
+          </Button>
+        </Card>
+      ) : null}
+
+      {jlState.status === 'pending' && jobLevels.length === 0 ? (
+        <SkeletonTable />
+      ) : null}
+
+      {jlState.status !== 'pending' && jobLevels.length === 0 && !jlState.error ? (
+        <Card className="mb-4 px-5 py-10 text-center text-body-sm text-ink-muted">{t('organization.emptySearch')}</Card>
+      ) : null}
+
+      {jobLevels.length > 0 && (
+        <>
+          {/* Job Levels table — desktop */}
+          <Card className="mb-4 hidden lg:block">
+            <div className="border-b border-divider px-5 py-3">
+              <div className="grid grid-cols-[2fr_1fr_auto] gap-4">
+                {(['jobLevel.table.name', 'jobLevel.table.sortOrder', 'jobLevel.table.actions'] as const).map((key) => (
+                  <span key={key} className="text-caption font-semibold uppercase tracking-wide text-ink-faint">
+                    {t(`organization.${key}`)}
+                  </span>
+                ))}
+              </div>
+            </div>
+            {jobLevels.map((jl, idx) => (
+              <div
+                key={jl.id}
+                className={cn(
+                  'grid grid-cols-[2fr_1fr_auto] items-center gap-4 px-5 py-3',
+                  idx < jobLevels.length - 1 && 'border-b border-divider',
+                  'transition-colors hover:bg-surface/60',
+                )}
+              >
+                <p className="truncate text-body-sm font-semibold text-ink">{jl.name}</p>
+                <p className="nums font-mono text-body-sm text-ink">{jl.sort_order ?? '—'}</p>
+                <RowActions
+                  onEdit={() => { setEditJl(jl); setJlFormOpen(true); }}
+                  onDelete={() => setDeleteJl(jl)}
+                  editLabel={t('organization.jobLevel.editAction')}
+                  deleteLabel={t('organization.jobLevel.deleteAction')}
+                />
+              </div>
+            ))}
+          </Card>
+
+          {/* Job Levels cards — mobile */}
+          <div className="mb-4 flex flex-col gap-3 lg:hidden">
+            {jobLevels.map((jl) => (
+              <Card key={jl.id} className="flex flex-col gap-3 p-4">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="truncate text-body-sm font-semibold text-ink">{jl.name}</p>
+                  </div>
+                  <RowActions
+                    onEdit={() => { setEditJl(jl); setJlFormOpen(true); }}
+                    onDelete={() => setDeleteJl(jl)}
+                    editLabel={t('organization.jobLevel.editAction')}
+                    deleteLabel={t('organization.jobLevel.deleteAction')}
+                  />
+                </div>
+              </Card>
+            ))}
+          </div>
+
+          {jlMeta ? (
+            <div className="mb-8">
+              <Pagination
+                currentPage={jlMeta.current_page}
+                lastPage={jlMeta.last_page}
+                total={jlMeta.total}
+                perPage={jlMeta.per_page}
+                onPageChange={setJlPage}
+              />
+            </div>
+          ) : <div className="mb-8" />}
+        </>
+      )}
+
+      {jobLevels.length === 0 && <div className="mb-8" />}
+
+      {/* ═══ Section 7: Cost Centers ═════════════════════════════════════════════ */}
+      <SectionHeader
+        title={t('organization.costCentersSectionTitle')}
+        addLabel={t('organization.addCostCenter')}
+        onAdd={() => { setEditCc(undefined); setCcFormOpen(true); }}
+      />
+
+      <div className="mb-4 flex flex-wrap items-center gap-3">
+        <SearchInput
+          value={ccSearchInput}
+          onChange={setCcSearchInput}
+          placeholder={t('organization.searchPlaceholder')}
+        />
+      </div>
+
+      {ccState.error ? (
+        <Card className="mb-4 flex items-center justify-between gap-3 px-5 py-3 text-body-sm text-coral">
+          <span>{userFacingMessage(ccState.error) || t('organization.loadFailed')}</span>
+          <Button variant="secondary" onClick={() => void refetchCc()}>
+            {t('common.retry')}
+          </Button>
+        </Card>
+      ) : null}
+
+      {ccState.status === 'pending' && costCenters.length === 0 ? (
+        <SkeletonTable />
+      ) : null}
+
+      {ccState.status !== 'pending' && costCenters.length === 0 && !ccState.error ? (
+        <Card className="mb-4 px-5 py-10 text-center text-body-sm text-ink-muted">{t('organization.emptySearch')}</Card>
+      ) : null}
+
+      {costCenters.length > 0 && (
+        <>
+          {/* Cost Centers table — desktop */}
+          <Card className="mb-4 hidden lg:block">
+            <div className="border-b border-divider px-5 py-3">
+              <div className="grid grid-cols-[2fr_1fr_100px_auto] gap-4">
+                {(['costCenter.table.name', 'costCenter.table.code', 'costCenter.table.status', 'costCenter.table.actions'] as const).map((key) => (
+                  <span key={key} className="text-caption font-semibold uppercase tracking-wide text-ink-faint">
+                    {t(`organization.${key}`)}
+                  </span>
+                ))}
+              </div>
+            </div>
+            {costCenters.map((cc, idx) => (
+              <div
+                key={cc.id}
+                className={cn(
+                  'grid grid-cols-[2fr_1fr_100px_auto] items-center gap-4 px-5 py-3',
+                  idx < costCenters.length - 1 && 'border-b border-divider',
+                  'transition-colors hover:bg-surface/60',
+                )}
+              >
+                <p className="truncate text-body-sm font-semibold text-ink">{cc.name}</p>
+                <p className="truncate text-body-sm text-ink">{cc.code ?? '—'}</p>
+                <div><ActiveBadge isActive={cc.is_active} /></div>
+                <RowActions
+                  onEdit={() => { setEditCc(cc); setCcFormOpen(true); }}
+                  onDelete={() => setDeleteCc(cc)}
+                  editLabel={t('organization.costCenter.editAction')}
+                  deleteLabel={t('organization.costCenter.deleteAction')}
+                />
+              </div>
+            ))}
+          </Card>
+
+          {/* Cost Centers cards — mobile */}
+          <div className="mb-4 flex flex-col gap-3 lg:hidden">
+            {costCenters.map((cc) => (
+              <Card key={cc.id} className="flex flex-col gap-3 p-4">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="truncate text-body-sm font-semibold text-ink">{cc.name}</p>
+                    {cc.code ? <p className="truncate text-caption text-ink-muted">{cc.code}</p> : null}
+                  </div>
+                  <div className="flex shrink-0 flex-col items-end gap-2">
+                    <ActiveBadge isActive={cc.is_active} />
+                    <RowActions
+                      onEdit={() => { setEditCc(cc); setCcFormOpen(true); }}
+                      onDelete={() => setDeleteCc(cc)}
+                      editLabel={t('organization.costCenter.editAction')}
+                      deleteLabel={t('organization.costCenter.deleteAction')}
+                    />
+                  </div>
+                </div>
+              </Card>
+            ))}
+          </div>
+
+          {ccMeta ? (
             <Pagination
-              currentPage={jpMeta.current_page}
-              lastPage={jpMeta.last_page}
-              total={jpMeta.total}
-              perPage={jpMeta.per_page}
-              onPageChange={setJpPage}
+              currentPage={ccMeta.current_page}
+              lastPage={ccMeta.last_page}
+              total={ccMeta.total}
+              perPage={ccMeta.per_page}
+              onPageChange={setCcPage}
             />
           ) : null}
         </>
       )}
+
+      </> )} {/* end list view */}
 
       {/* ── Dialogs ─────────────────────────────────────────────────────────── */}
 
@@ -909,6 +1458,12 @@ export function OrganizationPage() {
       <BranchFormDialog open={branchFormOpen} onOpenChange={setBranchFormOpen} branch={editBranch} />
 
       <JobPositionFormDialog open={jpFormOpen} onOpenChange={setJpFormOpen} jobPosition={editJp} />
+
+      <JobGradeFormDialog open={jgFormOpen} onOpenChange={setJgFormOpen} jobGrade={editJg} />
+
+      <JobLevelFormDialog open={jlFormOpen} onOpenChange={setJlFormOpen} jobLevel={editJl} />
+
+      <CostCenterFormDialog open={ccFormOpen} onOpenChange={setCcFormOpen} costCenter={editCc} />
 
       <ConfirmDialog
         open={deleteDept !== undefined}
@@ -960,6 +1515,45 @@ export function OrganizationPage() {
         }
         isLoading={deleteJpMutation.isPending}
         onConfirm={() => void confirmDeleteJp()}
+      />
+
+      <ConfirmDialog
+        open={deleteJg !== undefined}
+        onOpenChange={(open) => !open && setDeleteJg(undefined)}
+        title={t('organization.jobGrade.deleteConfirm.title')}
+        description={
+          deleteJg
+            ? t('organization.jobGrade.deleteConfirm.description', { name: deleteJg.name })
+            : undefined
+        }
+        isLoading={deleteJgMutation.isPending}
+        onConfirm={() => void confirmDeleteJg()}
+      />
+
+      <ConfirmDialog
+        open={deleteJl !== undefined}
+        onOpenChange={(open) => !open && setDeleteJl(undefined)}
+        title={t('organization.jobLevel.deleteConfirm.title')}
+        description={
+          deleteJl
+            ? t('organization.jobLevel.deleteConfirm.description', { name: deleteJl.name })
+            : undefined
+        }
+        isLoading={deleteJlMutation.isPending}
+        onConfirm={() => void confirmDeleteJl()}
+      />
+
+      <ConfirmDialog
+        open={deleteCc !== undefined}
+        onOpenChange={(open) => !open && setDeleteCc(undefined)}
+        title={t('organization.costCenter.deleteConfirm.title')}
+        description={
+          deleteCc
+            ? t('organization.costCenter.deleteConfirm.description', { name: deleteCc.name })
+            : undefined
+        }
+        isLoading={deleteCcMutation.isPending}
+        onConfirm={() => void confirmDeleteCc()}
       />
     </div>
   );

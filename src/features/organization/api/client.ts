@@ -1,15 +1,20 @@
 import { env } from '@/config/env';
-import { createHttpClient } from '@/lib/api/http';
-import type { HttpClient } from '@/lib/api/http';
+import { appHttpClient as http } from '@/lib/api/appHttpClient';
 import {
   mockDepartmentApi,
   mockCompanyApi,
   mockBranchApi,
   mockJobPositionApi,
+  mockJobGradeApi,
+  mockJobLevelApi,
+  mockCostCenterApi,
   resetMockDepartments,
   resetMockCompanies,
   resetMockBranches,
   resetMockJobPositions,
+  resetMockJobGrades,
+  resetMockJobLevels,
+  resetMockCostCenters,
   setMockFailureRate,
 } from './mockApi';
 import {
@@ -21,6 +26,12 @@ import {
   branchListDecoder,
   jobPositionEnvelopeDecoder,
   jobPositionListDecoder,
+  jobGradeEnvelopeDecoder,
+  jobGradeListDecoder,
+  jobLevelEnvelopeDecoder,
+  jobLevelListDecoder,
+  costCenterEnvelopeDecoder,
+  costCenterListDecoder,
 } from './schema';
 import type {
   DepartmentApi,
@@ -39,25 +50,31 @@ import type {
   JobPositionInput,
   JobPositionListParams,
   JobPositionUpdateInput,
+  JobGradeApi,
+  JobGradeInput,
+  JobGradeListParams,
+  JobGradeUpdateInput,
+  JobLevelApi,
+  JobLevelInput,
+  JobLevelListParams,
+  JobLevelUpdateInput,
+  CostCenterApi,
+  CostCenterInput,
+  CostCenterListParams,
+  CostCenterUpdateInput,
 } from './resource';
 
 /**
- * Real HTTP implementations of DepartmentApi, CompanyApi, BranchApi, and
- * JobPositionApi.
+ * Real HTTP implementations of DepartmentApi, CompanyApi, BranchApi,
+ * JobPositionApi, JobGradeApi, JobLevelApi, and CostCenterApi.
  *
- * Note on search params for Company/Branch/JobPosition: the real backend
- * controllers do NOT list a free-text `search` field in their $filterable
- * arrays. The mock implementations support client-side search for UX, but the
- * HTTP implementations do NOT send a `search` query param to avoid fabricating
- * a backend contract that doesn't exist. This is documented in the report.
+ * Note on search params for Company/Branch/JobPosition/JobGrade/JobLevel/
+ * CostCenter: the real backend controllers do NOT list a free-text `search`
+ * field in their $filterable arrays. The mock implementations support
+ * client-side search for UX, but the HTTP implementations do NOT send a
+ * `search` query param to avoid fabricating a backend contract that doesn't
+ * exist. This is documented in the report.
  */
-
-const http: HttpClient = createHttpClient({
-  baseUrl: env.apiBaseUrl || '/api/v1',
-  timeoutMs: env.requestTimeoutMs,
-  retries: env.requestRetries,
-  backoffMs: env.requestBackoffMs,
-});
 
 // ─── Department ───────────────────────────────────────────────────────────────
 
@@ -71,7 +88,7 @@ export const httpDepartmentApi: DepartmentApi = {
         per_page: params.perPage,
         search: params.search || undefined,
         is_active: params.isActive,
-        include: 'head',
+        include: 'head,costCenter',
       },
       signal,
       schema: departmentListDecoder,
@@ -207,8 +224,10 @@ export const httpJobPositionApi: JobPositionApi = {
         // NOTE: no `search` param — backend $filterable does not include free-text search
         company_id: params.companyId,
         department_id: params.departmentId,
+        job_grade_id: params.jobGradeId,
+        job_level_id: params.jobLevelId,
         is_active: params.isActive,
-        include: 'company,department',
+        include: 'company,department,jobGrade,jobLevel',
       },
       signal,
       schema: jobPositionListDecoder,
@@ -241,6 +260,136 @@ export const httpJobPositionApi: JobPositionApi = {
   },
 };
 
+// ─── JobGrade ─────────────────────────────────────────────────────────────────
+
+const JOB_GRADE_BASE = '/job-grades';
+
+export const httpJobGradeApi: JobGradeApi = {
+  async list({ signal }, params) {
+    const { data } = await http(JOB_GRADE_BASE, {
+      query: {
+        page: params.page,
+        per_page: params.perPage,
+        company_id: params.companyId,
+      },
+      signal,
+      schema: jobGradeListDecoder,
+    });
+    return requireData(data, 'GET /job-grades');
+  },
+
+  async create({ signal }, input) {
+    const { data } = await http(JOB_GRADE_BASE, {
+      method: 'POST',
+      body: input,
+      signal,
+      schema: jobGradeEnvelopeDecoder,
+    });
+    return requireData(data, 'POST /job-grades').data;
+  },
+
+  async update({ signal }, id, input) {
+    const { data } = await http(`${JOB_GRADE_BASE}/${id}`, {
+      method: 'PATCH',
+      body: input,
+      signal,
+      schema: jobGradeEnvelopeDecoder,
+    });
+    return requireData(data, `PATCH /job-grades/${id}`).data;
+  },
+
+  async remove({ signal }, id) {
+    await http(`${JOB_GRADE_BASE}/${id}`, { method: 'DELETE', signal, ignoreBody: true });
+  },
+};
+
+// ─── JobLevel ─────────────────────────────────────────────────────────────────
+
+const JOB_LEVEL_BASE = '/job-levels';
+
+export const httpJobLevelApi: JobLevelApi = {
+  async list({ signal }, params) {
+    const { data } = await http(JOB_LEVEL_BASE, {
+      query: {
+        page: params.page,
+        per_page: params.perPage,
+        company_id: params.companyId,
+      },
+      signal,
+      schema: jobLevelListDecoder,
+    });
+    return requireData(data, 'GET /job-levels');
+  },
+
+  async create({ signal }, input) {
+    const { data } = await http(JOB_LEVEL_BASE, {
+      method: 'POST',
+      body: input,
+      signal,
+      schema: jobLevelEnvelopeDecoder,
+    });
+    return requireData(data, 'POST /job-levels').data;
+  },
+
+  async update({ signal }, id, input) {
+    const { data } = await http(`${JOB_LEVEL_BASE}/${id}`, {
+      method: 'PATCH',
+      body: input,
+      signal,
+      schema: jobLevelEnvelopeDecoder,
+    });
+    return requireData(data, `PATCH /job-levels/${id}`).data;
+  },
+
+  async remove({ signal }, id) {
+    await http(`${JOB_LEVEL_BASE}/${id}`, { method: 'DELETE', signal, ignoreBody: true });
+  },
+};
+
+// ─── CostCenter ───────────────────────────────────────────────────────────────
+
+const COST_CENTER_BASE = '/cost-centers';
+
+export const httpCostCenterApi: CostCenterApi = {
+  async list({ signal }, params) {
+    const { data } = await http(COST_CENTER_BASE, {
+      query: {
+        page: params.page,
+        per_page: params.perPage,
+        company_id: params.companyId,
+        is_active: params.isActive,
+      },
+      signal,
+      schema: costCenterListDecoder,
+    });
+    return requireData(data, 'GET /cost-centers');
+  },
+
+  async create({ signal }, input) {
+    const { data } = await http(COST_CENTER_BASE, {
+      method: 'POST',
+      body: input,
+      signal,
+      schema: costCenterEnvelopeDecoder,
+    });
+    return requireData(data, 'POST /cost-centers').data;
+  },
+
+  async update({ signal }, id, input) {
+    const { data } = await http(`${COST_CENTER_BASE}/${id}`, {
+      method: 'PATCH',
+      body: input,
+      signal,
+      schema: costCenterEnvelopeDecoder,
+    });
+    return requireData(data, `PATCH /cost-centers/${id}`).data;
+  },
+
+  async remove({ signal }, id) {
+    await http(`${COST_CENTER_BASE}/${id}`, { method: 'DELETE', signal, ignoreBody: true });
+  },
+};
+
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 function requireData<T>(data: T | undefined, endpoint: string): T {
@@ -258,6 +407,9 @@ export const departmentApi: DepartmentApi = env.useMockApi ? mockDepartmentApi :
 export const companyApi: CompanyApi = env.useMockApi ? mockCompanyApi : httpCompanyApi;
 export const branchApi: BranchApi = env.useMockApi ? mockBranchApi : httpBranchApi;
 export const jobPositionApi: JobPositionApi = env.useMockApi ? mockJobPositionApi : httpJobPositionApi;
+export const jobGradeApi: JobGradeApi = env.useMockApi ? mockJobGradeApi : httpJobGradeApi;
+export const jobLevelApi: JobLevelApi = env.useMockApi ? mockJobLevelApi : httpJobLevelApi;
+export const costCenterApi: CostCenterApi = env.useMockApi ? mockCostCenterApi : httpCostCenterApi;
 
 if (env.isDev && env.useMockApi) {
   Object.defineProperty(window, '__departmentsMock', {
@@ -276,6 +428,18 @@ if (env.isDev && env.useMockApi) {
     value: { reset: resetMockJobPositions },
     configurable: true,
   });
+  Object.defineProperty(window, '__jobGradesMock', {
+    value: { reset: resetMockJobGrades },
+    configurable: true,
+  });
+  Object.defineProperty(window, '__jobLevelsMock', {
+    value: { reset: resetMockJobLevels },
+    configurable: true,
+  });
+  Object.defineProperty(window, '__costCentersMock', {
+    value: { reset: resetMockCostCenters },
+    configurable: true,
+  });
 }
 
 export type {
@@ -291,4 +455,13 @@ export type {
   JobPositionInput,
   JobPositionUpdateInput,
   JobPositionListParams,
+  JobGradeInput,
+  JobGradeUpdateInput,
+  JobGradeListParams,
+  JobLevelInput,
+  JobLevelUpdateInput,
+  JobLevelListParams,
+  CostCenterInput,
+  CostCenterUpdateInput,
+  CostCenterListParams,
 };

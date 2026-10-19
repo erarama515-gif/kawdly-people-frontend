@@ -10,8 +10,9 @@ import { Field, Input, Select } from '@/components/ui/form';
 import { userFacingMessage } from '@/lib/api/errors';
 import type { ApiError } from '@/lib/api/errors';
 import {
-  useCompanyList,
   useDepartmentList,
+  useJobGradeList,
+  useJobLevelList,
   useCreateJobPosition,
   useUpdateJobPosition,
 } from '../api/queries';
@@ -22,22 +23,20 @@ import type { JobPositionWire } from '../api/schema';
  * Add/Edit modal for one JobPosition record.
  *
  * Confirmed fields from StoreJobPositionRequest.php:
- *   company_id (required FK), department_id (nullable FK), title (required),
- *   title_ar, code, description (textarea), requirements (textarea),
- *   headcount (int min:1), is_active (boolean).
+ *   company_id (required FK, attached server-side), department_id (nullable FK),
+ *   title (required), title_ar, code, description (textarea),
+ *   requirements (textarea), headcount (int min:1), is_active (boolean),
+ *   job_grade_id (nullable FK, exists:job_grades,id),
+ *   job_level_id (nullable FK, exists:job_levels,id).
  *
- * Omitted: job_grade_id (JobGrade resource not yet built),
- *          job_level_id (JobLevel resource not yet built).
- *
- * Company picker: useCompanyList({ page: 1, perPage: 100 }).
- * Department picker: reuses the existing useDepartmentList hook from queries.ts.
+ * Department/JobGrade/JobLevel pickers reuse the existing useDepartmentList /
+ * useJobGradeList / useJobLevelList hooks from queries.ts.
  * Footer Save is wired via form="job-position-form" attribute.
  */
 
 const REQUIRED = 'common.requiredField';
 
 const jobPositionFormSchema = z.object({
-  company_id: z.string().min(1, REQUIRED),
   department_id: z.string(),
   title: z.string().min(1, REQUIRED).max(255),
   title_ar: z.string().max(255),
@@ -45,6 +44,8 @@ const jobPositionFormSchema = z.object({
   description: z.string(),
   requirements: z.string(),
   headcount: z.string(),
+  job_grade_id: z.string(),
+  job_level_id: z.string(),
   is_active: z.string(),
 });
 
@@ -53,7 +54,6 @@ type JobPositionFormValues = z.infer<typeof jobPositionFormSchema>;
 function buildDefaultValues(jobPosition: JobPositionWire | undefined): JobPositionFormValues {
   if (!jobPosition) {
     return {
-      company_id: '',
       department_id: '',
       title: '',
       title_ar: '',
@@ -61,11 +61,12 @@ function buildDefaultValues(jobPosition: JobPositionWire | undefined): JobPositi
       description: '',
       requirements: '',
       headcount: '',
+      job_grade_id: '',
+      job_level_id: '',
       is_active: 'true',
     };
   }
   return {
-    company_id: String(jobPosition.company_id),
     department_id: jobPosition.department_id !== undefined ? String(jobPosition.department_id) : '',
     title: jobPosition.title,
     title_ar: jobPosition.title_ar ?? '',
@@ -73,13 +74,14 @@ function buildDefaultValues(jobPosition: JobPositionWire | undefined): JobPositi
     description: jobPosition.description ?? '',
     requirements: jobPosition.requirements ?? '',
     headcount: jobPosition.headcount !== undefined ? String(jobPosition.headcount) : '',
+    job_grade_id: jobPosition.job_grade_id !== undefined ? String(jobPosition.job_grade_id) : '',
+    job_level_id: jobPosition.job_level_id !== undefined ? String(jobPosition.job_level_id) : '',
     is_active: jobPosition.is_active === false ? 'false' : 'true',
   };
 }
 
 function toJobPositionInput(values: JobPositionFormValues): JobPositionInput {
   return {
-    company_id: Number(values.company_id),
     department_id: values.department_id ? Number(values.department_id) : null,
     title: values.title.trim(),
     title_ar: values.title_ar.trim() || null,
@@ -87,6 +89,8 @@ function toJobPositionInput(values: JobPositionFormValues): JobPositionInput {
     description: values.description.trim() || null,
     requirements: values.requirements.trim() || null,
     headcount: values.headcount ? Number(values.headcount) : null,
+    job_grade_id: values.job_grade_id ? Number(values.job_grade_id) : null,
+    job_level_id: values.job_level_id ? Number(values.job_level_id) : null,
     is_active: values.is_active === 'false' ? false : true,
   };
 }
@@ -121,13 +125,13 @@ export function JobPositionFormDialog({ open, onOpenChange, jobPosition }: JobPo
   const isPending = createMutation.isPending || updateMutation.isPending;
   const mutationError = createMutation.error ?? updateMutation.error;
 
-  // Company picker
-  const { state: companyState } = useCompanyList({ page: 1, perPage: 100 });
-  const companies = companyState.data?.data ?? [];
-
-  // Department picker — reuse the existing useDepartmentList hook
+  // Department/JobGrade/JobLevel pickers — reuse the existing list hooks
   const { state: deptState } = useDepartmentList({ page: 1, perPage: 200 });
   const departments = deptState.data?.data ?? [];
+  const { state: jobGradeState } = useJobGradeList({ page: 1, perPage: 200 });
+  const jobGrades = jobGradeState.data?.data ?? [];
+  const { state: jobLevelState } = useJobLevelList({ page: 1, perPage: 200 });
+  const jobLevels = jobLevelState.data?.data ?? [];
 
   const resolver = useMemo(() => zodResolver(jobPositionFormSchema), []);
 
@@ -195,23 +199,6 @@ export function JobPositionFormDialog({ open, onOpenChange, jobPosition }: JobPo
             </p>
           ) : null}
 
-          {/* Company picker */}
-          <Field
-            label={t('organization.jobPosition.form.company')}
-            htmlFor="jp_company_id"
-            required
-            error={translate(t, errors.company_id?.message)}
-          >
-            <Select id="jp_company_id" invalid={!!errors.company_id} {...register('company_id')}>
-              <option value="">{t('organization.jobPosition.form.selectCompany')}</option>
-              {companies.map((c) => (
-                <option key={c.id} value={c.id}>
-                  {c.name}
-                </option>
-              ))}
-            </Select>
-          </Field>
-
           {/* Department picker (nullable) */}
           <Field
             label={t('organization.jobPosition.form.department')}
@@ -264,6 +251,40 @@ export function JobPositionFormDialog({ open, onOpenChange, jobPosition }: JobPo
               error={translate(t, errors.headcount?.message)}
             >
               <Input id="jp_headcount" type="number" min="1" invalid={!!errors.headcount} {...register('headcount')} />
+            </Field>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            {/* Job Grade */}
+            <Field
+              label={t('organization.jobPosition.form.jobGrade')}
+              htmlFor="jp_job_grade_id"
+              error={translate(t, errors.job_grade_id?.message)}
+            >
+              <Select id="jp_job_grade_id" invalid={!!errors.job_grade_id} {...register('job_grade_id')}>
+                <option value="">{t('organization.jobPosition.form.noJobGrade')}</option>
+                {jobGrades.map((grade) => (
+                  <option key={grade.id} value={grade.id}>
+                    {grade.name}
+                  </option>
+                ))}
+              </Select>
+            </Field>
+
+            {/* Job Level */}
+            <Field
+              label={t('organization.jobPosition.form.jobLevel')}
+              htmlFor="jp_job_level_id"
+              error={translate(t, errors.job_level_id?.message)}
+            >
+              <Select id="jp_job_level_id" invalid={!!errors.job_level_id} {...register('job_level_id')}>
+                <option value="">{t('organization.jobPosition.form.noJobLevel')}</option>
+                {jobLevels.map((level) => (
+                  <option key={level.id} value={level.id}>
+                    {level.name}
+                  </option>
+                ))}
+              </Select>
             </Field>
           </div>
 

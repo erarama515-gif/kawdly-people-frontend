@@ -8,8 +8,8 @@ import { array, bool, num, object, optional, str } from '@/lib/api/decode';
  *   - backend/app/Modules/Organization/Requests/StoreDepartmentRequest.php
  *   - backend/app/Modules/Organization/Controllers/DepartmentController.php
  *
- * FULL CRUD: Company, Branch, JobPosition — complete wire shapes including
- *   all scalar fields and eager-loaded relations.
+ * FULL CRUD: Company, Branch, JobPosition, JobGrade, JobLevel — complete wire
+ *   shapes including all scalar fields and eager-loaded relations.
  */
 
 // ─── Shared page meta ─────────────────────────────────────────────────────────
@@ -38,6 +38,17 @@ const headRefDecoder = object({
   photo: optional(str()),
 });
 
+/**
+ * Minimal cost-center reference — used as the eager-loaded `costCenter`
+ * relation on Department. Only id + name are needed for display.
+ */
+export const costCenterRefDecoder = object({
+  id: num(),
+  name: str(),
+});
+
+export type CostCenterRefWire = ReturnType<typeof costCenterRefDecoder.decode>;
+
 export const departmentDecoder = object({
   id: num(),
   uuid: optional(str()),
@@ -46,6 +57,7 @@ export const departmentDecoder = object({
   name: str(),
   code: optional(str()),
   head_employee_id: optional(num()),
+  cost_center_id: optional(num()),
   level: optional(num()),
   path: optional(str()),
   sort_order: optional(num()),
@@ -54,6 +66,8 @@ export const departmentDecoder = object({
   updated_at: optional(str()),
   /** Eager-loaded relation — present only when include=head is sent. */
   head: optional(headRefDecoder),
+  /** Eager-loaded relation — present only when include=costCenter is sent. */
+  costCenter: optional(costCenterRefDecoder),
 });
 
 export type DepartmentWire = ReturnType<typeof departmentDecoder.decode>;
@@ -152,6 +166,78 @@ export type BranchListWire = ReturnType<typeof branchListDecoder.decode>;
 export const branchEnvelopeDecoder = object({ data: branchDecoder });
 export type BranchEnvelopeWire = ReturnType<typeof branchEnvelopeDecoder.decode>;
 
+// ─── JobGrade ─────────────────────────────────────────────────────────────────
+
+export const jobGradeDecoder = object({
+  id: num(),
+  company_id: num(),
+  name: str(),
+  code: optional(str()),
+  min_salary: optional(num()),
+  mid_salary: optional(num()),
+  max_salary: optional(num()),
+  sort_order: optional(num()),
+  created_at: optional(str()),
+  updated_at: optional(str()),
+});
+
+export type JobGradeWire = ReturnType<typeof jobGradeDecoder.decode>;
+
+export const jobGradeListDecoder = object({
+  data: array(jobGradeDecoder),
+  meta: pageMetaDecoder,
+});
+
+export type JobGradeListWire = ReturnType<typeof jobGradeListDecoder.decode>;
+
+export const jobGradeEnvelopeDecoder = object({ data: jobGradeDecoder });
+export type JobGradeEnvelopeWire = ReturnType<typeof jobGradeEnvelopeDecoder.decode>;
+
+/**
+ * Minimal job-grade reference — used as the eager-loaded `jobGrade` relation
+ * on JobPosition. Only id + name are needed for display.
+ */
+export const jobGradeRefDecoder = object({
+  id: num(),
+  name: str(),
+});
+
+export type JobGradeRefWire = ReturnType<typeof jobGradeRefDecoder.decode>;
+
+// ─── JobLevel ─────────────────────────────────────────────────────────────────
+
+export const jobLevelDecoder = object({
+  id: num(),
+  company_id: num(),
+  name: str(),
+  sort_order: optional(num()),
+  created_at: optional(str()),
+  updated_at: optional(str()),
+});
+
+export type JobLevelWire = ReturnType<typeof jobLevelDecoder.decode>;
+
+export const jobLevelListDecoder = object({
+  data: array(jobLevelDecoder),
+  meta: pageMetaDecoder,
+});
+
+export type JobLevelListWire = ReturnType<typeof jobLevelListDecoder.decode>;
+
+export const jobLevelEnvelopeDecoder = object({ data: jobLevelDecoder });
+export type JobLevelEnvelopeWire = ReturnType<typeof jobLevelEnvelopeDecoder.decode>;
+
+/**
+ * Minimal job-level reference — used as the eager-loaded `jobLevel` relation
+ * on JobPosition. Only id + name are needed for display.
+ */
+export const jobLevelRefDecoder = object({
+  id: num(),
+  name: str(),
+});
+
+export type JobLevelRefWire = ReturnType<typeof jobLevelRefDecoder.decode>;
+
 // ─── JobPosition ──────────────────────────────────────────────────────────────
 
 /**
@@ -173,15 +259,19 @@ export const jobPositionDecoder = object({
   title: str(),
   title_ar: optional(str()),
   code: optional(str()),
+  job_grade_id: optional(num()),
+  job_level_id: optional(num()),
   description: optional(str()),
   requirements: optional(str()),
   headcount: optional(num()),
   is_active: optional(bool()),
   created_at: optional(str()),
   updated_at: optional(str()),
-  /** Eager-loaded relations — present when include=company,department is sent. */
+  /** Eager-loaded relations — present when include=company,department,jobGrade,jobLevel is sent. */
   company: optional(companyRefDecoder),
   department: optional(departmentRefDecoder),
+  jobGrade: optional(jobGradeRefDecoder),
+  jobLevel: optional(jobLevelRefDecoder),
 });
 
 export type JobPositionWire = ReturnType<typeof jobPositionDecoder.decode>;
@@ -195,3 +285,27 @@ export type JobPositionListWire = ReturnType<typeof jobPositionListDecoder.decod
 
 export const jobPositionEnvelopeDecoder = object({ data: jobPositionDecoder });
 export type JobPositionEnvelopeWire = ReturnType<typeof jobPositionEnvelopeDecoder.decode>;
+
+// ─── CostCenter ───────────────────────────────────────────────────────────────
+
+export const costCenterDecoder = object({
+  id: num(),
+  company_id: num(),
+  name: str(),
+  code: optional(str()),
+  is_active: optional(bool()),
+  created_at: optional(str()),
+  updated_at: optional(str()),
+});
+
+export type CostCenterWire = ReturnType<typeof costCenterDecoder.decode>;
+
+export const costCenterListDecoder = object({
+  data: array(costCenterDecoder),
+  meta: pageMetaDecoder,
+});
+
+export type CostCenterListWire = ReturnType<typeof costCenterListDecoder.decode>;
+
+export const costCenterEnvelopeDecoder = object({ data: costCenterDecoder });
+export type CostCenterEnvelopeWire = ReturnType<typeof costCenterEnvelopeDecoder.decode>;

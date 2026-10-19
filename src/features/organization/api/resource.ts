@@ -8,13 +8,20 @@ import type {
   BranchWire,
   JobPositionListWire,
   JobPositionWire,
+  JobGradeListWire,
+  JobGradeWire,
+  JobLevelListWire,
+  JobLevelWire,
+  CostCenterListWire,
+  CostCenterWire,
 } from './schema';
 
 /**
  * The Organization module's remote resource contract.
  *
  * PRIMARY resource: Department — full CRUD.
- * New full CRUD resources: Company, Branch, JobPosition.
+ * Full CRUD resources: Company, Branch, JobPosition, JobGrade, JobLevel,
+ * CostCenter.
  *
  * Components never call this directly — they go through the query hooks in
  * `queries.ts`. Two implementations satisfy each Api interface: `http*Api`
@@ -33,12 +40,13 @@ export interface DepartmentListParams {
 
 /** Shape of `StoreDepartmentRequest`'s validated fields (confirmed from backend). */
 export interface DepartmentInput {
-  company_id: number;
+  /** Injected by the backend's auth middleware; omit from form payloads. */
+  company_id?: number;
   parent_id?: number | null;
   name: string;
   code?: string | null;
   head_employee_id?: number | null;
-  /** cost_center_id is intentionally omitted — cost-centers resource not yet built. */
+  cost_center_id?: number | null;
   level?: number | null;
   path?: string | null;
   sort_order?: number | null;
@@ -119,7 +127,8 @@ export interface BranchListParams {
 
 /** Shape of `StoreBranchRequest`'s validated fields (confirmed from backend). */
 export interface BranchInput {
-  company_id: number;
+  /** Injected by the backend's auth middleware; omit from form payloads. */
+  company_id?: number;
   name: string;
   code?: string | null;
   address?: string | null;
@@ -155,18 +164,21 @@ export interface JobPositionListParams {
   search?: string | undefined;
   companyId?: number | undefined;
   departmentId?: number | undefined;
+  jobGradeId?: number | undefined;
+  jobLevelId?: number | undefined;
   isActive?: boolean | undefined;
 }
 
 /** Shape of `StoreJobPositionRequest`'s validated fields (confirmed from backend). */
 export interface JobPositionInput {
-  company_id: number;
+  /** Injected by the backend's auth middleware; omit from form payloads. */
+  company_id?: number;
   department_id?: number | null;
   title: string;
   title_ar?: string | null;
   code?: string | null;
-  /** job_grade_id omitted — JobGrade resource not yet built. */
-  /** job_level_id omitted — JobLevel resource not yet built. */
+  job_grade_id?: number | null;
+  job_level_id?: number | null;
   description?: string | null;
   requirements?: string | null;
   headcount?: number | null;
@@ -185,4 +197,100 @@ export interface JobPositionApi {
 export const jobPositionKeys = {
   all: ['job-positions'] as const satisfies QueryKey,
   list: (params: JobPositionListParams) => ['job-positions', 'list', params] as const satisfies QueryKey,
+};
+
+// ─── JobGrade ───────────────────────────────────────────────────────────────
+
+export interface JobGradeListParams {
+  page?: number;
+  perPage?: number;
+  companyId?: number | undefined;
+}
+
+/** Shape of `StoreJobGradeRequest`'s validated fields (confirmed from backend). */
+export interface JobGradeInput {
+  /** Injected by the backend's auth middleware; omit from form payloads. */
+  company_id?: number;
+  name: string;
+  code?: string | null;
+  min_salary?: number | null;
+  mid_salary?: number | null;
+  max_salary?: number | null;
+  sort_order?: number | null;
+}
+
+export type JobGradeUpdateInput = Partial<JobGradeInput>;
+
+export interface JobGradeApi {
+  list(context: FetchContext, params: JobGradeListParams): Promise<JobGradeListWire>;
+  create(context: FetchContext, input: JobGradeInput): Promise<JobGradeWire>;
+  update(context: FetchContext, id: number, input: JobGradeUpdateInput): Promise<JobGradeWire>;
+  remove(context: FetchContext, id: number): Promise<void>;
+}
+
+export const jobGradeKeys = {
+  all: ['job-grades'] as const satisfies QueryKey,
+  list: (params: JobGradeListParams) => ['job-grades', 'list', params] as const satisfies QueryKey,
+};
+
+// ─── JobLevel ───────────────────────────────────────────────────────────────
+
+export interface JobLevelListParams {
+  page?: number;
+  perPage?: number;
+  companyId?: number | undefined;
+}
+
+/** Shape of `StoreJobLevelRequest`'s validated fields (confirmed from backend). */
+export interface JobLevelInput {
+  /** Injected by the backend's auth middleware; omit from form payloads. */
+  company_id?: number;
+  name: string;
+  sort_order?: number | null;
+}
+
+export type JobLevelUpdateInput = Partial<JobLevelInput>;
+
+export interface JobLevelApi {
+  list(context: FetchContext, params: JobLevelListParams): Promise<JobLevelListWire>;
+  create(context: FetchContext, input: JobLevelInput): Promise<JobLevelWire>;
+  update(context: FetchContext, id: number, input: JobLevelUpdateInput): Promise<JobLevelWire>;
+  remove(context: FetchContext, id: number): Promise<void>;
+}
+
+export const jobLevelKeys = {
+  all: ['job-levels'] as const satisfies QueryKey,
+  list: (params: JobLevelListParams) => ['job-levels', 'list', params] as const satisfies QueryKey,
+};
+
+// ─── CostCenter ───────────────────────────────────────────────────────────────
+
+export interface CostCenterListParams {
+  page?: number;
+  perPage?: number;
+  companyId?: number | undefined;
+  isActive?: boolean | undefined;
+}
+
+/** Shape of `StoreCostCenterRequest`'s validated fields (confirmed from backend). */
+export interface CostCenterInput {
+  /** Injected by the backend's auth middleware; omit from form payloads. */
+  company_id?: number;
+  name: string;
+  code?: string | null;
+  is_active?: boolean | null;
+}
+
+export type CostCenterUpdateInput = Partial<CostCenterInput>;
+
+export interface CostCenterApi {
+  list(context: FetchContext, params: CostCenterListParams): Promise<CostCenterListWire>;
+  create(context: FetchContext, input: CostCenterInput): Promise<CostCenterWire>;
+  update(context: FetchContext, id: number, input: CostCenterUpdateInput): Promise<CostCenterWire>;
+  remove(context: FetchContext, id: number): Promise<void>;
+}
+
+export const costCenterKeys = {
+  all: ['cost-centers'] as const satisfies QueryKey,
+  list: (params: CostCenterListParams) => ['cost-centers', 'list', params] as const satisfies QueryKey,
 };

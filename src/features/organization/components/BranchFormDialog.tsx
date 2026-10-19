@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/Button';
 import { Field, Input, Select } from '@/components/ui/form';
 import { userFacingMessage } from '@/lib/api/errors';
 import type { ApiError } from '@/lib/api/errors';
-import { useCompanyList, useCreateBranch, useUpdateBranch } from '../api/queries';
+import { useCreateBranch, useUpdateBranch } from '../api/queries';
 import type { BranchInput } from '../api/resource';
 import type { BranchWire } from '../api/schema';
 
@@ -21,14 +21,12 @@ import type { BranchWire } from '../api/schema';
  *   city, country_code (size:2), latitude, longitude, geofence_radius,
  *   phone, is_headquarters (boolean), is_active (boolean).
  *
- * Company picker populated from useCompanyList({ page: 1, perPage: 100 }).
  * Footer Save is wired via form="branch-form" attribute.
  */
 
 const REQUIRED = 'common.requiredField';
 
 const branchFormSchema = z.object({
-  company_id: z.string().min(1, REQUIRED),
   name: z.string().min(1, REQUIRED).max(255),
   code: z.string().max(20),
   address: z.string(),
@@ -47,7 +45,6 @@ type BranchFormValues = z.infer<typeof branchFormSchema>;
 function buildDefaultValues(branch: BranchWire | undefined): BranchFormValues {
   if (!branch) {
     return {
-      company_id: '',
       name: '',
       code: '',
       address: '',
@@ -62,7 +59,6 @@ function buildDefaultValues(branch: BranchWire | undefined): BranchFormValues {
     };
   }
   return {
-    company_id: String(branch.company_id),
     name: branch.name,
     code: branch.code ?? '',
     address: branch.address ?? '',
@@ -79,7 +75,6 @@ function buildDefaultValues(branch: BranchWire | undefined): BranchFormValues {
 
 function toBranchInput(values: BranchFormValues): BranchInput {
   return {
-    company_id: Number(values.company_id),
     name: values.name.trim(),
     code: values.code.trim() || null,
     address: values.address.trim() || null,
@@ -123,10 +118,6 @@ export function BranchFormDialog({ open, onOpenChange, branch }: BranchFormDialo
   const updateMutation = useUpdateBranch();
   const isPending = createMutation.isPending || updateMutation.isPending;
   const mutationError = createMutation.error ?? updateMutation.error;
-
-  // Company picker
-  const { state: companyState } = useCompanyList({ page: 1, perPage: 100 });
-  const companies = companyState.data?.data ?? [];
 
   const resolver = useMemo(() => zodResolver(branchFormSchema), []);
 
@@ -193,23 +184,6 @@ export function BranchFormDialog({ open, onOpenChange, branch }: BranchFormDialo
               {userFacingMessage(mutationError)}
             </p>
           ) : null}
-
-          {/* Company picker */}
-          <Field
-            label={t('organization.branch.form.company')}
-            htmlFor="branch_company_id"
-            required
-            error={translate(t, errors.company_id?.message)}
-          >
-            <Select id="branch_company_id" invalid={!!errors.company_id} {...register('company_id')}>
-              <option value="">{t('organization.branch.form.selectCompany')}</option>
-              {companies.map((c) => (
-                <option key={c.id} value={c.id}>
-                  {c.name}
-                </option>
-              ))}
-            </Select>
-          </Field>
 
           {/* Name */}
           <Field
