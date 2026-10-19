@@ -1,9 +1,14 @@
 import { env } from '@/config/env';
-import { createHttpClient } from '@/lib/api/http';
-import type { HttpClient } from '@/lib/api/http';
+import { appHttpClient as http } from '@/lib/api/appHttpClient';
 import { mockContractApi, resetMockContracts, setMockContractFailureRate } from './mockApi';
 import { contractEnvelopeDecoder, contractListDecoder } from './schema';
-import type { ContractApi, ContractInput, ContractListParams, ContractUpdateInput } from './resource';
+import type {
+  ContractApi,
+  ContractInput,
+  ContractListParams,
+  ContractTerminateInput,
+  ContractUpdateInput,
+} from './resource';
 
 /**
  * Real HTTP implementation of `ContractApi`, pointed at
@@ -12,13 +17,6 @@ import type { ContractApi, ContractInput, ContractListParams, ContractUpdateInpu
  *  - `show`/`store`/`update` return `{ data: <contract> }`
  *  - `destroy` returns 204 with an empty body
  */
-
-const http: HttpClient = createHttpClient({
-  baseUrl: env.apiBaseUrl || '/api/v1',
-  timeoutMs: env.requestTimeoutMs,
-  retries: env.requestRetries,
-  backoffMs: env.requestBackoffMs,
-});
 
 const BASE = '/contracts';
 /** Relations needed to render the list table without a second round-trip. */
@@ -63,6 +61,16 @@ export const httpContractApi: ContractApi = {
 
   async remove({ signal }, id) {
     await http(`${BASE}/${id}`, { method: 'DELETE', signal, ignoreBody: true });
+  },
+
+  async terminate({ signal }, id, input: ContractTerminateInput) {
+    const { data } = await http(`${BASE}/${id}/terminate`, {
+      method: 'POST',
+      body: input,
+      signal,
+      schema: contractEnvelopeDecoder,
+    });
+    return requireData(data, `POST /contracts/${id}/terminate`).data;
   },
 };
 

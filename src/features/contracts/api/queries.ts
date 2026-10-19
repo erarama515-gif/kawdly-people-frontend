@@ -2,7 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@/lib/query';
 import type { QueryState } from '@/lib/query';
 import { contractApi } from './client';
 import { contractKeys } from './resource';
-import type { ContractInput, ContractListParams, ContractUpdateInput } from './resource';
+import type { ContractInput, ContractListParams, ContractTerminateInput, ContractUpdateInput } from './resource';
 import type { ContractListWire, ContractWire } from './schema';
 
 /**
@@ -54,6 +54,22 @@ export function useUpdateContract() {
 
   return useMutation<UpdateContractInput, ContractWire>({
     mutationFn: ({ id, ...input }, { signal }) => contractApi.update({ signal }, id, input),
+    onSuccess: () => {
+      void client.invalidate({ predicate: isContractKey });
+    },
+  });
+}
+
+export interface TerminateContractInput extends ContractTerminateInput {
+  id: number;
+}
+
+/** Terminates a contract (`POST /contracts/{id}/terminate`), then invalidates every cached list. */
+export function useTerminateContract() {
+  const client = useQueryClient();
+
+  return useMutation<TerminateContractInput, ContractWire>({
+    mutationFn: ({ id, ...input }, { signal }) => contractApi.terminate({ signal }, id, input),
     onSuccess: () => {
       void client.invalidate({ predicate: isContractKey });
     },

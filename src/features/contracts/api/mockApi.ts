@@ -252,6 +252,31 @@ export const mockContractApi: ContractApi = {
     findOrThrow(id);
     store = store.filter((item) => item.id !== id);
   },
+
+  // Mirrors the real `ContractService::terminate()`: always sets
+  // status=terminated, optionally moves end_date to termination_date, and
+  // appends the reason (if any) to the free-text `terms` field — never
+  // introduces a new column the backend doesn't have.
+  async terminate(context, id, input) {
+    await simulate(context, WRITE_LATENCY_MS);
+    const row = findOrThrow(id);
+
+    const terms = input.reason
+      ? row.terms
+        ? `${row.terms}\n\nTermination reason: ${input.reason}`
+        : `Termination reason: ${input.reason}`
+      : row.terms;
+
+    const updated: StoredContract = {
+      ...row,
+      status: 'terminated',
+      end_date: input.termination_date ?? row.end_date,
+      terms,
+      updated_at: new Date().toISOString(),
+    };
+    store = store.map((item) => (item.id === id ? updated : item));
+    return contractDecoder.decode(structuredClone(toWire(updated)));
+  },
 };
 
 function toWire(row: StoredContract): ContractWire {
