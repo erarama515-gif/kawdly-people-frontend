@@ -1,0 +1,6 @@
+# Compiled main/preload output (tsc -p electron/tsconfig.json)
+dist/
+# Nothing should ever be installed here: electron + electron-builder are root devDeps
+node_modules/
+# Local prod-like run data (userData redirect target in dev) — see E2 plan §4
+.dev-userData/

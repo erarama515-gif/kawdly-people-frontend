@@ -1,0 +1,7 @@
+{
+  "name": "@kawdly/desktop-shell",
+  "private": true,
+  "description": "Electron main + preload for Kawdly People. Marker package: declares the CommonJS module boundary for everything under electron/. NOT an npm workspace and NOT installable — it deliberately has no dependencies, no version and no scripts. electron + electron-builder live in the ROOT package.json (single app manifest, single version string — see Electron-Packaging-Design.md §4.7).",
+  "type": "commonjs",
+  "main": "dist/main.js"
+}

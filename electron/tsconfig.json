@@ -1,0 +1,47 @@
+{
+  // Electron main + preload. Extends the repo's Node-side base and then overrides
+  // every option that is specific to "bundler, type-check only" so that this project
+  // actually EMITS CommonJS JavaScript for the Electron runtime.
+  //
+  // NOT yet listed in ../tsconfig.json "references": `tsc -b` must stay EXIT 0, and
+  // this project cannot resolve `electron` until `npm i -D electron` runs (T? install
+  // step). Wiring it into the root references is a one-line change at that point.
+  "extends": "../tsconfig.node.json",
+  "compilerOptions": {
+    "composite": true,
+    "tsBuildInfoFile": "../node_modules/.tmp/tsconfig.electron.tsbuildinfo",
+
+    /* Emit: this is the one TS project in the repo that produces runtime JS. */
+    "noEmit": false,
+    "outDir": "dist",
+    "rootDir": "src",
+    "sourceMap": true,
+    "declaration": true,
+
+    /* CommonJS, because Electron's sandboxed preload cannot be an ES module and the
+       root package.json declares "type": "module". electron/package.json re-declares
+       "type": "commonjs" so the emitted dist/*.js is resolved as CJS at runtime. */
+    "module": "CommonJS",
+    "moduleResolution": "node10",
+
+    /* Overrides forced by the two options above (each would otherwise be an error):
+       - allowImportingTsExtensions requires noEmit
+       - verbatimModuleSyntax forbids ESM import syntax in a CommonJS module */
+    "allowImportingTsExtensions": false,
+    "verbatimModuleSyntax": false,
+
+    /* Node 20/22 is what Electron 3x embeds; no DOM lib in the main process. */
+    "target": "ES2022",
+    "lib": ["ES2023"],
+    "types": ["node"],
+
+    "strict": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "noImplicitOverride": true,
+    "noFallthroughCasesInSwitch": true,
+    "exactOptionalPropertyTypes": true,
+    "skipLibCheck": true
+  },
+  "include": ["src"]
+}
