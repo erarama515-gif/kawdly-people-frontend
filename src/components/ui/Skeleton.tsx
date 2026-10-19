@@ -1,6 +1,7 @@
+import type { HTMLAttributes } from 'react';
 import { cn } from '@/lib/cn';
 
-export function Skeleton({ className }: { className?: string }) {
+export function Skeleton({ className, ...props }: HTMLAttributes<HTMLSpanElement>) {
   return (
     <span
       aria-hidden="true"
@@ -8,6 +9,7 @@ export function Skeleton({ className }: { className?: string }) {
         'inline-block animate-pulse rounded-[2px] bg-[#e3e7ec]',
         className,
       )}
+      {...props}
     />
   );
 }
