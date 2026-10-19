@@ -1,6 +1,5 @@
 import { env } from '@/config/env';
-import { createHttpClient } from '@/lib/api/http';
-import type { HttpClient } from '@/lib/api/http';
+import { appHttpClient as http } from '@/lib/api/appHttpClient';
 import { mockDashboardApi, resetMockServer, setMockFailureRate } from './mockApi';
 import {
   alertListDecoder,
@@ -20,13 +19,6 @@ import type { DashboardApi, DashboardScope } from './resource';
  * authenticated user. `as_role` is only the dev design-review override and is
  * omitted for a real session.
  */
-
-const http: HttpClient = createHttpClient({
-  baseUrl: env.apiBaseUrl || '/api/v1',
-  timeoutMs: env.requestTimeoutMs,
-  retries: env.requestRetries,
-  backoffMs: env.requestBackoffMs,
-});
 
 const BASE = '/dashboard';
 

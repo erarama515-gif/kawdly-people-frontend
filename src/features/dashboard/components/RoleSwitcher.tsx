@@ -6,7 +6,7 @@ import type { Role } from '@/auth/session';
 
 const OPTIONS: Array<{ value: Role; labelKey: string }> = [
   { value: 'hr_admin', labelKey: 'dashboard.roleSwitch.admin' },
-  { value: 'manager', labelKey: 'dashboard.roleSwitch.manager' },
+  { value: 'department_manager', labelKey: 'dashboard.roleSwitch.manager' },
 ];
 
 /**

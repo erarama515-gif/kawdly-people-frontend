@@ -28,7 +28,10 @@ interface MockStore {
 }
 
 const store: MockStore = {
-  datasets: new Map([['hr_admin', createDataset('hr_admin')], ['manager', createDataset('manager')]]),
+  datasets: new Map([
+    ['hr_admin', createDataset('hr_admin')],
+    ['department_manager', createDataset('department_manager')],
+  ]),
   dismissedAlerts: new Map(),
 };
 
@@ -54,7 +57,10 @@ export function setMockFailureRate(rate: number): void {
 }
 
 export function resetMockServer(): void {
-  store.datasets = new Map([['hr_admin', createDataset('hr_admin')], ['manager', createDataset('manager')]]);
+  store.datasets = new Map([
+    ['hr_admin', createDataset('hr_admin')],
+    ['department_manager', createDataset('department_manager')],
+  ]);
   store.dismissedAlerts = new Map();
 }
 
@@ -107,10 +113,20 @@ export const mockDashboardApi: DashboardApi = {
   },
 };
 
+/**
+ * Only `hr_admin` and `department_manager` have a bespoke dataset; the other
+ * 8 real roles (Permission Matrix) have no dashboard UI of their own yet, so
+ * they lazily get — and keep — the admin dataset rather than a hard 404.
+ * `createDataset()` itself already falls back to the admin shape for any
+ * role it doesn't special-case, so this mirrors that behaviour instead of
+ * fighting it.
+ */
 function datasetOf(role: Role): DashboardDataset {
-  const dataset = store.datasets.get(role);
-  /* c8 ignore next */
-  if (!dataset) throw new ApiError('http', `No dataset for role ${role}`, { status: 404 });
+  let dataset = store.datasets.get(role);
+  if (!dataset) {
+    dataset = createDataset(role);
+    store.datasets.set(role, dataset);
+  }
   return dataset;
 }
 

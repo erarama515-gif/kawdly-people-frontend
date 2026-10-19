@@ -319,7 +319,7 @@ export const sharedUpcoming: UpcomingItem[] = [
 const nowIso = new Date().toISOString();
 
 export function createDataset(role: Role): DashboardDataset {
-  if (role === 'manager') {
+  if (role === 'department_manager') {
     return {
       queues: [leaveFromTeam, performanceReview],
       kpis: managerKpis,
