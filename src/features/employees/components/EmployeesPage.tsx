@@ -1,14 +1,23 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Pencil, Plus, Search, Trash2 } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { CheckSquare, Download, Pencil, Plus, Search, Square, Trash2 } from 'lucide-react';
+import { ExportButton } from '@/components/ui/ExportButton';
+import type { ExportColumn } from '@/components/ui/ExportButton';
 import { cn } from '@/lib/cn';
 import { Card } from '@/components/ui/Card';
+import { SkeletonTable } from '@/components/ui/SkeletonTable';
+import { SortableHeader } from '@/components/ui/SortableHeader';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { Avatar } from '@/components/ui/Avatar';
 import { Button } from '@/components/ui/Button';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
+import { BulkActionBar } from '@/components/ui/BulkActionBar';
 import { Pagination } from '@/components/ui/Pagination';
+import { useSort, sortData } from '@/hooks/useSort';
+import { useBulkSelect } from '@/hooks/useBulkSelect';
 import { userFacingMessage } from '@/lib/api/errors';
+import { exportToExcel } from '@/lib/export';
 import { useDeleteEmployee, useEmployeeList } from '../api/queries';
 import type { EmployeeListParams } from '../api/resource';
 import type { EmployeeStatus } from '../api/resource';
@@ -115,6 +124,8 @@ export function EmployeesPage() {
   const [formOpen, setFormOpen] = useState(false);
   const [editTarget, setEditTarget] = useState<EmployeeWire | undefined>(undefined);
   const [deleteTarget, setDeleteTarget] = useState<EmployeeWire | undefined>(undefined);
+  const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
+  const [isBulkDeleting, setIsBulkDeleting] = useState(false);
 
   // Debounce the free-text search so every keystroke doesn't fire a request.
   useEffect(() => {
@@ -144,8 +155,41 @@ export function EmployeesPage() {
 
   const deleteMutation = useDeleteEmployee(params);
 
-  const employees = state.data?.data ?? [];
+  // Client-side sorting
+  type EmpSortCol = 'employee' | 'id' | 'department' | 'position' | 'status' | 'joined';
+  const { sort, toggle: toggleSort } = useSort<EmpSortCol>();
+  const SORT_ACCESSORS: Record<EmpSortCol, (e: EmployeeWire) => string | number | undefined> = {
+    employee: (e) => `${e.first_name} ${e.last_name}`,
+    id: (e) => e.employee_number,
+    department: (e) => e.department?.name,
+    position: (e) => e.job_position?.title,
+    status: (e) => e.status,
+    joined: (e) => e.joining_date,
+  };
+  const rawEmployees = state.data?.data ?? [];
+  const employees = sortData(rawEmployees, sort, SORT_ACCESSORS);
   const meta = state.data?.meta;
+
+  // ── Bulk selection ──────────────────────────────────────────────────────────
+  const bulk = useBulkSelect(employees);
+
+  const exportColumns: ExportColumn[] = [
+    { key: 'name', label: t('employees.table.employee') },
+    { key: 'employee_number', label: t('employees.table.id') },
+    { key: 'department', label: t('employees.table.department') },
+    { key: 'position', label: t('employees.table.position') },
+    { key: 'status', label: t('employees.table.status') },
+    { key: 'joining_date', label: t('employees.table.joined') },
+  ];
+
+  const exportData = employees.map((emp) => ({
+    name: `${emp.first_name} ${emp.last_name}`,
+    employee_number: emp.employee_number,
+    department: emp.department?.name ?? '',
+    position: emp.job_position?.title ?? '',
+    status: t(`employees.status.${emp.status}`),
+    joining_date: formatJoined(emp.joining_date),
+  }));
 
   function openAddForm() {
     setEditTarget(undefined);
@@ -163,15 +207,34 @@ export function EmployeesPage() {
     if (result !== undefined || deleteMutation.error === undefined) setDeleteTarget(undefined);
   }
 
+  function handleBulkExport() {
+    const selectedRows = exportData.filter((_, idx) => bulk.isSelected(employees[idx]!.id));
+    exportToExcel(selectedRows as Record<string, unknown>[], exportColumns, 'employees-selected');
+  }
+
+  async function handleBulkDelete() {
+    setIsBulkDeleting(true);
+    const ids = Array.from(bulk.selectedIds);
+    for (const id of ids) {
+      await deleteMutation.mutate(id);
+    }
+    bulk.deselectAll();
+    setIsBulkDeleting(false);
+    setBulkDeleteOpen(false);
+  }
+
   return (
     <div className="flex flex-col">
       <PageHeader
         title={t('employees.title')}
         actions={
-          <Button variant="primary" onClick={openAddForm}>
-            <Plus className="h-3.5 w-3.5" strokeWidth={2} aria-hidden="true" />
-            {t('employees.addEmployee')}
-          </Button>
+          <div className="flex items-center gap-2">
+            <ExportButton data={exportData} columns={exportColumns} filename="employees" />
+            <Button variant="primary" onClick={openAddForm}>
+              <Plus className="h-3.5 w-3.5" strokeWidth={2} aria-hidden="true" />
+              {t('employees.addEmployee')}
+            </Button>
+          </div>
         }
       />
 
@@ -186,7 +249,7 @@ export function EmployeesPage() {
       <div className="mb-4 flex flex-wrap items-center gap-3">
         {/* Search */}
         <label className="relative flex items-center">
-          <span className="pointer-events-none absolute left-3 text-ink-faint">
+          <span className="pointer-events-none absolute start-3 text-ink-faint">
             <Search className="h-3.5 w-3.5" strokeWidth={1.75} aria-hidden="true" />
           </span>
           <input
@@ -195,7 +258,7 @@ export function EmployeesPage() {
             value={searchInput}
             onChange={(e) => setSearchInput(e.target.value)}
             className={cn(
-              'h-9 rounded-full border border-hairline bg-surface pl-8 pr-4 text-[13px] text-ink placeholder:text-ink-faint',
+              'h-9 rounded-full border border-hairline bg-surface ps-8 pe-4 text-[13px] text-ink placeholder:text-ink-faint',
               'focus:outline-none focus:ring-1 focus:ring-navy/40',
               'w-52',
             )}
@@ -234,7 +297,7 @@ export function EmployeesPage() {
 
       {/* Initial load */}
       {state.status === 'pending' && employees.length === 0 ? (
-        <Card className="px-5 py-10 text-center text-body-sm text-ink-muted">{t('common.loading')}</Card>
+        <SkeletonTable />
       ) : null}
 
       {/* Empty state (shared across both layouts) */}
@@ -248,11 +311,22 @@ export function EmployeesPage() {
           <Card className="hidden lg:block">
             {/* Header */}
             <div className="border-b border-divider px-5 py-3">
-              <div className="grid grid-cols-[2.5fr_1fr_1.5fr_1.5fr_1fr_1fr_auto] gap-4">
+              <div className="grid grid-cols-[auto_2.5fr_1fr_1.5fr_1.5fr_1fr_1fr_auto] gap-4">
+                {/* Select-all checkbox */}
+                <button
+                  type="button"
+                  aria-label={bulk.isAllSelected ? t('common.deselectAll') : t('common.selected', { count: employees.length })}
+                  onClick={() => (bulk.isAllSelected ? bulk.deselectAll() : bulk.selectAll())}
+                  className="flex items-center text-ink-faint hover:text-navy transition-colors"
+                >
+                  {bulk.isAllSelected ? (
+                    <CheckSquare className="h-4 w-4" strokeWidth={1.75} aria-hidden="true" />
+                  ) : (
+                    <Square className="h-4 w-4" strokeWidth={1.75} aria-hidden="true" />
+                  )}
+                </button>
                 {(['employee', 'id', 'department', 'position', 'status', 'joined'] as const).map((col) => (
-                  <span key={col} className="text-caption font-semibold uppercase tracking-wide text-ink-faint">
-                    {t(`employees.table.${col}`)}
-                  </span>
+                  <SortableHeader key={col} column={col} label={t(`employees.table.${col}`)} sort={sort} onSort={toggleSort} />
                 ))}
                 <span className="text-caption font-semibold uppercase tracking-wide text-ink-faint">
                   {t('employees.table.actions')}
@@ -264,21 +338,39 @@ export function EmployeesPage() {
               <div
                 key={emp.id}
                 className={cn(
-                  'grid grid-cols-[2.5fr_1fr_1.5fr_1.5fr_1fr_1fr_auto] items-center gap-4 px-5 py-3',
+                  'grid grid-cols-[auto_2.5fr_1fr_1.5fr_1.5fr_1fr_1fr_auto] items-center gap-4 px-5 py-3',
                   idx < employees.length - 1 && 'border-b border-divider',
                   'hover:bg-surface/60 transition-colors',
+                  bulk.isSelected(emp.id) && 'bg-navy/5',
                 )}
               >
-                {/* Employee name + email */}
-                <div className="flex min-w-0 items-center gap-3">
+                {/* Row checkbox */}
+                <button
+                  type="button"
+                  aria-label={bulk.isSelected(emp.id) ? t('common.deselectAll') : t('common.selected', { count: 1 })}
+                  onClick={() => bulk.toggle(emp.id)}
+                  className="flex items-center text-ink-faint hover:text-navy transition-colors"
+                >
+                  {bulk.isSelected(emp.id) ? (
+                    <CheckSquare className="h-4 w-4 text-navy" strokeWidth={1.75} aria-hidden="true" />
+                  ) : (
+                    <Square className="h-4 w-4" strokeWidth={1.75} aria-hidden="true" />
+                  )}
+                </button>
+
+                {/* Employee name + email — clicking the name navigates to the profile */}
+                <Link
+                  to={`/people/employees/${emp.id}`}
+                  className="flex min-w-0 items-center gap-3 group"
+                >
                   <Avatar initials={initialsOf(emp.first_name, emp.last_name)} photo={emp.photo} size={32} />
                   <div className="min-w-0">
-                    <p className="truncate text-body-sm font-semibold text-ink">
+                    <p className="truncate text-body-sm font-semibold text-ink group-hover:text-navy transition-colors">
                       {emp.first_name} {emp.last_name}
                     </p>
                     <p className="truncate text-caption text-ink-muted">{emp.email ?? '—'}</p>
                   </div>
-                </div>
+                </Link>
 
                 {/* Employee number */}
                 <span className="nums font-mono text-[12px] text-ink-muted">{emp.employee_number}</span>
@@ -287,7 +379,7 @@ export function EmployeesPage() {
                 <span className="truncate text-body-sm text-ink">{emp.department?.name ?? '—'}</span>
 
                 {/* Position */}
-                <span className="truncate text-body-sm text-ink-muted">{emp.jobPosition?.title ?? '—'}</span>
+                <span className="truncate text-body-sm text-ink-muted">{emp.job_position?.title ?? '—'}</span>
 
                 {/* Status */}
                 <StatusBadge status={emp.status} />
@@ -304,17 +396,38 @@ export function EmployeesPage() {
           {/* Employee cards — mobile/tablet-portrait */}
           <div className="flex flex-col gap-3 lg:hidden">
             {employees.map((emp) => (
-              <Card key={emp.id} className="flex flex-col gap-3 p-4">
+              <Card
+                key={emp.id}
+                className={cn('flex flex-col gap-3 p-4', bulk.isSelected(emp.id) && 'ring-1 ring-navy/30')}
+              >
                 {/* Identity + status */}
                 <div className="flex items-start justify-between gap-3">
                   <div className="flex min-w-0 items-center gap-3">
-                    <Avatar initials={initialsOf(emp.first_name, emp.last_name)} photo={emp.photo} size={32} />
-                    <div className="min-w-0">
-                      <p className="truncate text-body-sm font-semibold text-ink">
-                        {emp.first_name} {emp.last_name}
-                      </p>
-                      <p className="truncate text-caption text-ink-muted">{emp.email ?? '—'}</p>
-                    </div>
+                    {/* Checkbox */}
+                    <button
+                      type="button"
+                      aria-label={bulk.isSelected(emp.id) ? t('common.deselectAll') : t('common.selected', { count: 1 })}
+                      onClick={() => bulk.toggle(emp.id)}
+                      className="shrink-0 text-ink-faint hover:text-navy transition-colors"
+                    >
+                      {bulk.isSelected(emp.id) ? (
+                        <CheckSquare className="h-4 w-4 text-navy" strokeWidth={1.75} aria-hidden="true" />
+                      ) : (
+                        <Square className="h-4 w-4" strokeWidth={1.75} aria-hidden="true" />
+                      )}
+                    </button>
+                    <Link
+                      to={`/people/employees/${emp.id}`}
+                      className="flex min-w-0 items-center gap-3 group"
+                    >
+                      <Avatar initials={initialsOf(emp.first_name, emp.last_name)} photo={emp.photo} size={32} />
+                      <div className="min-w-0">
+                        <p className="truncate text-body-sm font-semibold text-ink group-hover:text-navy transition-colors">
+                          {emp.first_name} {emp.last_name}
+                        </p>
+                        <p className="truncate text-caption text-ink-muted">{emp.email ?? '—'}</p>
+                      </div>
+                    </Link>
                   </div>
                   <div className="flex shrink-0 flex-col items-end gap-2">
                     <StatusBadge status={emp.status} />
@@ -334,7 +447,7 @@ export function EmployeesPage() {
                   </div>
                   <div className="flex flex-col gap-0.5">
                     <span className="text-caption text-ink-faint">{t('employees.table.position')}</span>
-                    <span className="truncate text-body-sm text-ink">{emp.jobPosition?.title ?? '—'}</span>
+                    <span className="truncate text-body-sm text-ink">{emp.job_position?.title ?? '—'}</span>
                   </div>
                   <div className="flex flex-col gap-0.5">
                     <span className="text-caption text-ink-faint">{t('employees.table.joined')}</span>
@@ -359,6 +472,7 @@ export function EmployeesPage() {
 
       <EmployeeFormDialog open={formOpen} onOpenChange={setFormOpen} employee={editTarget} />
 
+      {/* Single-row delete dialog */}
       <ConfirmDialog
         open={deleteTarget !== undefined}
         onOpenChange={(open) => !open && setDeleteTarget(undefined)}
@@ -368,6 +482,35 @@ export function EmployeesPage() {
         }
         isLoading={deleteMutation.isPending}
         onConfirm={() => void confirmDelete()}
+      />
+
+      {/* Bulk delete confirm dialog */}
+      <ConfirmDialog
+        open={bulkDeleteOpen}
+        onOpenChange={(open) => !open && setBulkDeleteOpen(false)}
+        title={t('common.bulkDeleteConfirm.title')}
+        description={t('common.bulkDeleteConfirm.description', { count: bulk.selectedCount })}
+        isLoading={isBulkDeleting}
+        onConfirm={() => void handleBulkDelete()}
+      />
+
+      {/* Bulk action bar */}
+      <BulkActionBar
+        selectedCount={bulk.selectedCount}
+        onDeselectAll={bulk.deselectAll}
+        actions={[
+          {
+            label: t('common.exportSelected'),
+            icon: Download,
+            onClick: handleBulkExport,
+          },
+          {
+            label: t('common.deleteSelected'),
+            icon: Trash2,
+            onClick: () => setBulkDeleteOpen(true),
+            variant: 'danger',
+          },
+        ]}
       />
     </div>
   );

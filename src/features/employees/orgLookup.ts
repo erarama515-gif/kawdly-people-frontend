@@ -1,14 +1,23 @@
 /**
- * Static lookup data for the Employee form's dropdowns (branch, department,
- * job position, job grade, job level).
+ * Static seed fixtures for the **mock API layer only**
+ * (`employees/api/mockApi.ts`, `recruitment/api/mockApi.ts`), used to
+ * synthesize realistic Employee/JobPosting rows at module-load time when
+ * `env.useMockApi` is on.
  *
- * There is no Organization API client on the frontend yet — building one is
- * out of scope for this task (it is its own feature page). These ids are
- * pinned to exactly what `OrganizationSeeder.php` inserts on a fresh
- * `migrate:fresh --seed` (sequential auto-increment, single company), so the
- * same form works unmodified against both the mock API and the real backend.
- * When an Organization feature lands, this file should be deleted in favour
- * of real `useBranches()`/`useDepartments()` queries.
+ * The Organization feature (`@/features/organization`) now has a real,
+ * fully-built API client (`useBranchList`, `useDepartmentList`,
+ * `useJobPositionList`, `useJobGradeList`, `useJobLevelList`) backed by live
+ * HTTP/mock resources, and every real UI component (Employee
+ * add/edit/promote/transfer forms, Recruitment job-posting form, convert-to-
+ * employee dialog) has been migrated onto it — none of them import from this
+ * file anymore.
+ *
+ * This file survives narrowly as synchronous seed data for the two mock-API
+ * generators above, which build fixture rows eagerly at import time and
+ * cannot await async query hooks. These ids are still pinned to exactly what
+ * `OrganizationSeeder.php` inserts on a fresh `migrate:fresh --seed`
+ * (sequential auto-increment, single company), so the generated mock rows
+ * stay consistent with the real backend's shape.
  */
 
 export const COMPANY_ID = 1;

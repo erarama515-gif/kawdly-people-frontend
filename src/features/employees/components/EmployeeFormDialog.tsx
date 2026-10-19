@@ -1,5 +1,10 @@
+/*
+ * i18n keys used in this file (add to en.json / ar.json):
+ *   employees.form.photo  — "Profile Photo"
+ */
+
 import { useEffect, useMemo } from 'react';
-import { useForm } from 'react-hook-form';
+import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useTranslation } from 'react-i18next';
@@ -7,16 +12,18 @@ import type { TFunction } from 'i18next';
 import { Dialog, DialogContent, DialogClose } from '@/components/ui/Dialog';
 import { Button } from '@/components/ui/Button';
 import { Field, Input, Select } from '@/components/ui/form';
+import { FileUpload } from '@/components/ui/FileUpload';
+import type { UploadedFile } from '@/components/ui/FileUpload';
 import { userFacingMessage } from '@/lib/api/errors';
 import type { ApiError } from '@/lib/api/errors';
 import {
-  BRANCHES,
-  COMPANY_ID,
-  DEPARTMENTS,
-  JOB_GRADES,
-  JOB_LEVELS,
-  positionsForDepartment,
-} from '../orgLookup';
+  useBranchList,
+  useDepartmentList,
+  useJobPositionList,
+  useJobGradeList,
+  useJobLevelList,
+} from '@/features/organization/api/queries';
+import { toast } from '@/components/ui/Toast';
 import { useCreateEmployee, useUpdateEmployee } from '../api/queries';
 import type {
   EmployeeGender,
@@ -68,6 +75,10 @@ const employeeFormSchema = z.object({
   marital_status: z.string(),
   joining_date: z.string().min(1, REQUIRED),
   status: z.string(),
+  /** Populated by FileUpload after a successful upload; optional on create. */
+  photo: z.string(),
+  /** Client-only: preview URL for the uploaded photo, not sent to the server. */
+  photo_preview_url: z.string(),
 });
 
 type EmployeeFormValues = z.infer<typeof employeeFormSchema>;
@@ -82,7 +93,7 @@ function buildDefaultValues(employee: EmployeeWire | undefined): EmployeeFormVal
       employee_number: '',
       email: '',
       phone: '',
-      branch_id: BRANCHES[0] ? String(BRANCHES[0].id) : '',
+      branch_id: '',
       department_id: '',
       job_position_id: '',
       job_grade_id: '',
@@ -93,6 +104,8 @@ function buildDefaultValues(employee: EmployeeWire | undefined): EmployeeFormVal
       marital_status: '',
       joining_date: new Date().toISOString().slice(0, 10),
       status: 'active',
+      photo: '',
+      photo_preview_url: '',
     };
   }
 
@@ -115,12 +128,13 @@ function buildDefaultValues(employee: EmployeeWire | undefined): EmployeeFormVal
     marital_status: employee.marital_status ?? '',
     joining_date: employee.joining_date.slice(0, 10),
     status: employee.status,
+    photo: employee.photo ?? '',
+    photo_preview_url: employee.photo ?? '',
   };
 }
 
 function toEmployeeInput(values: EmployeeFormValues): EmployeeInput {
   return {
-    company_id: COMPANY_ID,
     branch_id: Number(values.branch_id),
     department_id: Number(values.department_id),
     job_position_id: Number(values.job_position_id),
@@ -139,6 +153,8 @@ function toEmployeeInput(values: EmployeeFormValues): EmployeeInput {
     employment_type: values.employment_type as EmploymentType,
     work_location: values.work_location as WorkLocation,
     status: (values.status || 'active') as EmployeeStatus,
+    // photo_preview_url is client-only; only send the server-side storage path.
+    photo: values.photo.trim() || null,
   };
 }
 
@@ -183,6 +199,7 @@ export function EmployeeFormDialog({ open, onOpenChange, employee }: EmployeeFor
     setValue,
     reset,
     setError,
+    control,
     formState: { errors },
   } = useForm<EmployeeFormValues>({
     resolver,
@@ -197,10 +214,25 @@ export function EmployeeFormDialog({ open, onOpenChange, employee }: EmployeeFor
   }, [open, employee, reset]);
 
   const departmentId = watch('department_id');
-  const positions = useMemo(
-    () => positionsForDepartment(departmentId ? Number(departmentId) : undefined),
-    [departmentId],
-  );
+
+  // Org lookups — reuse the Organization feature's query hooks (no mock
+  // layer here; same module that powers the Organization page). 200 is the
+  // same "first page, generous perPage" convention used elsewhere in this
+  // file (see EmployeeTransferDialog's manager picker) for flat dropdowns.
+  const { state: branchState } = useBranchList({ page: 1, perPage: 200 });
+  const branches = branchState.data?.data ?? [];
+  const { state: departmentState } = useDepartmentList({ page: 1, perPage: 200 });
+  const departments = departmentState.data?.data ?? [];
+  const { state: positionState } = useJobPositionList({
+    page: 1,
+    perPage: 200,
+    departmentId: departmentId ? Number(departmentId) : undefined,
+  });
+  const positions = positionState.data?.data ?? [];
+  const { state: jobGradeState } = useJobGradeList({ page: 1, perPage: 200 });
+  const jobGrades = jobGradeState.data?.data ?? [];
+  const { state: jobLevelState } = useJobLevelList({ page: 1, perPage: 200 });
+  const jobLevels = jobLevelState.data?.data ?? [];
 
   function handleOpenChange(next: boolean) {
     if (!next) {
@@ -217,10 +249,12 @@ export function EmployeeFormDialog({ open, onOpenChange, employee }: EmployeeFor
       : await createMutation.mutate(input);
 
     if (result) {
+      toast.success('common.saved');
       handleOpenChange(false);
       return;
     }
 
+    toast.error('common.operationFailed');
     const fieldErrors = fieldErrorsFrom(isEdit ? updateMutation.error : createMutation.error);
     for (const [field, message] of Object.entries(fieldErrors)) {
       setError(field as keyof EmployeeFormValues, { type: 'server', message });
@@ -250,6 +284,33 @@ export function EmployeeFormDialog({ open, onOpenChange, employee }: EmployeeFor
               {userFacingMessage(mutationError)}
             </p>
           ) : null}
+
+          {/* Photo upload — optional; shows a circular preview once uploaded */}
+          <Field label={t('employees.form.photo')} htmlFor="photo_upload">
+            <div className="flex items-start gap-4">
+              <Controller
+                name="photo"
+                control={control}
+                render={({ field }) => (
+                  <FileUpload
+                    accept="image/jpeg,image/png,.jpg,.jpeg,.png"
+                    className="flex-1"
+                    onUpload={(uploaded: UploadedFile) => {
+                      field.onChange(uploaded.path);
+                      setValue('photo_preview_url', uploaded.url, { shouldValidate: false });
+                    }}
+                  />
+                )}
+              />
+              {watch('photo_preview_url') ? (
+                <img
+                  src={watch('photo_preview_url')}
+                  alt=""
+                  className="h-16 w-16 shrink-0 rounded-full object-cover border border-hairline"
+                />
+              ) : null}
+            </div>
+          </Field>
 
           <div className="grid grid-cols-2 gap-4">
             <Field label={t('employees.form.firstName')} htmlFor="first_name" required error={translate(t, errors.first_name?.message)}>
@@ -300,7 +361,8 @@ export function EmployeeFormDialog({ open, onOpenChange, employee }: EmployeeFor
           <div className="grid grid-cols-2 gap-4">
             <Field label={t('employees.form.branch')} htmlFor="branch_id" required error={translate(t, errors.branch_id?.message)}>
               <Select id="branch_id" invalid={!!errors.branch_id} {...register('branch_id')}>
-                {BRANCHES.map((branch) => (
+                <option value="">{t('common.selectPlaceholder')}</option>
+                {branches.map((branch) => (
                   <option key={branch.id} value={branch.id}>
                     {branch.name}
                   </option>
@@ -319,7 +381,7 @@ export function EmployeeFormDialog({ open, onOpenChange, employee }: EmployeeFor
                 {...register('department_id', { onChange: () => setValue('job_position_id', '') })}
               >
                 <option value="">{t('common.selectPlaceholder')}</option>
-                {DEPARTMENTS.map((department) => (
+                {departments.map((department) => (
                   <option key={department.id} value={department.id}>
                     {department.name}
                   </option>
@@ -339,7 +401,7 @@ export function EmployeeFormDialog({ open, onOpenChange, employee }: EmployeeFor
                 <option value="">{t('common.selectPlaceholder')}</option>
                 {positions.map((position) => (
                   <option key={position.id} value={position.id}>
-                    {position.name}
+                    {position.title}
                   </option>
                 ))}
               </Select>
@@ -347,7 +409,7 @@ export function EmployeeFormDialog({ open, onOpenChange, employee }: EmployeeFor
             <Field label={t('employees.form.jobGrade')} htmlFor="job_grade_id" error={translate(t, errors.job_grade_id?.message)}>
               <Select id="job_grade_id" invalid={!!errors.job_grade_id} {...register('job_grade_id')}>
                 <option value="">{t('common.selectPlaceholder')}</option>
-                {JOB_GRADES.map((grade) => (
+                {jobGrades.map((grade) => (
                   <option key={grade.id} value={grade.id}>
                     {grade.name}
                   </option>
@@ -360,7 +422,7 @@ export function EmployeeFormDialog({ open, onOpenChange, employee }: EmployeeFor
             <Field label={t('employees.form.jobLevel')} htmlFor="job_level_id" error={translate(t, errors.job_level_id?.message)}>
               <Select id="job_level_id" invalid={!!errors.job_level_id} {...register('job_level_id')}>
                 <option value="">{t('common.selectPlaceholder')}</option>
-                {JOB_LEVELS.map((level) => (
+                {jobLevels.map((level) => (
                   <option key={level.id} value={level.id}>
                     {level.name}
                   </option>

@@ -1,9 +1,18 @@
 import { env } from '@/config/env';
-import { createHttpClient } from '@/lib/api/http';
-import type { HttpClient } from '@/lib/api/http';
+import { appHttpClient as http } from '@/lib/api/appHttpClient';
 import { mockEmployeeApi, resetMockEmployees, setMockFailureRate } from './mockApi';
 import { employeeEnvelopeDecoder, employeeListDecoder } from './schema';
-import type { EmployeeApi, EmployeeInput, EmployeeListParams, EmployeeUpdateInput } from './resource';
+import type {
+  EmployeeApi,
+  EmployeeInput,
+  EmployeeListParams,
+  EmployeePromoteInput,
+  EmployeeReinstateInput,
+  EmployeeSuspendInput,
+  EmployeeTerminateInput,
+  EmployeeTransferInput,
+  EmployeeUpdateInput,
+} from './resource';
 
 /**
  * Real HTTP implementation of `EmployeeApi`, pointed at
@@ -18,18 +27,22 @@ import type { EmployeeApi, EmployeeInput, EmployeeListParams, EmployeeUpdateInpu
  * `undefined` three components deep.
  */
 
-const http: HttpClient = createHttpClient({
-  baseUrl: env.apiBaseUrl || '/api/v1',
-  timeoutMs: env.requestTimeoutMs,
-  retries: env.requestRetries,
-  backoffMs: env.requestBackoffMs,
-});
-
 const BASE = '/employees';
 /** Relations needed to render the list table without a second round-trip. */
 const LIST_INCLUDE = 'department,jobPosition,branch';
+/** Relations loaded for the single-employee profile page. */
+const DETAIL_INCLUDE = 'department,jobPosition,branch,jobGrade,directManager';
 
 export const httpEmployeeApi: EmployeeApi = {
+  async show({ signal }, id) {
+    const { data } = await http(`${BASE}/${id}`, {
+      query: { include: DETAIL_INCLUDE },
+      signal,
+      schema: employeeEnvelopeDecoder,
+    });
+    return requireData(data, `GET /employees/${id}`).data;
+  },
+
   async list({ signal }, params) {
     const { data } = await http(BASE, {
       query: {
@@ -69,6 +82,56 @@ export const httpEmployeeApi: EmployeeApi = {
   async remove({ signal }, id) {
     await http(`${BASE}/${id}`, { method: 'DELETE', signal, ignoreBody: true });
   },
+
+  async promote({ signal }, id, input: EmployeePromoteInput) {
+    const { data } = await http(`${BASE}/${id}/promote`, {
+      method: 'POST',
+      body: input,
+      signal,
+      schema: employeeEnvelopeDecoder,
+    });
+    return requireData(data, `POST /employees/${id}/promote`).data;
+  },
+
+  async transfer({ signal }, id, input: EmployeeTransferInput) {
+    const { data } = await http(`${BASE}/${id}/transfer`, {
+      method: 'POST',
+      body: input,
+      signal,
+      schema: employeeEnvelopeDecoder,
+    });
+    return requireData(data, `POST /employees/${id}/transfer`).data;
+  },
+
+  async suspend({ signal }, id, input: EmployeeSuspendInput) {
+    const { data } = await http(`${BASE}/${id}/suspend`, {
+      method: 'POST',
+      body: input,
+      signal,
+      schema: employeeEnvelopeDecoder,
+    });
+    return requireData(data, `POST /employees/${id}/suspend`).data;
+  },
+
+  async terminate({ signal }, id, input: EmployeeTerminateInput) {
+    const { data } = await http(`${BASE}/${id}/terminate`, {
+      method: 'POST',
+      body: input,
+      signal,
+      schema: employeeEnvelopeDecoder,
+    });
+    return requireData(data, `POST /employees/${id}/terminate`).data;
+  },
+
+  async reinstate({ signal }, id, input: EmployeeReinstateInput) {
+    const { data } = await http(`${BASE}/${id}/reinstate`, {
+      method: 'POST',
+      body: input,
+      signal,
+      schema: employeeEnvelopeDecoder,
+    });
+    return requireData(data, `POST /employees/${id}/reinstate`).data;
+  },
 };
 
 function requireData<T>(data: T | undefined, endpoint: string): T {
@@ -94,4 +157,13 @@ if (env.isDev && env.useMockApi) {
   });
 }
 
-export type { EmployeeInput, EmployeeUpdateInput, EmployeeListParams };
+export type {
+  EmployeeInput,
+  EmployeeUpdateInput,
+  EmployeeListParams,
+  EmployeePromoteInput,
+  EmployeeTransferInput,
+  EmployeeSuspendInput,
+  EmployeeTerminateInput,
+  EmployeeReinstateInput,
+};

@@ -7,10 +7,15 @@ import { array, isoDate, literalUnion, num, object, optional, passthrough, str }
  * `index` envelope is the app's custom `{ data, meta }` pager — not Laravel's
  * default paginator shape (no `links`/`from`/`to` keys).
  *
- * `department`/`jobPosition`/`branch` are optional because they are only
- * present when the request asked for `include=department,jobPosition,branch`
- * — Eloquent appends eager-loaded relations to `toArray()` under the exact
- * relation method name (camelCase for multi-word relations).
+ * `department`/`job_position`/`branch`/`job_grade`/`direct_manager` are
+ * optional because they are only present when the request asked for the
+ * matching `include=` value — Eloquent's `relationsToArray()` always
+ * snake_cases the relation method name for the JSON key, regardless of how
+ * the relation method itself is named (so the `jobPosition()` relation shows
+ * up on the wire as `job_position`, never `jobPosition`; `directManager()`
+ * shows up as `direct_manager`, serialized with the same employee fields as
+ * any other employee record — hence the narrower `id`/`first_name`/
+ * `last_name`-only ref decoder below, just enough to render a name).
  */
 
 export const genderDecoder = literalUnion(['male', 'female'] as const);
@@ -28,6 +33,8 @@ export const employeeStatusDecoder = literalUnion([
 const departmentRefDecoder = object({ id: num(), name: str() });
 const jobPositionRefDecoder = object({ id: num(), title: str() });
 const branchRefDecoder = object({ id: num(), name: str() });
+const jobGradeRefDecoder = object({ id: num(), name: str() });
+const directManagerRefDecoder = object({ id: num(), first_name: str(), last_name: str() });
 
 export const employeeDecoder = object({
   id: num(),
@@ -69,8 +76,10 @@ export const employeeDecoder = object({
   created_at: optional(str()),
   updated_at: optional(str()),
   department: optional(departmentRefDecoder),
-  jobPosition: optional(jobPositionRefDecoder),
+  job_position: optional(jobPositionRefDecoder),
   branch: optional(branchRefDecoder),
+  job_grade: optional(jobGradeRefDecoder),
+  direct_manager: optional(directManagerRefDecoder),
 });
 
 export type EmployeeWire = ReturnType<typeof employeeDecoder.decode>;
