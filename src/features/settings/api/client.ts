@@ -1,6 +1,5 @@
 import { env } from '@/config/env';
-import { createHttpClient } from '@/lib/api/http';
-import type { HttpClient } from '@/lib/api/http';
+import { appHttpClient as http } from '@/lib/api/appHttpClient';
 import { mockSettingApi, resetMockSettings, setMockSettingFailureRate } from './mockApi';
 import { settingEnvelopeDecoder, settingListDecoder } from './schema';
 import type { SettingApi, SettingInput, SettingListParams, SettingUpdateInput } from './resource';
@@ -12,13 +11,6 @@ import type { SettingApi, SettingInput, SettingListParams, SettingUpdateInput } 
  * only query params sent on list. Mirrors the HttpClient conventions from
  * `organization/api/client.ts`.
  */
-
-const http: HttpClient = createHttpClient({
-  baseUrl: env.apiBaseUrl || '/api/v1',
-  timeoutMs: env.requestTimeoutMs,
-  retries: env.requestRetries,
-  backoffMs: env.requestBackoffMs,
-});
 
 const SETTINGS_BASE = '/settings';
 
