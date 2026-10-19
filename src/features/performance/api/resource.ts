@@ -54,8 +54,8 @@ export interface PerformanceCycleListParams {
 
 /** Shape of `StorePerformanceCycleRequest`'s validated fields. */
 export interface PerformanceCycleInput {
-  /** Hardcoded to 1 as placeholder until auth context is wired. */
-  company_id: number;
+  /** Injected by the backend's auth middleware; omit from form payloads. */
+  company_id?: number;
   name: string;
   type: PerformanceCycleType;
   start_date: string;

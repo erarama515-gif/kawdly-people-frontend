@@ -20,9 +20,6 @@ import type { PerformanceCycleWire } from '../api/schema';
  * `toPerformanceCycleInput()` converts them to the wire-shaped
  * `PerformanceCycleInput` on submit.
  *
- * `company_id` is hardcoded to 1 as placeholder (same as all other features
- * in this project until auth context is wired).
- *
  * Save button wired via HTML5 `form="performance-cycle-form"` — lives in the
  * dialog footer, outside the <form> element.
  */
@@ -80,7 +77,6 @@ function buildDefaultValues(cycle: PerformanceCycleWire | undefined): Performanc
 
 function toPerformanceCycleInput(values: PerformanceCycleFormValues): PerformanceCycleInput {
   return {
-    company_id: 1,
     name: values.name.trim(),
     type: values.type as PerformanceCycleType,
     start_date: values.start_date,

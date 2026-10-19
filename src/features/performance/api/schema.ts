@@ -108,7 +108,7 @@ export const performanceReviewDecoder = object({
   employee_id: num(),
   reviewer_id: num(),
   review_type: performanceReviewTypeDecoder,
-  overall_rating: optional(num()),
+  overall_rating: optional(str()),
   strengths: optional(str()),
   improvements: optional(str()),
   comments: optional(str()),

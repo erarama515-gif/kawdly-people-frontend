@@ -1,6 +1,5 @@
 import { env } from '@/config/env';
-import { createHttpClient } from '@/lib/api/http';
-import type { HttpClient } from '@/lib/api/http';
+import { appHttpClient as http } from '@/lib/api/appHttpClient';
 import {
   mockPerformanceCycleApi,
   mockPerformanceReviewApi,
@@ -34,13 +33,6 @@ import type {
  *
  * Mock is the active default (see bottom of file) until `VITE_API_BASE_URL` is set.
  */
-
-const http: HttpClient = createHttpClient({
-  baseUrl: env.apiBaseUrl || '/api/v1',
-  timeoutMs: env.requestTimeoutMs,
-  retries: env.requestRetries,
-  backoffMs: env.requestBackoffMs,
-});
 
 function requireData<T>(data: T | undefined, endpoint: string): T {
   if (data === undefined) throw new Error(`${endpoint} returned an empty body`);
