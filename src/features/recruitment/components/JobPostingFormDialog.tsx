@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/Button';
 import { Field, Input, Select } from '@/components/ui/form';
 import { userFacingMessage } from '@/lib/api/errors';
 import type { ApiError } from '@/lib/api/errors';
-import { DEPARTMENTS } from '@/features/employees/orgLookup';
+import { useDepartmentList } from '@/features/organization/api/queries';
 import { useCreateJobPosting, useUpdateJobPosting } from '../api/queries';
 import type { JobPostingEmploymentType, JobPostingInput } from '../api/resource';
 import type { JobPostingWire } from '../api/schema';
@@ -155,6 +155,9 @@ export function JobPostingFormDialog({ open, onOpenChange, posting }: JobPosting
 
   const resolver = useMemo(() => zodResolver(jobPostingFormSchema), []);
 
+  const { state: departmentState } = useDepartmentList({ page: 1, perPage: 200 });
+  const departments = departmentState.data?.data ?? [];
+
   const {
     register,
     handleSubmit,
@@ -258,7 +261,7 @@ export function JobPostingFormDialog({ open, onOpenChange, posting }: JobPosting
             >
               <Select id="jp_department" invalid={!!errors.job_requisition_id} {...register('job_requisition_id')}>
                 <option value="">{t('common.selectPlaceholder')}</option>
-                {DEPARTMENTS.map((dept) => (
+                {departments.map((dept) => (
                   <option key={dept.id} value={dept.id}>
                     {dept.name}
                   </option>

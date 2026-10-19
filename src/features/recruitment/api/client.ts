@@ -1,6 +1,5 @@
 import { env } from '@/config/env';
-import { createHttpClient } from '@/lib/api/http';
-import type { HttpClient } from '@/lib/api/http';
+import { appHttpClient as http } from '@/lib/api/appHttpClient';
 import { mockJobPostingApi, resetMockJobPostings, setMockJobPostingFailureRate } from './mockApi';
 import { jobPostingEnvelopeDecoder, jobPostingListDecoder } from './schema';
 import type { JobPostingApi, JobPostingInput, JobPostingListParams, JobPostingUpdateInput } from './resource';
@@ -13,13 +12,6 @@ import type { JobPostingApi, JobPostingInput, JobPostingListParams, JobPostingUp
  * each raw record is annotated with a client-computed status so the schema
  * decoder can validate it. See `computeStatus()` for the derivation logic.
  */
-
-const http: HttpClient = createHttpClient({
-  baseUrl: env.apiBaseUrl || '/api/v1',
-  timeoutMs: env.requestTimeoutMs,
-  retries: env.requestRetries,
-  backoffMs: env.requestBackoffMs,
-});
 
 const BASE = '/job-postings';
 
