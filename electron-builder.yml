@@ -1,0 +1,154 @@
+# Kawdly People — electron-builder configuration (T5).
+#
+# ---------------------------------------------------------------------------
+# Why this is a separate file and NOT package.json "build"
+# ---------------------------------------------------------------------------
+# T3 left a four-line `build` block in package.json. It has been removed, and
+# this file is now the single source of truth. Three reasons:
+#
+#   1. JSON has no comments. Every non-obvious setting below needs a "why" —
+#      especially the node_modules exclusion and the extraResources layout,
+#      both of which look like mistakes until you read the reason. In a JSON
+#      manifest that reasoning would have to live in a separate document and
+#      would rot the first time someone edited one and not the other.
+#   2. package.json is consumed at RUNTIME (Electron reads `main` and `version`
+#      from it, and it is itself shipped inside the asar). Build-time knobs do
+#      not belong in an artifact that gets installed on a user's machine.
+#   3. Two config sources is a bug waiting to happen: electron-builder would
+#      read one and silently ignore the other.
+#
+# ---------------------------------------------------------------------------
+# Scope (founder decisions, T5)
+# ---------------------------------------------------------------------------
+#   Windows NSIS only. macOS is T5b (needs a $99 Apple Developer account —
+#   a credit card, which Phase 1's zero-card policy forbids). Code signing is
+#   also T5b for the same reason, so this build is UNSIGNED and SmartScreen
+#   will warn. That friction is accepted and documented, not worked around.
+#   The bundled php.exe is still the UPX-packed artifact; rebuilding it without
+#   UPX is T5a, scheduled before public release (see Electron-Packaging-Design
+#   §5 R2).
+
+appId: com.kawdly.people
+productName: Kawdly People
+copyright: Copyright © 2026 Kawdly
+
+directories:
+  output: release
+  buildResources: electron/build
+
+# ---------------------------------------------------------------------------
+# What goes INSIDE the asar
+# ---------------------------------------------------------------------------
+# Only the compiled main process. Three entries, and the second one is the
+# load-bearing surprise:
+#
+#   electron/package.json is NOT optional. The root package.json declares
+#   "type": "module", and Node resolves a file's module system from the
+#   NEAREST package.json. Without electron/package.json (which declares
+#   "type": "commonjs") the CommonJS output of electron/tsconfig.json would be
+#   parsed as ESM and the app would die at startup with a SyntaxError on the
+#   first `require`. It is 7 lines and it is a hard dependency.
+files:
+  - electron/dist/**/*
+  - electron/package.json
+  - package.json
+  # node_modules is EXCLUDED, which is not the usual advice.
+  #
+  # electron-builder's default is to bundle the whole production dependency
+  # tree. Here that tree is ~100 MB of React, Recharts, jsPDF, xlsx and Radix —
+  # and every byte of it is dead weight, because Vite has already compiled all
+  # of it into the SPA bundle that Laravel serves from backend/public/app.
+  # The main process imports exactly two things: `electron` (provided by the
+  # runtime, never from node_modules) and node: builtins. Verified by grepping
+  # every import in electron/src.
+  #
+  # If a real runtime dependency is ever added to the main process, this line
+  # must be narrowed to allowlist it — the app will fail loudly at startup with
+  # MODULE_NOT_FOUND, not silently.
+  - '!node_modules/**/*'
+
+asar: true
+# Nothing needs unpacking from the asar: everything php.exe has to read is an
+# extraResource, which lands on the real filesystem by definition.
+asarUnpack: []
+
+# ---------------------------------------------------------------------------
+# What goes OUTSIDE the asar (the real filesystem, under resourcesPath)
+# ---------------------------------------------------------------------------
+# php.exe is a separate OS process. It cannot read through Electron's asar
+# virtual filesystem, so the PHP binary, the Laravel application it serves and
+# the router script it is handed must all be plain files on disk.
+extraResources:
+  # Just the binary — NOT the whole php-runtime-spike/ directory, which also
+  # holds the 8.9 MB source zip and a userData/ scratch tree from the E1 spike.
+  # Shipping those would add ~9 MB of pure noise to every installer.
+  - from: ../php-runtime-spike/php.exe
+    to: php/php.exe
+
+  # The PRUNED backend, not ../backend. Built by scripts/stage-backend.mjs,
+  # which strips .env, the developer's database.sqlite, .git/, tests/ and
+  # storage/, then runs `composer install --no-dev --optimize-autoloader`.
+  # Pointing this at ../backend directly would ship a real APP_KEY and a
+  # developer's data to every user.
+  - from: release-staging/backend
+    to: backend
+
+  # The T4 router script that fixes the SPA deep-link 404 (F14).
+  #
+  # The doubled "resources" in the destination is intentional and correct:
+  # `to:` is relative to the app's resources directory, which is exactly what
+  # process.resourcesPath points at. So this file lands at
+  # <resourcesPath>/resources/desktop-server.php, which is what
+  # electron/src/paths.ts resolves. Change one side and you MUST change the
+  # other — and the failure mode is quiet, because php -S logs an unreadable
+  # router to stderr and then keeps serving through its default handler, which
+  # is F14 all over again. requireRouterScript() exists to turn that into a
+  # startup error instead.
+  - from: electron/resources/desktop-server.php
+    to: resources/desktop-server.php
+
+# ---------------------------------------------------------------------------
+# Windows target
+# ---------------------------------------------------------------------------
+win:
+  target:
+    - target: nsis
+      arch:
+        - x64
+  icon: electron/build/icon.ico
+  # No `certificateFile` / `signingHashAlgorithms`: Phase 1 ships unsigned on
+  # purpose. Leaving these absent is the honest encoding of that decision —
+  # a commented-out certificate path is how a half-configured signing setup
+  # fails at 2am on release day.
+
+nsis:
+  # Per-user install under %LOCALAPPDATA%\Programs. No UAC prompt, no admin
+  # rights, nothing written to Program Files — which also means an IT-locked
+  # machine can still evaluate the beta.
+  oneClick: false
+  perMachine: false
+  allowElevation: false
+  allowToChangeInstallationDirectory: true
+
+  createDesktopShortcut: true
+  createStartMenuShortcut: true
+  shortcutName: Kawdly People
+
+  installerIcon: electron/build/icon.ico
+  uninstallerIcon: electron/build/icon.ico
+  installerHeaderIcon: electron/build/icon.ico
+  license: electron/build/license.txt
+
+  # Uninstall must NOT delete the user's records. The database, the generated
+  # APP_KEY and the uploaded files all live in userData, outside the install
+  # directory, and a reinstall is expected to find them intact. This is the
+  # default, but it is asserted explicitly because V7c tests exactly this and a
+  # silent upstream default change would destroy user data.
+  deleteAppDataOnUninstall: false
+
+artifactName: ${productName} Setup ${version}.${ext}
+
+# Auto-update is session T6. No publish provider is configured, so no
+# latest.yml is emitted and electron-builder will not try to reach a release
+# host during the build. Wiring GitHub Releases here is T6's first step.
+publish: null

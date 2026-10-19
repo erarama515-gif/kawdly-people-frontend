@@ -1,28 +1,33 @@
 /**
- * Kawdly People — Electron main process (T3).
+ * Kawdly People — Electron main process.
  *
  * Startup is a strict sequence, and the order is the design:
  *
- *   single-instance lock → paths → userData tree → APP_KEY → free port
- *   → splash window → spawn PHP → readiness probe → main window → show
+ *   single-instance lock → resolvePaths → userData tree → splash window
+ *   → assertPaths → first-run bootstrap / upgrade migrate → APP_KEY
+ *   → free port → spawn PHP → readiness probe → main window → show
  *
- * The splash is created BEFORE the backend is spawned so that every later step
- * has somewhere to report progress, and so a slow PHP cold boot never looks like
- * "nothing happened". The main window is created only after the probe passes, so
- * the user can never see a half-booted Laravel.
+ * The splash is created BEFORE anything that can take time or fail, so that
+ * every later step has somewhere to report progress and a slow PHP cold boot
+ * never looks like "nothing happened". The main window is created only after
+ * the probe passes, so the user can never see a half-booted Laravel.
  *
- * Deliberately NOT here (later tasks — E2 plan §13):
- *   T4  crash supervision / restart, orphan reaping across app restarts, the
- *       custom router script that fixes SPA deep links (F14)
- *   T5  production path resolution (packaged php.exe + backend outside the asar),
- *       log rotation
- *   T6  Vite dev-server mode with HMR, router `basename`
- *   T9  real first-run provisioning: generated APP_KEY, DB template, migrations
+ * ---------------------------------------------------------------------------
+ * What T5 changed here
+ * ---------------------------------------------------------------------------
+ * T3 resolved paths inline from `__dirname` (`resolveDevPaths`, DEV-ONLY), read
+ * APP_KEY out of the backend's `.env`, and copied the developer's own
+ * `database.sqlite` into userData (`seedDevDatabase`, DEV-ONLY). All three are
+ * gone. Path resolution now lives in `paths.ts` and provisioning in
+ * `first-run.ts`, and BOTH run identically in dev and packaged — which is the
+ * point: the first-run code path users hit is the one exercised every day here,
+ * not one that only ever executes on a stranger's machine.
  *
- * ⚠️ Two blocks in here are explicitly marked DEV-ONLY (`resolveDevPaths` and
- * `seedDevDatabase`). They exist so T3 can be smoke-tested end to end against the
- * repo checkout, and they are gated on `!app.isPackaged` so a packaged build can
- * never silently depend on them. T5/T9 replace both.
+ * Deliberately NOT here (later sessions):
+ *   crash supervision / restart and orphan reaping across app restarts
+ *   log rotation
+ *   Vite dev-server mode with HMR
+ *   auto-update checks (T6; the installer-side skeleton only)
  */
 
 import { app, BrowserWindow, dialog, session, shell } from 'electron';
@@ -30,6 +35,15 @@ import * as fs from 'node:fs';
 import * as path from 'node:path';
 
 import { KAWDLY_CONFIG_ARGV_PREFIX, type DesktopConfig } from './desktop-config';
+import {
+  MigrationFailedError,
+  ensureAppKey,
+  ensureUserDataTree,
+  initializeUserData,
+  isFirstRun,
+  migrateIfNeeded,
+} from './first-run';
+import { assertPaths, resolvePaths } from './paths';
 import { spawnPhp, type PhpProcessHandle } from './php-process';
 import { pickFreePort } from './port';
 import { BackendNotReadyError, waitForBackend } from './readiness';
@@ -54,12 +68,6 @@ const READINESS_INTERVAL_MS = 250;
 /** Where the SPA lives, relative to the backend's document root. */
 const SPA_PATH = '/app/';
 
-interface ResolvedPaths {
-  readonly userDataPath: string;
-  readonly backendPath: string;
-  readonly phpBinaryPath: string;
-}
-
 let splashWindow: BrowserWindow | null = null;
 let mainWindow: BrowserWindow | null = null;
 let php: PhpProcessHandle | null = null;
@@ -68,28 +76,7 @@ let isQuitting = false;
 /** Set once the backend port is known; the security guards read it. */
 let backendOrigin: string | null = null;
 
-// ─── paths ────────────────────────────────────────────────────────────────────
-
-/**
- * DEV-ONLY path resolution.
- *
- * `__dirname` is `<repo>/frontend/electron/dist`, so three levels up is the
- * workspace root that holds both `backend/` and `php-runtime-spike/`.
- *
- * TODO(T5): in a packaged build the backend and php.exe ship as unpacked
- * resources (`process.resourcesPath`), never inside the asar — PHP cannot read a
- * virtual filesystem. Until that exists, a packaged launch is refused outright
- * rather than silently pointing at paths that do not exist on a user's machine.
- */
-function resolveDevPaths(): ResolvedPaths {
-  const workspaceRoot = path.resolve(__dirname, '..', '..', '..');
-
-  return {
-    userDataPath: app.getPath('userData'),
-    backendPath: path.join(workspaceRoot, 'backend'),
-    phpBinaryPath: path.join(workspaceRoot, 'php-runtime-spike', 'php.exe'),
-  };
-}
+// ─── version ──────────────────────────────────────────────────────────────────
 
 /**
  * The application's own version — NOT `app.getVersion()` on its own.
@@ -120,123 +107,6 @@ function resolveAppVersion(): string {
   }
 
   return app.getVersion();
-}
-
-/**
- * The per-user writable tree. Created in full up front: Laravel does not create
- * `storage/framework/views` on demand, and a missing one surfaces as a Blade
- * compile failure inside a 200 response — exactly the failure mode the readiness
- * probe exists to catch, but much easier to simply prevent.
- */
-function ensureUserDataTree(userDataPath: string): void {
-  const dirs = [
-    'data',
-    'logs',
-    'backups',
-    path.join('storage', 'app', 'public'),
-    path.join('storage', 'app', 'private'),
-    path.join('storage', 'framework', 'cache'),
-    path.join('storage', 'framework', 'sessions'),
-    path.join('storage', 'framework', 'views'),
-    path.join('storage', 'logs'),
-  ];
-
-  for (const dir of dirs) {
-    fs.mkdirSync(path.join(userDataPath, dir), { recursive: true });
-  }
-}
-
-// ─── APP_KEY ──────────────────────────────────────────────────────────────────
-
-/**
- * Resolves the Laravel application key.
- *
- * Order: explicit environment override → the cached `userData/.appkey` → (dev
- * only) the backend's own `.env`.
- *
- * The key must be STABLE across runs: it encrypts session payloads and anything
- * written through `Crypt`, so regenerating it on every launch would invalidate
- * stored data. Hence the cache file. Generating a fresh key on first run belongs
- * to T9, together with DB provisioning, because the two have to happen together.
- */
-function resolveAppKey(paths: ResolvedPaths): string {
-  const fromEnv = process.env['KAWDLY_APP_KEY'];
-  if (fromEnv !== undefined && fromEnv !== '') {
-    return fromEnv;
-  }
-
-  const keyFile = path.join(paths.userDataPath, '.appkey');
-  if (fs.existsSync(keyFile)) {
-    const cached = fs.readFileSync(keyFile, 'utf8').trim();
-    if (cached !== '') {
-      return cached;
-    }
-  }
-
-  if (!app.isPackaged) {
-    const key = readAppKeyFromDotEnv(path.join(paths.backendPath, '.env'));
-    if (key !== null) {
-      // Cache it so the dev app keeps working if the backend `.env` is rotated
-      // mid-session, and so dev behaves like production (read from userData).
-      fs.writeFileSync(keyFile, key, 'utf8');
-      return key;
-    }
-  }
-
-  throw new Error(
-    'No APP_KEY available. Expected one of: the KAWDLY_APP_KEY environment ' +
-      `variable, a cached key at ${keyFile}, or (in dev) an APP_KEY line in ` +
-      `${path.join(paths.backendPath, '.env')}. Generating one on first run is T9.`,
-  );
-}
-
-/**
- * Minimal `.env` reader — intentionally not a full dotenv parser. It needs to
- * handle exactly one key written by `artisan key:generate`, which is always a
- * bare unquoted `base64:` value, so a regex is both sufficient and auditable.
- */
-function readAppKeyFromDotEnv(envPath: string): string | null {
-  if (!fs.existsSync(envPath)) {
-    return null;
-  }
-
-  const match = /^\s*APP_KEY\s*=\s*"?([^"\r\n]+)"?\s*$/m.exec(fs.readFileSync(envPath, 'utf8'));
-  const value = match?.[1]?.trim();
-
-  return value !== undefined && value !== '' ? value : null;
-}
-
-// ─── DEV-ONLY database seed ───────────────────────────────────────────────────
-
-/**
- * DEV-ONLY: copies the repo's development SQLite file into userData on first run.
- *
- * T3's smoke test has to be able to log in, and the child process points
- * `DB_DATABASE` at `userData/data/database.sqlite`, which does not exist on a
- * fresh machine. Creating an empty file would be worse than useless: Laravel
- * would boot, `/api/v1/health` would fail its `SELECT 1` on a missing `cache`
- * table, and the probe would report "degraded" for a reason that has nothing to
- * do with the shell being tested.
- *
- * TODO(T9): ship a migrated-but-empty template DB as a resource, copy that, then
- * run `migrate --force` on version change. Never copy a developer's data.
- */
-function seedDevDatabase(paths: ResolvedPaths): void {
-  if (app.isPackaged) {
-    return;
-  }
-
-  const target = path.join(paths.userDataPath, 'data', 'database.sqlite');
-  if (fs.existsSync(target)) {
-    return;
-  }
-
-  const source = path.join(paths.backendPath, 'database', 'database.sqlite');
-  if (!fs.existsSync(source)) {
-    return;
-  }
-
-  fs.copyFileSync(source, target);
 }
 
 // ─── splash ───────────────────────────────────────────────────────────────────
@@ -500,13 +370,21 @@ function createMainWindow(port: number, origin: string): BrowserWindow {
  * Terminal startup failure.
  *
  * A native `dialog` rather than an HTML error window with buttons: a button in a
- * renderer needs an IPC channel to act, and T3's contract is zero IPC (3.7/3.8).
- * A native dialog gets the same two actions — "open the log folder" and "quit" —
- * with no new attack surface. T4, which owns crash supervision and therefore
- * needs a renderer→main channel anyway, can upgrade this to a real window.
+ * renderer needs an IPC channel to act, and the desktop shell's contract is zero
+ * IPC (3.7/3.8). A native dialog gets the same two actions — "open the log
+ * folder" and "quit" — with no new attack surface. Whichever session introduces
+ * crash supervision needs a renderer→main channel anyway and can upgrade this to
+ * a real window then.
+ *
+ * The three failure classes get three different bodies on purpose, because the
+ * user-visible symptom is identical (the app does not open) while the fix is
+ * completely different: a broken install needs a reinstall, a failed migration
+ * needs the log, and a readiness timeout needs the PHP capture files.
  */
 async function reportFatal(error: unknown, logDir: string | null): Promise<void> {
   splashWindow?.close();
+
+  const isMigration = error instanceof MigrationFailedError;
 
   const detail = [
     error instanceof Error ? `${error.name}: ${error.message}` : String(error),
@@ -521,6 +399,23 @@ async function reportFatal(error: unknown, logDir: string | null): Promise<void>
           error.lastBody.slice(0, 1_200),
         ].join('\n')
       : '',
+    /**
+     * The TAIL of the migration output, not the head. `artisan migrate` prints
+     * one line per migration, so a failure after 90 successful migrations would
+     * push the actual SQL error off the end of any head-truncated excerpt.
+     */
+    error instanceof MigrationFailedError
+      ? [
+          '',
+          `Exit code: ${error.exitCode === null ? '(killed / never started)' : String(error.exitCode)}`,
+          '',
+          'Last output from artisan migrate:',
+          error.output.trim().slice(-1_600),
+          '',
+          'A copy of the full output is in logs/migrate.log. Your database was ' +
+            'backed up to the backups folder before the upgrade ran.',
+        ].join('\n')
+      : '',
     php === null ? '' : `\nCommand line:\n${php.commandLine}`,
   ]
     .filter((part) => part !== '')
@@ -531,7 +426,7 @@ async function reportFatal(error: unknown, logDir: string | null): Promise<void>
   const { response } = await dialog.showMessageBox({
     type: 'error',
     title: 'Kawdly People — فشل التشغيل',
-    message: 'تعذّر تشغيل الخدمة الخلفية.',
+    message: isMigration ? 'تعذّر تحديث قاعدة البيانات.' : 'تعذّر تشغيل الخدمة الخلفية.',
     detail,
     buttons,
     defaultId: 0,
@@ -554,15 +449,53 @@ async function startup(): Promise<void> {
   let logDir: string | null = null;
 
   try {
-    const paths = resolveDevPaths();
+    const paths = resolvePaths();
     logDir = path.join(paths.userDataPath, 'logs');
 
+    /**
+     * Before anything that can fail, and deliberately duplicated with the call
+     * inside the bootstrap below: `reportFatal` offers "open the log folder",
+     * and `shell.openPath` on a directory that does not exist silently does
+     * nothing. Creating the tree first means the error dialog is useful even
+     * when the failure happened before provisioning started.
+     */
     ensureUserDataTree(paths.userDataPath);
-    seedDevDatabase(paths);
-
-    const appKey = resolveAppKey(paths);
 
     splashWindow = createSplash();
+
+    /**
+     * Fail on a broken INSTALL before touching the user's profile. Without
+     * this, a missing php.exe or an unstaged backend would instead surface 20
+     * seconds later as a readiness timeout, and a missing document root would
+     * surface as a blank window — both of which read as application bugs
+     * rather than "this build is incomplete". See paths.ts.
+     */
+    assertPaths(paths);
+
+    const appVersion = resolveAppVersion();
+
+    /**
+     * Provisioning, and the one branch in startup that can run for minutes.
+     *
+     * First run builds the profile from scratch (tree, generated APP_KEY,
+     * database from the shipped template, `migrate --force`). Every later
+     * launch takes `migrateIfNeeded`, which returns immediately unless the
+     * installed version differs from the marker — so a normal start pays no
+     * PHP spawn at all.
+     *
+     * Both run in dev too. The old DEV-ONLY shortcuts meant the code users
+     * depend on most was the code tested least.
+     */
+    if (isFirstRun(paths.userDataPath)) {
+      setSplashStatus('جاري تجهيز التطبيق لأول مرة…');
+      await initializeUserData({ paths, appVersion, onProgress: setSplashStatus });
+    } else {
+      await migrateIfNeeded({ paths, appVersion, onProgress: setSplashStatus });
+    }
+
+    // After provisioning: on a first run the key is generated in there, and
+    // reading it back is how this function stays a pure lookup.
+    const appKey = ensureAppKey(paths.userDataPath);
 
     setSplashStatus('جاري اختيار منفذ…');
     const port = await pickFreePort(PREFERRED_PORTS);
@@ -577,18 +510,19 @@ async function startup(): Promise<void> {
       userDataPath: paths.userDataPath,
       backendPath: paths.backendPath,
       phpBinaryPath: paths.phpBinaryPath,
+      routerScriptPath: paths.routerScriptPath,
       appKey,
     });
 
     /**
-     * Diagnostics only — restart/supervision is T4. Without this listener an
-     * early exit (a bad `-d` flag, a missing DLL) would surface only as a
-     * readiness timeout, hiding the actual exit code.
+     * Diagnostics only — crash supervision and restart are a later session.
+     * Without this listener an early exit (a bad `-d` flag, a missing DLL)
+     * would surface only as a readiness timeout, hiding the actual exit code.
      */
     php.child.once('exit', (code, signal) => {
       console.error(
         `[php] exited early: code=${String(code)} signal=${String(signal)}. ` +
-          'Supervision/restart is T4.',
+          'No supervision/restart yet — the app will not recover on its own.',
       );
     });
 

@@ -26,6 +26,9 @@
  *    damage ($_SERVER rewritten to point at `public/app/index.html`) is done by
  *    php -S before any router runs; see resources/desktop-server.php for the full
  *    mechanism. Swapping this back to the stock script silently reintroduces F14.
+ *    Since T5 the path arrives as an option (`routerScriptPath`) rather than
+ *    being computed here, because the packaged build resolves it from
+ *    `process.resourcesPath` — see paths.ts and electron-builder.yml.
  *
  * 3. `-d variables_order=EGPCS` is load-bearing, not cosmetic. Laravel's `env()`
  *    reads `$_SERVER`/`$_ENV` (`Illuminate\Support\Env` → Dotenv's ServerConst and
@@ -50,9 +53,10 @@
  *    `.env`. That is what makes this allowlist authoritative even though a `.env`
  *    file still exists next to the backend in dev.
  *
- * NOT here (later tasks): crash supervision/restart and orphan reaping across app
- * restarts (T4), log rotation (T5), first-run DB provisioning and a generated
- * APP_KEY (T9).
+ * NOT here (later sessions): crash supervision/restart and orphan reaping across
+ * app restarts, and log rotation. First-run DB provisioning and the generated
+ * APP_KEY moved IN to T5 and live in first-run.ts — this module just receives
+ * the key it is told to use.
  */
 
 import { spawn, execFile, type ChildProcess } from 'node:child_process';
@@ -88,6 +92,14 @@ export interface SpawnPhpOptions {
   backendPath: string;
   /** Absolute path to the bundled `php.exe`. */
   phpBinaryPath: string;
+  /**
+   * Absolute path to `desktop-server.php`, from `resolvePaths()` (T5).
+   *
+   * Passed in rather than computed here: dev and packaged builds resolve it
+   * from completely different roots, and `paths.ts` is the single module that
+   * is allowed to know which one applies.
+   */
+  routerScriptPath: string;
   /** `base64:...` application key. Dev reads it from the backend `.env`; T9 generates it. */
   appKey: string;
 }
@@ -166,7 +178,7 @@ export function spawnPhp(opts: SpawnPhpOptions): PhpProcessHandle {
   const docRoot = path.join(opts.backendPath, 'public');
   // Throws if the file is missing — see requireRouterScript() for why a missing
   // router is far worse than a missing binary: the server still starts.
-  const routerScript = requireRouterScript();
+  const routerScript = requireRouterScript(opts.routerScriptPath);
   const logDir = path.join(opts.userDataPath, 'logs');
 
   if (!fs.existsSync(opts.phpBinaryPath)) {

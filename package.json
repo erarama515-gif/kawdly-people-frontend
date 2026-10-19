@@ -12,18 +12,12 @@
     "preview": "vite preview",
     "build:desktop": "tsc -b && vite build --base=/app/ --outDir ../backend/public/app --emptyOutDir",
     "electron:build": "npm run build:desktop && npx tsc -p electron/tsconfig.json",
-    "electron:dev": "npm run electron:build && electron electron/dist/main.js"
-  },
-  "build": {
-    "appId": "com.kawdly.people",
-    "productName": "Kawdly People",
-    "directories": {
-      "output": "release"
-    },
-    "files": [
-      "electron/dist/**/*",
-      "package.json"
-    ]
+    "electron:dev": "npm run electron:build && electron electron/dist/main.js",
+    "make:icon": "node scripts/make-placeholder-icon.mjs",
+    "stage:backend": "node scripts/stage-backend.mjs",
+    "verify:staging": "node scripts/stage-backend.mjs --verify",
+    "package:dir": "npm run electron:build && npm run stage:backend && electron-builder --dir",
+    "package:win": "npm run electron:build && npm run stage:backend && electron-builder --win nsis"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.9.1",

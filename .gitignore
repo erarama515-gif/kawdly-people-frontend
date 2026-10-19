@@ -4,6 +4,11 @@ dist-ssr
 # electron-builder output. Redirected here from its default "dist" so it cannot
 # collide with (or be mistaken for) the Vite build. ~490 MB of unpacked Electron.
 release/
+# Packaging staging tree built by scripts/stage-backend.mjs (T5): a pruned copy of
+# ../backend plus its own --no-dev vendor/ and the built SPA. ~100 MB, fully
+# reproducible from the two source repos, and it would otherwise commit a SECOND
+# copy of the backend into the frontend repo.
+release-staging/
 *.local
 .DS_Store
 *.log
