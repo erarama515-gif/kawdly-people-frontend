@@ -71,6 +71,7 @@ export function userFacingMessage(error: unknown): string {
       if (error.status === 401) return 'Your session has expired.';
       if (error.status === 403) return 'You do not have access to this data.';
       if (error.status === 404) return 'This data is no longer available.';
+      if (error.status === 429) return 'Too many attempts. Please wait a moment and try again.';
       return 'The server could not complete the request.';
     default:
       return 'Something went wrong.';

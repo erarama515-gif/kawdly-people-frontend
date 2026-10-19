@@ -6,8 +6,10 @@ import { cn } from '@/lib/cn';
 import { getNavEntries, navigation } from '@/config/navigation';
 import { useUiStore } from '@/stores/ui-store';
 import { Brand } from './Brand';
-import { NotificationsPopover } from './NotificationsPopover';
+import { LanguageSwitcher } from './LanguageSwitcher';
+import { NotificationBell } from '@/features/notifications/components/NotificationBell';
 import { SearchTrigger } from './SearchTrigger';
+import { ThemeToggle } from './ThemeToggle';
 import { TopNav } from './TopNav';
 import { UserMenu } from './UserMenu';
 
@@ -49,13 +51,13 @@ export function TopBar() {
   const closeMobileSidebar = useUiStore((state) => state.closeMobileSidebar);
 
   return (
-    <header className="sticky top-0 z-30 flex h-14 shrink-0 items-center gap-4 border-b border-on-navy-border-18 bg-navy px-4 xl:gap-6 md:h-16 md:px-6 lg:px-8 2xl:gap-8">
+    <header className="sticky top-0 z-30 flex h-11 shrink-0 items-center gap-5 bg-navy px-4 md:px-6 lg:gap-7 lg:px-6">
       <button
         type="button"
         onClick={mobileSidebarOpen ? closeMobileSidebar : openMobileSidebar}
         aria-label={mobileSidebarOpen ? t('topbar.closeMenu') : t('topbar.openMenu')}
         aria-expanded={mobileSidebarOpen}
-        className="grid h-9 w-9 shrink-0 -ms-1 place-items-center rounded-[3px] text-on-navy-muted-85 transition-colors duration-150 hover:bg-on-navy-fill-12 hover:text-on-navy xl:hidden"
+        className="grid h-7 w-7 shrink-0 -ms-1 place-items-center rounded-[2px] text-on-navy-muted-85 transition-colors duration-150 hover:bg-on-navy-fill-12 hover:text-on-navy xl:hidden"
       >
         <Menu className="h-[18px] w-[18px]" strokeWidth={1.75} aria-hidden="true" />
       </button>
@@ -65,11 +67,13 @@ export function TopBar() {
       <TopNav />
 
       <div
-        className="rise ms-auto flex shrink-0 items-center gap-3"
+        className="rise ms-auto flex shrink-0 items-center gap-2"
         style={{ animationDelay: '120ms' }}
       >
         <SearchTrigger />
-        <NotificationsPopover />
+        <LanguageSwitcher />
+        <ThemeToggle />
+        <NotificationBell />
         <UserMenu />
       </div>
 

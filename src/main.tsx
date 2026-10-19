@@ -6,6 +6,10 @@ import { QueryClientProvider } from './lib/query';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import './i18n';
 import './styles/globals.css';
+import { applyTheme, readStoredTheme } from './lib/theme';
+
+// Apply persisted theme before first render to avoid flash.
+applyTheme(readStoredTheme());
 
 const container = document.getElementById('root');
 

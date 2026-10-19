@@ -6,7 +6,7 @@ import { cn } from '@/lib/cn';
 import { useIsRtl } from '@/hooks/useDirection';
 import { useUiStore } from '@/stores/ui-store';
 import { pathById } from '@/config/navigation';
-import { currentUser } from '@/config/currentUser';
+import { useSession, useSessionStore } from '@/auth/session';
 import { Avatar } from '@/components/ui/Avatar';
 import type { Language } from '@/lib/language';
 
@@ -21,10 +21,17 @@ export function UserMenu() {
   const navigate = useNavigate();
   const language = useUiStore((state) => state.language);
   const setLanguage = useUiStore((state) => state.setLanguage);
+  const logout = useSessionStore((state) => state.logout);
+  const { user } = useSession();
   const isArabic = language === 'ar';
   const identity = {
-    name: isArabic ? currentUser.name.ar : currentUser.name.en,
-    initials: isArabic ? currentUser.initials.ar : currentUser.initials.en,
+    name: isArabic ? user.name.ar : user.name.en,
+    initials: isArabic ? user.initials.ar : user.initials.en,
+  };
+
+  const handleLogout = () => {
+    logout();
+    navigate('/login', { replace: true });
   };
 
   // Radix places overlays physically, so the alignment follows the current direction.
@@ -44,9 +51,9 @@ export function UserMenu() {
         >
           <Avatar
             initials={identity.initials}
-            photo={currentUser.photo}
-            size={32}
-            className="border-2 border-navy outline outline-2 outline-surface"
+            photo={user.photo}
+            size={26}
+            className="border border-on-navy-border-35"
           />
         </button>
       </DropdownMenu.Trigger>
@@ -61,7 +68,7 @@ export function UserMenu() {
           <div className="px-3 py-2.5">
             <p className="truncate text-body-sm font-semibold text-ink">{identity.name}</p>
             <p className="nums mt-0.5 truncate text-start text-caption text-ink-muted" dir="ltr">
-              {currentUser.email}
+              {user.email}
             </p>
           </div>
 
@@ -107,7 +114,7 @@ export function UserMenu() {
 
           <DropdownMenu.Separator className={separatorClass} />
 
-          <DropdownMenu.Item className={cn(menuItemClass, 'text-coral')}>
+          <DropdownMenu.Item className={cn(menuItemClass, 'text-coral')} onSelect={handleLogout}>
             <LogOut className="h-4 w-4 shrink-0" strokeWidth={1.75} aria-hidden="true" />
             {t('userMenu.logout')}
           </DropdownMenu.Item>

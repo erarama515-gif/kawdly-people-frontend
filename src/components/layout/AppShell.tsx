@@ -23,7 +23,7 @@ export function AppShell() {
     <div className="flex h-screen w-full flex-col overflow-hidden bg-page">
       <TopBar />
 
-      <main ref={scrollRef} className="scrollbar-slim flex-1 overflow-y-auto">
+      <main ref={scrollRef} className="scrollbar-slim flex-1 overflow-y-auto overscroll-contain pb-[env(safe-area-inset-bottom)]">
         {/* Keyed by pathname so only the content transitions, never the shell. */}
         <div
           key={pathname}

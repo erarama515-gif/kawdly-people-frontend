@@ -20,14 +20,29 @@ function positiveInt(value: string | undefined, fallback: number): number {
 }
 
 const apiBaseUrl = import.meta.env.VITE_API_BASE_URL?.trim() ?? '';
+const mockExplicitlyRequested = import.meta.env.VITE_USE_MOCK_API === 'true';
+
+// Guard rail: a *production* build must never silently fall back to fabricated
+// mock data just because VITE_API_BASE_URL was left unset by a misconfigured
+// deploy pipeline. Mock data is only acceptable in prod if someone explicitly
+// opted in via VITE_USE_MOCK_API=true. Dev builds keep the old convenience
+// default (mock when no base URL) so `npm run dev` works with zero setup.
+if (import.meta.env.PROD && apiBaseUrl === '' && !mockExplicitlyRequested) {
+  throw new Error(
+    'VITE_API_BASE_URL is not configured for this production build. Refusing to ' +
+      'start with fabricated mock statistics — set VITE_API_BASE_URL (e.g. /api/v1) ' +
+      'in the build environment, or set VITE_USE_MOCK_API=true if mock data is truly intended.',
+  );
+}
 
 export const env = {
   isDev: import.meta.env.DEV,
   apiBaseUrl,
   /**
-   * Mock is the default whenever there is no API to talk to. Real HTTP is used
-   * as soon as a base URL is configured, so a dev build pointed at a local
-   * Laravel instance never silently returns fake numbers.
+   * Mock is the default in dev whenever there is no API to talk to. Real HTTP
+   * is used as soon as a base URL is configured, so a dev build pointed at a
+   * local Laravel instance never silently returns fake numbers. In prod this
+   * is gated by the guard above — see comment there.
    */
   useMockApi: flag(import.meta.env.VITE_USE_MOCK_API, apiBaseUrl === ''),
   requestTimeoutMs: positiveInt(import.meta.env.VITE_REQUEST_TIMEOUT_MS, 10_000),

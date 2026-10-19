@@ -27,10 +27,10 @@ function isGroupActive(group: NavGroup, pathname: string) {
 }
 
 const navButtonClass =
-  'group/nav h-full w-[104px] shrink-0 cursor-pointer place-items-center rounded-[3px] border-0 bg-transparent text-on-navy-muted-70 outline-none focus-visible:outline-2 focus-visible:outline-on-navy focus-visible:outline-offset-[-6px] xl:w-[100px] 2xl:w-[124px]';
+  'group/nav h-full shrink-0 cursor-pointer place-items-center border-0 bg-transparent text-on-navy-muted-75 outline-none focus-visible:outline-2 focus-visible:outline-on-navy focus-visible:outline-offset-[-4px]';
 
-const navPillClass =
-  'inline-flex items-center gap-1 whitespace-nowrap rounded-[3px] px-1.5 py-1.5 text-[14px] font-medium transition-colors duration-150 group-hover/nav:bg-on-navy-fill-12 group-hover/nav:text-on-navy group-focus-visible/nav:bg-on-navy-fill-12';
+const navLabelClass =
+  'inline-flex items-center gap-1 whitespace-nowrap text-[12px] font-medium transition-colors duration-150 group-hover/nav:text-on-navy';
 
 /**
  * Primary navigation, moved into the top bar per the reference: a flat row of
@@ -105,7 +105,7 @@ export function TopNav({ className }: { className?: string }) {
     <nav
       ref={navRef}
       aria-label={t('sidebar.primaryNav')}
-      className={cn('rise relative hidden h-full shrink-0 xl:flex', className)}
+      className={cn('rise relative hidden h-full flex-1 shrink-0 items-center gap-6 xl:flex', className)}
       style={{ animationDelay: '60ms' }}
     >
       {items.map((item, index) => {
@@ -121,10 +121,10 @@ export function TopNav({ className }: { className?: string }) {
                 buttonRefs.current[index] = node;
               }}
               type="button"
-              className={cn(navButtonClass, 'grid')}
+              className={cn(navButtonClass, 'flex items-center px-0')}
               onClick={() => go(item.path)}
             >
-              <span className={cn(navPillClass, active && 'text-on-navy')}>{t(`nav.${item.id}`)}</span>
+              <span className={cn(navLabelClass, active && 'text-on-navy font-semibold')}>{t(`nav.${item.id}`)}</span>
             </button>
           );
         }
@@ -147,9 +147,9 @@ export function TopNav({ className }: { className?: string }) {
                 aria-controls={`topnav-menu-${group.id}`}
                 onPointerEnter={() => setOpenGroupId(group.id)}
                 onClick={() => setOpenGroupId(isOpen ? null : group.id)}
-                className={cn(navButtonClass, 'grid')}
+                className={cn(navButtonClass, 'flex items-center px-0')}
               >
-                <span className={cn(navPillClass, active && 'text-on-navy', isOpen && 'bg-on-navy-fill-12 text-on-navy')}>
+                <span className={cn(navLabelClass, active && 'text-on-navy font-semibold', isOpen && 'text-on-navy')}>
                   <span>{t(`nav.${group.id}`)}</span>
                   <span
                     aria-hidden="true"
@@ -199,7 +199,7 @@ export function TopNav({ className }: { className?: string }) {
       {indicator ? (
         <span
           aria-hidden="true"
-          className="pointer-events-none absolute -bottom-px h-[3px] rounded-t-sm bg-coral"
+          className="pointer-events-none absolute bottom-0 h-[2px] bg-coral"
           style={{
             left: indicator.left,
             right: indicator.right,
