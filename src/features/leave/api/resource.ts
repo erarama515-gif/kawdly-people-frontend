@@ -20,6 +20,9 @@ export interface LeaveRequestListParams {
   status?: LeaveRequestStatus | undefined;
   employeeId?: number | undefined;
   leaveTypeId?: number | undefined;
+  /** Inclusive range filter on `start_date`, mapped to `start_date_from`/`start_date_to` on the wire. */
+  dateFrom?: string | undefined;
+  dateTo?: string | undefined;
 }
 
 /** Shape of `StoreLeaveRequestRequest`'s validated fields. */

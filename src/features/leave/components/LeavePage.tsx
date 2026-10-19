@@ -1,13 +1,18 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Check, Pencil, Plus, Search, Trash2, X } from 'lucide-react';
+import { ExportButton } from '@/components/ui/ExportButton';
+import type { ExportColumn } from '@/components/ui/ExportButton';
 import { cn } from '@/lib/cn';
 import { Card } from '@/components/ui/Card';
+import { SkeletonTable } from '@/components/ui/SkeletonTable';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { Avatar } from '@/components/ui/Avatar';
 import { Button } from '@/components/ui/Button';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { Pagination } from '@/components/ui/Pagination';
+import { SortableHeader } from '@/components/ui/SortableHeader';
+import { useSort, sortData } from '@/hooks/useSort';
 import { userFacingMessage } from '@/lib/api/errors';
 import {
   useLeaveRequestList,
@@ -18,6 +23,8 @@ import {
 import type { LeaveRequestListParams, LeaveRequestStatus } from '../api/resource';
 import type { LeaveRequestWire } from '../api/schema';
 import { LeaveRequestFormDialog } from './LeaveRequestFormDialog';
+import { DateRangeFilter } from '@/components/ui/DateRangeFilter';
+import type { DateRange } from '@/components/ui/DateRangeFilter';
 
 const PER_PAGE = 10;
 
@@ -142,6 +149,7 @@ export function LeavePage() {
   const [searchInput, setSearchInput] = useState('');
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<LeaveRequestStatus | 'all'>('all');
+  const [dateRange, setDateRange] = useState<DateRange | null>(null);
   const [page, setPage] = useState(1);
 
   const [formOpen, setFormOpen] = useState(false);
@@ -157,7 +165,7 @@ export function LeavePage() {
   // A new search/filter invalidates the current page number.
   useEffect(() => {
     setPage(1);
-  }, [search, statusFilter]);
+  }, [search, statusFilter, dateRange]);
 
   const params = useMemo<LeaveRequestListParams>(
     () => ({
@@ -165,8 +173,10 @@ export function LeavePage() {
       perPage: PER_PAGE,
       search: search || undefined,
       status: statusFilter === 'all' ? undefined : statusFilter,
+      dateFrom: dateRange?.from,
+      dateTo: dateRange?.to,
     }),
-    [page, search, statusFilter],
+    [page, search, statusFilter, dateRange],
   );
 
   const { state, refetch } = useLeaveRequestList(params);
@@ -180,8 +190,39 @@ export function LeavePage() {
   const approveMutation = useApproveLeaveRequest(params);
   const rejectMutation  = useRejectLeaveRequest(params);
 
-  const requests = state.data?.data ?? [];
+  // Client-side sorting
+  type LeaveSortCol = 'employee' | 'leaveType' | 'from' | 'to' | 'days' | 'status';
+  const { sort, toggle: toggleSort } = useSort<LeaveSortCol>();
+  const SORT_ACCESSORS: Record<LeaveSortCol, (r: LeaveRequestWire) => string | number | undefined> = {
+    employee:  (r) => `${r.employee?.first_name ?? ''} ${r.employee?.last_name ?? ''}`,
+    leaveType: (r) => r.leave_type?.name ?? String(r.leave_type_id),
+    from:      (r) => r.start_date,
+    to:        (r) => r.end_date,
+    days:      (r) => parseFloat(r.days),
+    status:    (r) => r.status,
+  };
+  const rawRequests = state.data?.data ?? [];
+  // Date range is now applied server-side via `params.dateFrom`/`dateTo` (see above).
+  const requests = sortData(rawRequests, sort, SORT_ACCESSORS);
   const meta     = state.data?.meta;
+
+  const exportColumns: ExportColumn[] = [
+    { key: 'employee', label: t('leave.table.employee') },
+    { key: 'leaveType', label: t('leave.table.leaveType') },
+    { key: 'from', label: t('leave.table.from') },
+    { key: 'to', label: t('leave.table.to') },
+    { key: 'days', label: t('leave.table.days') },
+    { key: 'status', label: t('leave.table.status') },
+  ];
+
+  const exportData = requests.map((r) => ({
+    employee: `${r.employee?.first_name ?? ''} ${r.employee?.last_name ?? ''}`.trim(),
+    leaveType: r.leave_type?.name ?? String(r.leave_type_id),
+    from: formatDate(r.start_date),
+    to: formatDate(r.end_date),
+    days: parseFloat(r.days).toFixed(1),
+    status: t(`leave.status.${r.status}`),
+  }));
 
   function openAddForm() {
     setEditTarget(undefined);
@@ -212,10 +253,13 @@ export function LeavePage() {
       <PageHeader
         title={t('leave.title')}
         actions={
-          <Button variant="primary" onClick={openAddForm}>
-            <Plus className="h-3.5 w-3.5" strokeWidth={2} aria-hidden="true" />
-            {t('leave.addLeaveRequest')}
-          </Button>
+          <div className="flex items-center gap-2">
+            <ExportButton data={exportData} columns={exportColumns} filename="leave-requests" />
+            <Button variant="primary" onClick={openAddForm}>
+              <Plus className="h-3.5 w-3.5" strokeWidth={2} aria-hidden="true" />
+              {t('leave.addLeaveRequest')}
+            </Button>
+          </div>
         }
       />
 
@@ -230,7 +274,7 @@ export function LeavePage() {
       <div className="mb-4 flex flex-wrap items-center gap-3">
         {/* Search */}
         <label className="relative flex items-center">
-          <span className="pointer-events-none absolute left-3 text-ink-faint">
+          <span className="pointer-events-none absolute start-3 text-ink-faint">
             <Search className="h-3.5 w-3.5" strokeWidth={1.75} aria-hidden="true" />
           </span>
           <input
@@ -239,7 +283,7 @@ export function LeavePage() {
             value={searchInput}
             onChange={(e) => setSearchInput(e.target.value)}
             className={cn(
-              'h-9 rounded-full border border-hairline bg-surface pl-8 pr-4 text-[13px] text-ink placeholder:text-ink-faint',
+              'h-9 rounded-full border border-hairline bg-surface ps-8 pe-4 text-[13px] text-ink placeholder:text-ink-faint',
               'focus:outline-none focus:ring-1 focus:ring-navy/40',
               'w-52',
             )}
@@ -264,6 +308,9 @@ export function LeavePage() {
             </button>
           ))}
         </div>
+
+        {/* Date range filter */}
+        <DateRangeFilter value={dateRange} onChange={setDateRange} />
       </div>
 
       {/* Load failure */}
@@ -278,7 +325,7 @@ export function LeavePage() {
 
       {/* Initial load */}
       {state.status === 'pending' && requests.length === 0 ? (
-        <Card className="px-5 py-10 text-center text-body-sm text-ink-muted">{t('common.loading')}</Card>
+        <SkeletonTable />
       ) : null}
 
       {/* Empty state */}
@@ -294,9 +341,7 @@ export function LeavePage() {
             <div className="border-b border-divider px-5 py-3">
               <div className="grid grid-cols-[2fr_1.2fr_1fr_1fr_0.6fr_1fr_auto] gap-4">
                 {(['employee', 'leaveType', 'from', 'to', 'days', 'status'] as const).map((col) => (
-                  <span key={col} className="text-caption font-semibold uppercase tracking-wide text-ink-faint">
-                    {t(`leave.table.${col}`)}
-                  </span>
+                  <SortableHeader key={col} column={col} label={t(`leave.table.${col}`)} sort={sort} onSort={toggleSort} />
                 ))}
                 <span className="text-caption font-semibold uppercase tracking-wide text-ink-faint">
                   {t('leave.table.actions')}
@@ -310,7 +355,7 @@ export function LeavePage() {
               const lastName  = emp?.last_name ?? '';
               const photo     = emp?.photo;
               const initials  = initialsOf(firstName, lastName);
-              const leaveTypeName = req.leaveType?.name ?? String(req.leave_type_id);
+              const leaveTypeName = req.leave_type?.name ?? String(req.leave_type_id);
 
               return (
                 <div
@@ -372,7 +417,7 @@ export function LeavePage() {
               const lastName  = emp?.last_name ?? '';
               const photo     = emp?.photo;
               const initials  = initialsOf(firstName, lastName);
-              const leaveTypeName = req.leaveType?.name ?? String(req.leave_type_id);
+              const leaveTypeName = req.leave_type?.name ?? String(req.leave_type_id);
 
               return (
                 <Card key={req.id} className="flex flex-col gap-3 p-4">

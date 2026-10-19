@@ -1,4 +1,4 @@
-import { array, isoDate, literalUnion, num, object, optional, str } from '@/lib/api/decode';
+import { array, bool, isoDate, literalUnion, num, object, optional, str } from '@/lib/api/decode';
 
 /**
  * Wire schemas for the Leave module, matching the real Laravel contract
@@ -6,8 +6,11 @@ import { array, isoDate, literalUnion, num, object, optional, str } from '@/lib/
  * names are DB columns verbatim (snake_case). The index envelope uses the
  * app's custom `{ data, meta }` pager — same shape as Employees.
  *
- * `employee` and `leaveType` are optional because they are only present when
- * the request asked for `include=employee,leaveType`.
+ * `employee` and `leave_type` are optional because they are only present when
+ * the request asked for `include=employee,leaveType` — Eloquent's
+ * `relationsToArray()` always snake_cases the relation method name for the
+ * JSON key, so the `leaveType()` relation shows up on the wire as
+ * `leave_type`, never `leaveType`.
  */
 
 export const leaveRequestStatusDecoder = literalUnion([
@@ -36,8 +39,8 @@ export const leaveTypeDecoder = object({
   name: str(),
   code: optional(str()),
   color: optional(str()),
-  is_paid: optional(num()),
-  is_active: optional(num()),
+  is_paid: optional(bool()),
+  is_active: optional(bool()),
 });
 
 export type LeaveTypeWire = ReturnType<typeof leaveTypeDecoder.decode>;
@@ -50,7 +53,7 @@ export const leaveRequestDecoder = object({
   start_date: isoDate(),
   end_date: isoDate(),
   days: str(),
-  is_half_day: optional(num()),
+  is_half_day: optional(bool()),
   half_day_period: optional(str()),
   reason: optional(str()),
   attachment: optional(str()),
@@ -61,7 +64,7 @@ export const leaveRequestDecoder = object({
   created_at: optional(str()),
   updated_at: optional(str()),
   employee: optional(employeeRefDecoder),
-  leaveType: optional(leaveTypeRefDecoder),
+  leave_type: optional(leaveTypeRefDecoder),
 });
 
 export type LeaveRequestWire = ReturnType<typeof leaveRequestDecoder.decode>;

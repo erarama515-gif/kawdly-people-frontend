@@ -1,6 +1,5 @@
 import { env } from '@/config/env';
-import { createHttpClient } from '@/lib/api/http';
-import type { HttpClient } from '@/lib/api/http';
+import { appHttpClient as http } from '@/lib/api/appHttpClient';
 import { mockLeaveRequestApi, resetMockLeaveRequests, setMockLeaveFailureRate } from './mockApi';
 import {
   leaveRequestEnvelopeDecoder,
@@ -26,13 +25,6 @@ import type {
  * `undefined` three components deep.
  */
 
-const http: HttpClient = createHttpClient({
-  baseUrl: env.apiBaseUrl || '/api/v1',
-  timeoutMs: env.requestTimeoutMs,
-  retries: env.requestRetries,
-  backoffMs: env.requestBackoffMs,
-});
-
 const BASE = '/leave-requests';
 const LEAVE_TYPES_BASE = '/leave-types';
 /** Relations needed to render the list table without a second round-trip. */
@@ -47,6 +39,8 @@ export const httpLeaveRequestApi: LeaveRequestApi = {
         status: params.status,
         employee_id: params.employeeId,
         leave_type_id: params.leaveTypeId,
+        start_date_from: params.dateFrom,
+        start_date_to: params.dateTo,
         include: LIST_INCLUDE,
       },
       signal,
