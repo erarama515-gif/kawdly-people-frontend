@@ -170,6 +170,20 @@ export function EmployeesPage() {
   const employees = sortData(rawEmployees, sort, SORT_ACCESSORS);
   const meta = state.data?.meta;
 
+  /**
+   * Which empty state to show. "No employees match your search" was rendered
+   * unconditionally, so a fresh install — the common case since T6.5 made the
+   * first launch land on an empty database — blamed a search the user had never
+   * run.
+   *
+   * `totalState` is the unfiltered head count already fetched for the stat
+   * strip, so the real distinction costs no extra request: when the company has
+   * no employees at all, saying "none match" would be wrong even if a filter
+   * happens to be active.
+   */
+  const hasQuery = search !== '' || statusFilter !== 'all';
+  const isUnfiltered = !hasQuery || totalState.data?.meta.total === 0;
+
   // ── Bulk selection ──────────────────────────────────────────────────────────
   const bulk = useBulkSelect(employees);
 
@@ -302,7 +316,20 @@ export function EmployeesPage() {
 
       {/* Empty state (shared across both layouts) */}
       {state.status !== 'pending' && employees.length === 0 && (
-        <Card className="px-5 py-10 text-center text-body-sm text-ink-muted">{t('employees.emptySearch')}</Card>
+        <Card className="flex flex-col items-center gap-3 px-5 py-10 text-center">
+          <span className="text-body-sm text-ink-muted" data-testid="employees-empty">
+            {isUnfiltered ? t('employees.emptyNoEmployees') : t('employees.emptySearch')}
+          </span>
+          {isUnfiltered ? (
+            <>
+              <span className="text-caption text-ink-faint">{t('employees.emptyNoEmployeesHint')}</span>
+              <Button variant="primary" onClick={openAddForm}>
+                <Plus className="h-3.5 w-3.5" strokeWidth={2} aria-hidden="true" />
+                {t('employees.emptyAddFirst')}
+              </Button>
+            </>
+          ) : null}
+        </Card>
       )}
 
       {employees.length > 0 && (

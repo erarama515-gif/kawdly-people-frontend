@@ -39,9 +39,29 @@ export function DecisionQueue({
   const language = i18n.language === 'en' ? 'en' : 'ar';
   const total = rows.reduce((sum, row) => sum + (counts[row.id] ?? 0), 0);
 
+  const allZero = rows.length > 0 && rows.every((row) => (counts[row.id] ?? 0) === 0);
+
+  /**
+   * Nothing pending on arrival.
+   *
+   * The empty state used to require `removed.has(row.id)` for every row, and
+   * `removed` is only filled by the resolve animation — so it was reachable
+   * *only* by clearing items down to zero during the session, never by loading
+   * a dashboard that was already empty. With demo data that was invisible;
+   * after T6.5 every first install landed on three zero-count rows reciting
+   * `{{total}}M · {{employees}} employees`, "oldest from 24 Sep" and "Next
+   * expiry in 3 days" instead of the empty state that was already designed and
+   * translated for exactly this.
+   *
+   * There is no collapse to wait for here, since no row was ever animated away.
+   */
+  const arrivedEmpty = allZero && removed.size === 0 && removing.size === 0;
+
   // Cross-fade in only after the last row has finished collapsing.
-  const showEmpty = rows.length > 0 && rows.every((row) => (counts[row.id] ?? 0) === 0 && removed.has(row.id));
-  const aliveRows = rows.filter((row) => !removed.has(row.id));
+  const clearedInSession = allZero && rows.every((row) => removed.has(row.id));
+
+  const showEmpty = arrivedEmpty || clearedInSession;
+  const aliveRows = arrivedEmpty ? [] : rows.filter((row) => !removed.has(row.id));
 
   // "View all" points at the biggest remaining queue, which is the one the
   // reviewer most likely wants to clear next.
@@ -175,7 +195,18 @@ function QueueRow({
               ) : null}
             </p>
             <p className="mt-0.5 truncate text-[12px] text-ink-muted md:text-[13px]">
-              {row.descriptionParams ? t(row.descriptionKey, row.descriptionParams) : t(row.descriptionKey)}
+              {row.descriptionParams
+                ? t(row.descriptionKey, row.descriptionParams)
+                : /*
+                   * Params-less fallback. The payroll description is a numeric
+                   * template (`{{total}}M · {{employees}} employees`) and the
+                   * API sends `descriptionParams: null` when no run is pending,
+                   * so plain `t(descriptionKey)` rendered the placeholders
+                   * verbatim. The key-fallback array prefers a `…Empty` variant
+                   * and drops back to the template's key for the rows that have
+                   * no placeholders to fill.
+                   */
+                  t([`${row.descriptionKey}Empty`, row.descriptionKey])}
             </p>
           </div>
 

@@ -141,17 +141,18 @@
       },
       "leave": {
         "caption": "Leave requests",
-        "description": "Pending your approval · oldest from 24 Sep",
+        "description": "Pending your approval",
         "action": "Review"
       },
       "payroll": {
         "caption": "Payroll payment",
         "description": "{{total}}M · {{employees}} employees",
+        "descriptionEmpty": "No payroll run awaiting approval",
         "action": "Run payroll"
       },
       "contracts": {
         "caption": "Contract renewals",
-        "description": "Next expiry in 3 days · awaiting your decision",
+        "description": "Awaiting your renewal decision",
         "action": "Renew"
       },
       "leaveFromTeam": {
@@ -204,6 +205,11 @@
         "caption": "Reviews due",
         "delta": "within 7 days"
       },
+      "delta": {
+        "noChange": "no change",
+        "windowDays": "vs {{days}} days ago",
+        "windowPreviousRun": "vs previous run"
+      },
       "updated": "Updated · just now",
       "updatedAt": "Updated · {{time}}",
       "refresh": "Refresh dashboard"
@@ -216,6 +222,8 @@
       "attendance": "Attendance %",
       "payroll": "Payroll MTD",
       "openRoles": "Open roles",
+      "noData": "No data yet",
+      "noChange": "no change",
       "questions": {
         "employees": "Is the team growing?",
         "attendanceToday": "Is attendance stable?",
@@ -430,6 +438,9 @@
     "editEmployee": "Edit Employee",
     "searchPlaceholder": "Search employees…",
     "emptySearch": "No employees match your search.",
+    "emptyNoEmployees": "No employees yet.",
+    "emptyNoEmployeesHint": "Add your first employee to start building the org.",
+    "emptyAddFirst": "Add your first employee",
     "stat": {
       "totalEmployees": "Total Employees",
       "active": "Active",

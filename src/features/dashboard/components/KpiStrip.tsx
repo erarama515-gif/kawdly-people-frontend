@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { CountUp } from '@/components/ui/CountUp';
+import { deriveKpiDelta } from '../kpiDelta';
 import type { Kpi } from '../model';
 import type { DecisionQueueRow, QueueId } from '../model';
 
@@ -28,20 +29,22 @@ export function KpiStrip({ kpis, queues, counts }: KpiStripProps) {
   const urgentCount = queues?.filter((r) => r.urgent).reduce((s, r) => s + (counts?.[r.id] ?? r.count), 0) ?? 0;
   const hasQueues = queues && queues.length > 0;
 
+  // Each tile's delta is derived from the real `trend` series, and is `null`
+  // when nothing has been recorded yet — the delta line is then dropped rather
+  // than invented. See `../kpiDelta` for why the API's `deltaKey` is ignored.
+  const tiles = kpis
+    .slice(0, hasQueues ? 3 : 4)
+    .map((kpi) => ({ kpi, delta: deriveKpiDelta(kpi) }));
+
   return (
     <div
       className="grid gap-px"
       style={{ gridTemplateColumns: hasQueues ? 'repeat(3, 1fr) 1.15fr' : 'repeat(4, 1fr)' }}
       data-testid="kpi-grid"
     >
-      {kpis.slice(0, hasQueues ? 3 : 4).map((kpi) => (
+      {tiles.map(({ kpi, delta }) => (
         <div key={kpi.id} className="flex min-w-0 flex-col gap-1.5 bg-surface px-4 py-3.5 md:px-5 md:py-4">
-          <div className="flex items-baseline justify-between gap-2">
-            <span className="truncate text-[11px] font-medium text-ink-muted md:text-[12px]">{t(kpi.captionKey)}</span>
-            <span className={kpi.up ? 'nums text-[11px] font-semibold text-navy' : 'nums text-[11px] font-semibold text-coral'}>
-              {kpi.deltaKey ? t(kpi.deltaKey) : ''}
-            </span>
-          </div>
+          <span className="truncate text-[11px] font-medium text-ink-muted md:text-[12px]">{t(kpi.captionKey)}</span>
 
           <Link
             to={kpi.path}
@@ -59,11 +62,29 @@ export function KpiStrip({ kpis, queues, counts }: KpiStripProps) {
             </span>
           </Link>
 
-          <span className="flex flex-wrap items-baseline gap-x-1.5 text-[11px] leading-none md:text-[12px]">
-            <span className={kpi.up ? 'nums font-semibold text-navy' : 'nums font-semibold text-coral'}>
-              {t(kpi.deltaKey)}
-            </span>
-            {kpi.deltaSuffixKey ? <span className="text-ink-muted">{t(kpi.deltaSuffixKey)}</span> : null}
+          {/* Reserves the delta row's height either way so tiles with and
+              without a measurable change stay on the same baseline. */}
+          <span
+            className="flex min-h-[12px] flex-wrap items-baseline gap-x-1.5 text-[11px] leading-none md:min-h-[13px] md:text-[12px]"
+            data-testid={`kpi-delta-${kpi.id}`}
+          >
+            {delta ? (
+              <>
+                <span
+                  className={
+                    delta.direction === 'up'
+                      ? 'nums font-semibold text-navy'
+                      : delta.direction === 'down'
+                        ? 'nums font-semibold text-coral'
+                        : 'nums font-semibold text-ink-muted'
+                  }
+                  dir="ltr"
+                >
+                  {delta.direction === undefined ? t('dashboard.kpi.delta.noChange') : delta.text}
+                </span>
+                <span className="text-ink-muted">{t(delta.windowKey, delta.windowParams ?? {})}</span>
+              </>
+            ) : null}
           </span>
         </div>
       ))}

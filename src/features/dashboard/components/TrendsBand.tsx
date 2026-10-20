@@ -1,4 +1,5 @@
 import { useTranslation } from 'react-i18next';
+import { canCompareTrend, formatTrendNumber, hasTrendData } from '../kpiDelta';
 import { resolveLocaleText } from '../model';
 import type { Kpi, LocaleText } from '../model';
 
@@ -40,15 +41,38 @@ function areaPath(trend: number[], xs: number[]): string {
   return `${line} L${VIEW_W} ${BASELINE_Y} L0 ${BASELINE_Y} Z`;
 }
 
-/** Short answer text derived from the KPI's trend data. */
+/**
+ * Short answer text derived from the KPI's trend data.
+ *
+ * Guards the empty series on purpose. `payrollCostTrend()` returns `[]` when no
+ * payroll run exists, which on a fresh install is every install: `trend[0]` and
+ * `trend[length - 1]` were then both `undefined`, `diff` was `NaN` (so neither
+ * comparison branch was taken) and the fallback interpolated `undefined` into
+ * the string — the `undefinedM — no change` the budget card used to render.
+ *
+ * `noUncheckedIndexedAccess` is off in `tsconfig.app.json`, so `trend[0]` types
+ * as `number` and the compiler could not catch it; the guards below are the
+ * check the type system is not making.
+ */
 function deriveAnswer(kpi: Kpi, t: (key: string) => string): string {
-  const first = kpi.trend[0];
-  const last = kpi.trend[kpi.trend.length - 1];
-  const diff = last - first;
   const suffix = kpi.suffix ?? '';
-  if (diff > 0) return `${first}${suffix} → ${last}${suffix} (+${diff.toFixed(suffix === '%' ? 1 : 0)}${suffix})`;
-  if (diff < 0) return `${first}${suffix} → ${last}${suffix} (${diff.toFixed(suffix === '%' ? 1 : 0)}${suffix})`;
-  return `${last}${suffix} — ${t('dashboard.kpi.pendingLeave.delta')}`;
+
+  // Nothing recorded yet (empty series, or every point still zero).
+  if (!hasTrendData(kpi.trend)) return t('dashboard.trends.noData');
+
+  const last = kpi.trend[kpi.trend.length - 1] as number;
+
+  // A single real point: state it, but claim no movement.
+  if (!canCompareTrend(kpi.trend)) return formatTrendNumber(last, suffix);
+
+  const first = kpi.trend[0] as number;
+  const diff = Number((last - first).toFixed(1));
+  const from = formatTrendNumber(first, suffix);
+  const to = formatTrendNumber(last, suffix);
+
+  if (diff === 0) return `${to} — ${t('dashboard.trends.noChange')}`;
+  const change = `${diff > 0 ? '+' : '-'}${formatTrendNumber(Math.abs(diff), suffix)}`;
+  return `${from} → ${to} (${change})`;
 }
 
 /** Question key per KPI id. */
@@ -71,8 +95,6 @@ const QUESTION_KEY: Record<string, string> = {
 export function TrendsBand({ kpis, labels, language }: TrendsBandProps) {
   const { t } = useTranslation();
   const chartLabels = labels.map((label) => resolveLocaleText(label, language));
-  const xs = xsFor(chartLabels.length);
-  const lastX = xs[xs.length - 1] ?? VIEW_W / 2;
 
   return (
     <div className="flex flex-col bg-surface">
@@ -88,7 +110,17 @@ export function TrendsBand({ kpis, labels, language }: TrendsBandProps) {
         {kpis.map((kpi) => {
           const question = QUESTION_KEY[kpi.id] ? t(QUESTION_KEY[kpi.id]) : t(kpi.captionKey);
           const answer = deriveAnswer(kpi, t);
+
+          // Spaced across this KPI's own point count, not the weekday-label
+          // count: the payroll series is one point per real payroll run, so a
+          // shared 7-point x-axis drew its line across the left third while the
+          // endpoint marker sat at the far right. An empty series also made
+          // `endpoint` undefined and `cy` NaN, which the browser rejected.
+          const xs = xsFor(kpi.trend.length);
+          const lastX = xs[xs.length - 1] ?? VIEW_W / 2;
           const endpoint = kpi.trend[kpi.trend.length - 1];
+          const plottable = kpi.trend.length > 0 && endpoint !== undefined;
+
           return (
             <div key={kpi.id} className="min-w-0 bg-surface px-4 py-4 md:px-[18px]">
               {/* Question */}
@@ -102,9 +134,13 @@ export function TrendsBand({ kpis, labels, language }: TrendsBandProps) {
               <svg viewBox={`0 0 ${VIEW_W} ${VIEW_H}`} className="mt-2 block w-full" aria-hidden="true" style={{ direction: 'ltr' }}>
                 <line x1="0" y1={BASELINE_Y} x2={VIEW_W} y2={BASELINE_Y} stroke="var(--color-hairline, #d5dbe3)" />
                 <line x1="0" y1={45} x2={VIEW_W} y2={45} stroke="var(--color-divider, #eef1f5)" />
-                <path d={areaPath(kpi.trend, xs)} fill="var(--color-navy, #0C4874)" fillOpacity={0.07} />
-                <path d={linePath(kpi.trend, xs)} fill="none" stroke="var(--color-navy, #0C4874)" strokeWidth={1.8} />
-                <circle cx={lastX} cy={yOf(kpi.trend, endpoint)} r={3.5} fill="var(--color-coral, #E4714E)" />
+                {plottable ? (
+                  <>
+                    <path d={areaPath(kpi.trend, xs)} fill="var(--color-navy, #0C4874)" fillOpacity={0.07} />
+                    <path d={linePath(kpi.trend, xs)} fill="none" stroke="var(--color-navy, #0C4874)" strokeWidth={1.8} />
+                    <circle cx={lastX} cy={yOf(kpi.trend, endpoint)} r={3.5} fill="var(--color-coral, #E4714E)" />
+                  </>
+                ) : null}
               </svg>
 
               {/* X-axis labels */}

@@ -147,6 +147,7 @@
       "payroll": {
         "caption": "تشغيل المسير",
         "description": "إجمالي {{total}}M · لـ {{employees}} موظف",
+        "descriptionEmpty": "لا يوجد مسير رواتب بانتظار الاعتماد",
         "action": "تشغيل المسير"
       },
       "contracts": {
@@ -204,6 +205,11 @@
         "caption": "تقييمات مستحقة",
         "delta": "خلال 7 أيام"
       },
+      "delta": {
+        "noChange": "بلا تغيير",
+        "windowDays": "عن {{days}} أيام مضت",
+        "windowPreviousRun": "عن المسير السابق"
+      },
       "updated": "تم التحديث · الآن",
       "updatedAt": "تم التحديث · {{time}}",
       "refresh": "تحديث لوحة المعلومات"
@@ -216,6 +222,8 @@
       "attendance": "الحضور %",
       "payroll": "مسير الرواتب (MTD)",
       "openRoles": "الوظائف الشاغرة",
+      "noData": "لا توجد بيانات بعد",
+      "noChange": "بلا تغيير",
       "questions": {
         "employees": "هل ينمو الفريق؟",
         "attendanceToday": "هل الحضور مستقر؟",
@@ -430,6 +438,9 @@
     "editEmployee": "تعديل موظف",
     "searchPlaceholder": "بحث عن موظفين…",
     "emptySearch": "لا يوجد موظفون مطابقون للبحث.",
+    "emptyNoEmployees": "لا يوجد موظفون بعد.",
+    "emptyNoEmployeesHint": "ابدأ بإضافة أول موظف لبناء الهيكل التنظيمي.",
+    "emptyAddFirst": "إضافة أول موظف",
     "stat": {
       "totalEmployees": "إجمالي الموظفين",
       "active": "نشط",
