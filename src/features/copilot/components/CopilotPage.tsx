@@ -150,11 +150,19 @@ interface WelcomeProps {
 
 function WelcomeState({ onSelect }: WelcomeProps) {
   const { t } = useTranslation();
+  // "Average salary" used to be the fourth suggestion. It was removed rather
+  // than permission-gated: the backend's two compensation patterns now answer
+  // "salary data is unavailable in this release" for EVERY role — including
+  // hr_admin — because `employees` has no base_salary column and the patterns
+  // were never wired to employee_salaries (see CopilotController's
+  // MSG_SALARY_UNAVAILABLE). Gating on `analytics.sensitive.view` would still
+  // have offered hr_admin a button whose only possible outcome is a dead end.
+  // Restore it alongside the backend wiring, gated on that permission.
   const suggestions: Array<{ key: string; text: string }> = [
     { key: 'employeeCount', text: t('copilot.suggestion.employeeCount') },
     { key: 'newHires', text: t('copilot.suggestion.newHires') },
     { key: 'departments', text: t('copilot.suggestion.departments') },
-    { key: 'avgSalary', text: t('copilot.suggestion.avgSalary') },
+    { key: 'attendanceRate', text: t('copilot.suggestion.attendanceRate') },
   ];
 
   return (

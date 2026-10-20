@@ -1789,7 +1789,7 @@
       "employeeCount": "How many employees do we have?",
       "newHires": "New hires this year",
       "departments": "Department distribution",
-      "avgSalary": "Average salary"
+      "attendanceRate": "Attendance rate this month"
     }
   },
   "organization": {
