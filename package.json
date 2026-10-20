@@ -5,7 +5,9 @@
   "type": "module",
   "main": "electron/dist/main.js",
   "scripts": {
+    "predev": "node scripts/check-env.mjs --create",
     "dev": "vite",
+    "prebuild": "node scripts/check-env.mjs",
     "build": "tsc -b && vite build",
     "typecheck": "tsc -b",
     "typecheck:desktop": "tsc -p electron/tsconfig.json --noEmit",
