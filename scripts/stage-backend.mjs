@@ -58,6 +58,8 @@ import { spawnSync } from 'node:child_process';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 
+import { buildSeedTemplate, verifySeedTemplate } from './build-seed-template.mjs';
+
 const FRONTEND_ROOT = path.resolve(import.meta.dirname, '..');
 const PROJECT_ROOT = path.resolve(FRONTEND_ROOT, '..');
 const BACKEND_SRC = path.join(PROJECT_ROOT, 'backend');
@@ -90,10 +92,48 @@ const EXCLUDE_PATHS = new Set([
   'vite.config.js',
   // Replaced by the fresh Vite build, copied explicitly after composer runs.
   'public/app',
+  // The demo-data generators. Unreachable at run time — first-run.ts runs
+  // `migrate` and nothing else, and no route invokes a seeder — but they are
+  // 13 files of readable source carrying the developer's company, fabricated
+  // employee names, and (in DatabaseSeeder.php) the standing dev login
+  // `test@example.com` / `password`. T6.5 cleaned those rows out of the
+  // shipped database; leaving the code that re-creates them is leaving the
+  // loaded gun next to the unloaded one. If anyone ever wires a "reset demo
+  // data" action, or runs `migrate:fresh --seed` on a user's install, the
+  // shared-credential leak comes straight back. Pruned for the same reason
+  // `tests/` is.
+  'database/seeders',
+  // Exists only to feed seeders and tests, both of which are now gone.
+  // `HasFactory` resolves a factory class lazily, by name, on the first
+  // `Model::factory()` call — which production code never makes.
+  'database/factories',
 ]);
 
 /** File extensions pruned wherever they appear. */
 const EXCLUDE_EXTENSIONS = new Set(['.sqlite', '.sqlite-journal', '.log']);
+
+/**
+ * Design-system artefacts that live in `frontend/public/` and are therefore
+ * copied verbatim into the Vite output by every build.
+ *
+ * They are kept in the repo on purpose — designers reference them — but they
+ * must not ship. `public/app/` is the packaged app's document root, so anything
+ * in here is served: `HR Dashboard Ledger EN.dc.html` is a static mockup of the
+ * dashboard pre-filled with fabricated employees ("Ahmed Sami" and friends),
+ * reachable on a clean install at `/app/HR%20Dashboard%20Ledger%20EN.dc.html`.
+ * A beta user who finds that URL sees a page of demo PII that the app itself no
+ * longer contains anywhere.
+ *
+ * Matched on basename, relative to the SPA root. NOT part of EXCLUDE_PATHS:
+ * `public/app` is pruned wholesale in step 1 and copied explicitly in step 4,
+ * so the step-1 filter never sees these files.
+ */
+const EXCLUDE_SPA_FILES = new Set([
+  'HR Dashboard Ledger EN.dc.html',
+  'cover-preview.html',
+  'tokens.json',
+  'README.md',
+]);
 
 function rel(absolute) {
   return path.relative(BACKEND_SRC, absolute).split(path.sep).join('/');
@@ -156,6 +196,75 @@ function run(command, args, cwd) {
  * statement rather than an intention: a filter bug, a symlink, or someone
  * copying a file in by hand after the fact all show up here.
  */
+/**
+ * Byte-scans the whole staging tree for the standing development credentials.
+ *
+ * The seed template has its own string gate (verifySeedTemplate), but that only
+ * reads one file. This reads every file that ships, because the leak T6.5 fixed
+ * existed in two places at once: as rows in the database AND as literals in
+ * `database/seeders/DatabaseSeeder.php`, which created a `test@example.com`
+ * account whose password was `password` on every machine. Pruning the seeders
+ * closes that, and this is what keeps it closed — a re-added seeder, a stray
+ * fixture, a `.env` copied in by hand, or a built SPA chunk that inlined a test
+ * login all surface here instead of in a beta user's install.
+ *
+ * Scanned as raw bytes, not parsed: a literal split across a minified chunk
+ * boundary is not something a source-level grep would see anyway, and this way
+ * the check is indifferent to file type.
+ *
+ * `@example.com` on its own is NOT an error everywhere. Laravel's own
+ * `config/mail.php` defaults `MAIL_FROM_ADDRESS` to `hello@example.com`,
+ * `.env.example` ships the same, and Symfony's mailer carries it in docs and in
+ * `Address.php`. Those are framework defaults, not credentials, so the scan
+ * exempts `vendor/`, `config/`, and `.env.example` for the generic pattern
+ * while holding `test@example.com` to zero hits ANYWHERE — that one is a login
+ * that exists, with a known password, and has no legitimate reason to ship.
+ */
+const FORBIDDEN_BYTES = [
+  { needle: 'test@example.com', exempt: [] },
+  { needle: '@example.com', exempt: ['vendor/', 'config/', '.env.example'] },
+];
+
+function scanTreeForCredentials() {
+  const failures = [];
+  const probes = FORBIDDEN_BYTES.map((entry) => ({
+    ...entry,
+    buffer: Buffer.from(entry.needle, 'utf8'),
+    hits: [],
+  }));
+
+  let scannedFiles = 0;
+  let scannedBytes = 0;
+
+  for (const entry of fs.readdirSync(STAGING_BACKEND, { withFileTypes: true, recursive: true })) {
+    if (!entry.isFile()) {
+      continue;
+    }
+    const absolute = path.join(entry.parentPath, entry.name);
+    const relative = path.relative(STAGING_BACKEND, absolute).split(path.sep).join('/');
+    const data = fs.readFileSync(absolute);
+    scannedFiles += 1;
+    scannedBytes += data.length;
+
+    for (const probe of probes) {
+      if (probe.exempt.some((prefix) => relative.startsWith(prefix))) {
+        continue;
+      }
+      if (data.includes(probe.buffer)) {
+        probe.hits.push(relative);
+      }
+    }
+  }
+
+  for (const probe of probes) {
+    for (const hit of probe.hits) {
+      failures.push(`CREDENTIAL STRING: "${probe.needle}" found in ${hit}`);
+    }
+  }
+
+  return { failures, scannedFiles, scannedBytes };
+}
+
 function verify() {
   const failures = [];
 
@@ -167,6 +276,14 @@ function verify() {
     'phpunit.xml',
     'database/database.sqlite',
     'serve.log',
+    // T6.5: the demo-data generators and the design mockups served from the
+    // document root. See EXCLUDE_PATHS and EXCLUDE_SPA_FILES for why.
+    'database/seeders',
+    'database/factories',
+    'public/app/HR Dashboard Ledger EN.dc.html',
+    'public/app/cover-preview.html',
+    'public/app/tokens.json',
+    'public/app/README.md',
   ];
   for (const candidate of mustNotExist) {
     if (fs.existsSync(path.join(STAGING_BACKEND, candidate))) {
@@ -183,7 +300,6 @@ function verify() {
     'config/app.php',
     'routes/web.php',
     'database/migrations',
-    'database/seeders',
     'database/seed-template.sqlite',
     'public/index.php',
     'public/app/index.html',
@@ -220,9 +336,36 @@ function verify() {
     }
   }
 
+  // The seed template is the other half of "ships no secrets": the prune list
+  // keeps the developer's .env and live database out, and this keeps the
+  // developer's DATA out of the file that is deliberately copied in. Re-checked
+  // here, against the produced file, for the same reason the prune list is —
+  // buildSeedTemplate() validating its own output in-process cannot catch a
+  // template replaced by hand afterwards.
+  const template = path.join(STAGING_BACKEND, 'database', 'seed-template.sqlite');
+  const templateResult = verifySeedTemplate(template);
+  for (const failure of templateResult.failures) {
+    failures.push(`SEED TEMPLATE: ${failure}`);
+  }
+
+  const scan = scanTreeForCredentials();
+  failures.push(...scan.failures);
+
   console.log('\n── staging verification ──────────────────────────────────────');
+  console.log(
+    '  seed template: '
+    + Object.entries(templateResult.counts)
+      .map(([table, n]) => `${table}=${String(n)}`)
+      .join('  '),
+  );
+  console.log(
+    `  credential scan: ${String(scan.scannedFiles)} files, `
+    + `${mb(scan.scannedBytes)}, ${String(scan.failures.length)} hit(s)`,
+  );
   if (failures.length === 0) {
-    console.log('  PASS — prune list holds, required files present, vendor is --no-dev.');
+    console.log('  PASS — prune list holds, required files present, vendor is --no-dev,');
+    console.log('         seed template carries no users and no demo data, and no');
+    console.log('         development credentials appear anywhere in the shipped bytes.');
     return true;
   }
   for (const failure of failures) {
@@ -264,16 +407,29 @@ function stage() {
         'the Vite output straight into the backend document root with --base=/app/.',
     );
   }
-  fs.cpSync(spaSrc, path.join(STAGING_BACKEND, 'public', 'app'), { recursive: true });
+  const skippedSpaFiles = [];
+  fs.cpSync(spaSrc, path.join(STAGING_BACKEND, 'public', 'app'), {
+    recursive: true,
+    filter: (absolute) => {
+      if (!EXCLUDE_SPA_FILES.has(path.basename(absolute))) {
+        return true;
+      }
+      skippedSpaFiles.push(path.basename(absolute));
+      return false;
+    },
+  });
+  for (const skipped of skippedSpaFiles) {
+    console.log(`  pruned design artefact      ${skipped}`);
+  }
   report('public/app (SPA)', path.join(STAGING_BACKEND, 'public', 'app'));
 
-  console.log('\n── 5. copy the seeded template database');
+  console.log('\n── 5. build the clean seed template from the dev database');
   const dbSrc = path.join(BACKEND_SRC, 'database', 'database.sqlite');
   if (!fs.existsSync(dbSrc)) {
     throw new Error(`No template DB at ${dbSrc}.`);
   }
   const dbDest = path.join(STAGING_BACKEND, 'database', 'seed-template.sqlite');
-  fs.copyFileSync(dbSrc, dbDest);
+  buildSeedTemplate(dbSrc, dbDest);
   console.log(`  seed-template.sqlite        ${mb(fs.statSync(dbDest).size).padStart(10)}`);
 
   console.log('\n── totals ────────────────────────────────────────────────────');

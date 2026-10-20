@@ -30,11 +30,37 @@ function fullName(employee: EmployeeWire): string {
 }
 
 /**
- * Employment Certificate — confirms that the named individual is employed
- * by Kawdly Tech in the stated role.
+ * The employer named in the letter body.
+ *
+ * Every template takes this as an argument rather than hardcoding it. Until
+ * T6.5 these three functions said "Kawdly Tech" — the developer's own company —
+ * which was invisible in-house and wrong for everybody else: the PDF rendered
+ * the real company in the letterhead (buildPdf already drew `company.name`) and
+ * then certified, two lines below, that the employee works somewhere else. An
+ * external user cannot fix that from Settings, and an employment or experience
+ * letter is the kind of document that gets handed to a bank or an embassy.
+ *
+ * The caller passes the resolved `general.companyName` setting. The fallback
+ * below is only reached if that setting is missing or still loading; it is
+ * deliberately generic rather than any real company's name.
  */
-export function employmentCertificate(employee: EmployeeWire): LetterContent {
+const FALLBACK_EMPLOYER = 'the Company';
+
+function employer(companyName: string): string {
+  const trimmed = companyName.trim();
+  return trimmed === '' ? FALLBACK_EMPLOYER : trimmed;
+}
+
+/**
+ * Employment Certificate — confirms that the named individual is employed
+ * by `companyName` in the stated role.
+ */
+export function employmentCertificate(
+  employee: EmployeeWire,
+  companyName: string,
+): LetterContent {
   const name = fullName(employee);
+  const company = employer(companyName);
   const position = employee.job_position?.title ?? 'N/A';
   const department = employee.department?.name ?? 'N/A';
   const joinDate = formatDate(employee.joining_date);
@@ -44,7 +70,7 @@ export function employmentCertificate(employee: EmployeeWire): LetterContent {
     body: [
       'To Whom It May Concern,',
       '',
-      `This is to certify that ${name} has been employed with Kawdly Tech since ${joinDate}`,
+      `This is to certify that ${name} has been employed with ${company} since ${joinDate}`,
       `in the position of ${position}, within the ${department} department.`,
       '',
       'This employee is currently in good standing with the company and fulfills',
@@ -65,8 +91,12 @@ export function employmentCertificate(employee: EmployeeWire): LetterContent {
  * receives a monthly salary (amount intentionally omitted until payroll
  * integration is available in a later sprint).
  */
-export function salaryCertificate(employee: EmployeeWire): LetterContent {
+export function salaryCertificate(
+  employee: EmployeeWire,
+  companyName: string,
+): LetterContent {
   const name = fullName(employee);
+  const company = employer(companyName);
   const position = employee.job_position?.title ?? 'N/A';
   const department = employee.department?.name ?? 'N/A';
   const joinDate = formatDate(employee.joining_date);
@@ -76,7 +106,7 @@ export function salaryCertificate(employee: EmployeeWire): LetterContent {
     body: [
       'To Whom It May Concern,',
       '',
-      `This is to certify that ${name} is currently employed at Kawdly Tech`,
+      `This is to certify that ${name} is currently employed at ${company}`,
       `as ${position} in the ${department} department, effective ${joinDate}.`,
       '',
       'The employee receives a regular monthly salary as per the terms of their',
@@ -94,10 +124,14 @@ export function salaryCertificate(employee: EmployeeWire): LetterContent {
 
 /**
  * Experience Letter — issued upon or in anticipation of departure,
- * summarising the employee's tenure and role at Kawdly Tech.
+ * summarising the employee's tenure and role at `companyName`.
  */
-export function experienceLetter(employee: EmployeeWire): LetterContent {
+export function experienceLetter(
+  employee: EmployeeWire,
+  companyName: string,
+): LetterContent {
   const name = fullName(employee);
+  const company = employer(companyName);
   const position = employee.job_position?.title ?? 'N/A';
   const department = employee.department?.name ?? 'N/A';
   const joinDate = formatDate(employee.joining_date);
@@ -107,7 +141,7 @@ export function experienceLetter(employee: EmployeeWire): LetterContent {
     body: [
       'To Whom It May Concern,',
       '',
-      `This letter is to confirm that ${name} has been associated with Kawdly Tech`,
+      `This letter is to confirm that ${name} has been associated with ${company}`,
       `from ${joinDate} in the capacity of ${position}, ${department} department.`,
       '',
       'During their tenure, the employee demonstrated professionalism and',

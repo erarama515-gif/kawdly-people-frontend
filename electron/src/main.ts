@@ -40,13 +40,14 @@
  *     behind code signing, which the zero-card policy puts outside Phase 1)
  */
 
-import { app, BrowserWindow, dialog, session, shell } from 'electron';
+import { app, BrowserWindow, clipboard, dialog, session, shell } from 'electron';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 
 import { KAWDLY_CONFIG_ARGV_PREFIX, type DesktopConfig } from './desktop-config';
 import {
   MigrationFailedError,
+  type AdminCredentials,
   ensureAppKey,
   ensureUserDataTree,
   initializeUserData,
@@ -375,6 +376,69 @@ function createMainWindow(port: number, origin: string): BrowserWindow {
   return window;
 }
 
+// ─── first-run credentials ────────────────────────────────────────────────────
+
+/**
+ * Shows the generated admin password, once, and does not return until the user
+ * has acknowledged it.
+ *
+ * Modal and blocking by design. This is the only moment the password exists
+ * anywhere the user will look — `first-run.ts` writes it to a file and then
+ * forgets it, and the database only has the bcrypt hash — so the app must not
+ * get as far as a login screen the user cannot pass. Because
+ * `initializeUserData` awaits this before writing the install marker, closing
+ * the dialog without answering leaves the profile unfinished and shows it
+ * again on the next launch rather than stranding the user.
+ *
+ * The copy button re-opens the dialog rather than dismissing it: on Windows
+ * `showMessageBox` resolves as soon as any button is pressed, so a single
+ * "copy" press would otherwise close the only copy of the password. Looping
+ * means "copy" and "I saved it" are genuinely separate actions.
+ *
+ * Attached to the splash as parent while it exists, so the dialog cannot
+ * appear behind it.
+ */
+async function showCredentialsDialog(credentials: AdminCredentials): Promise<void> {
+  const detail = [
+    `الإيميل: ${credentials.email}`,
+    `كلمة المرور: ${credentials.password}`,
+    '',
+    'هتظهر مرة واحدة بس. الملف محفوظ في:',
+    credentials.credentialsPath,
+    '',
+    'تقدر تغيّر كلمة المرور من Settings بعد أول دخول.',
+  ].join('\n');
+
+  const options = {
+    type: 'warning' as const,
+    title: 'بيانات الدخول',
+    message: 'احتفظ ببيانات الدخول دي',
+    detail,
+    buttons: ['نسخ كلمة المرور', 'حفظت — متابعة'],
+    defaultId: 1,
+    // Esc and the window close button both mean "I am done reading", not
+    // "copy": landing on the copy branch would reopen the dialog forever.
+    cancelId: 1,
+    noLink: true,
+  };
+
+  const parent = splashWindow !== null && !splashWindow.isDestroyed() ? splashWindow : null;
+  const ask = async (): Promise<number> => {
+    const result =
+      parent === null
+        ? await dialog.showMessageBox(options)
+        : await dialog.showMessageBox(parent, options);
+
+    return result.response;
+  };
+
+  let response = await ask();
+  while (response === 0) {
+    clipboard.writeText(credentials.password);
+    response = await ask();
+  }
+}
+
 // ─── failure path ─────────────────────────────────────────────────────────────
 
 /**
@@ -499,7 +563,12 @@ async function startup(): Promise<void> {
      */
     if (isFirstRun(paths.userDataPath)) {
       setSplashStatus('جاري تجهيز التطبيق لأول مرة…');
-      await initializeUserData({ paths, appVersion, onProgress: setSplashStatus });
+      await initializeUserData({
+        paths,
+        appVersion,
+        onProgress: setSplashStatus,
+        onCredentials: showCredentialsDialog,
+      });
     } else {
       await migrateIfNeeded({ paths, appVersion, onProgress: setSplashStatus });
     }

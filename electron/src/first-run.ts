@@ -25,25 +25,32 @@
  * launch instead of leaving a profile that claims to be ready and is not.
  *
  * ---------------------------------------------------------------------------
- * Template database — v0.1 beta decision
+ * Template database and the first admin account (T6.5)
  * ---------------------------------------------------------------------------
- * The installer ships `database/seed-template.sqlite`: the repository's SEEDED
- * development database (10 roles, 816 permissions, 53 demo employees, and the
- * `test@example.com` / `password` login). For a beta whose purpose is to get
- * the product in front of people, an empty app with no way in is worse than
- * obviously-fake data.
+ * The installer ships `database/seed-template.sqlite`: full schema, all 93
+ * migration rows, complete RBAC (869 permissions, 10 roles), reference data
+ * and one placeholder company — and no people. It is built by
+ * `scripts/build-seed-template.mjs`, which empties every table not on its
+ * allowlist, so what ships cannot contain a developer's records.
  *
- * This is a deliberate, dated trade and it MUST NOT reach 1.0:
- *   - every install shares the same demo records, so "my data" is not actually
- *     the user's data until they delete it;
- *   - a known-password account exists on every machine. It is a local-only,
- *     loopback-bound app with no network listener beyond 127.0.0.1, which is
- *     what makes this tolerable for a beta — and unacceptable the moment any
- *     remote surface exists.
- * v1.0 needs a clean-install flow: empty schema + a first-launch wizard that
- * creates the company and the first admin. Tracked in the completion plan.
+ * Up to v0.1 this file instead shipped the seeded development database
+ * verbatim: 54 demo employees, 2310 attendance rows, and two accounts whose
+ * password was literally `password` — the same two on every machine, and
+ * written down in the repository. That was survivable while every install was
+ * ours. It stopped being survivable the moment a build could be handed to
+ * someone outside the team, which is what this release is for.
  *
- * The APP_KEY, by contrast, is generated per install and never shipped.
+ * So the admin account is created HERE, per install, with a password generated
+ * on this machine (`ensureAdminAccount` below). Nothing about the credentials
+ * is shipped: the template has zero rows in `users`, which the packaging
+ * verifier re-asserts against the file that actually got built.
+ *
+ * Still deferred to v1.0, deliberately: a first-launch wizard that asks for the
+ * real company name and the admin's own email, and forcing a password change on
+ * first login. This is the smaller change that makes a shared credential
+ * impossible; it is not the whole onboarding story.
+ *
+ * The APP_KEY is likewise generated per install and never shipped.
  */
 
 import { spawn } from 'node:child_process';
@@ -66,13 +73,44 @@ const LEGACY_APP_KEY_FILE = '.appkey';
 /** The live SQLite file, relative to userData. */
 const DATABASE_FILE = path.join('data', 'database.sqlite');
 
+/** Where the generated admin password is written, relative to userData. */
+const CREDENTIALS_FILE = path.join('data', 'ADMIN-CREDENTIALS.txt');
+
 /** A migration that has not finished in five minutes is not going to. */
 const MIGRATE_TIMEOUT_MS = 5 * 60 * 1000;
+
+/** Creating one user is a sub-second operation; a minute is already generous. */
+const CREATE_ADMIN_TIMEOUT_MS = 60 * 1000;
+
+const ADMIN_EMAIL = 'admin@kawdly.local';
+const ADMIN_NAME = 'Administrator';
+const PASSWORD_LENGTH = 20;
+
+/**
+ * Password alphabet: digits and letters, minus `0 O l I 1`.
+ *
+ * The user's first encounter with this password is reading it off a dialog and
+ * typing it into a login form, possibly having written it on paper first. A
+ * character set that cannot produce "l vs 1 vs I" is worth more here than the
+ * ~0.3 bits per character the exclusions cost (56 symbols instead of 62, so
+ * 20 characters still carry ~116 bits).
+ */
+const PASSWORD_ALPHABET = '23456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz';
 
 interface InstallMarker {
   readonly version: string;
   readonly installedAt: string;
   readonly lastMigratedAt?: string;
+}
+
+/** The account created on a fresh install, as handed to the UI once. */
+export interface AdminCredentials {
+  readonly email: string;
+  readonly password: string;
+  /** Absolute path of the file the password was written to. */
+  readonly credentialsPath: string;
+  /** False when a previous interrupted run had already created the account. */
+  readonly created: boolean;
 }
 
 export interface BootstrapOptions {
@@ -81,6 +119,16 @@ export interface BootstrapOptions {
   readonly appVersion: string;
   /** Progress text for the splash. Called with user-facing Arabic. */
   readonly onProgress?: (message: string) => void;
+  /**
+   * Shows the generated password to the user. Awaited, and awaited BEFORE the
+   * install marker is written, so a profile is never marked ready while the
+   * one-time credentials are still unacknowledged.
+   *
+   * A callback rather than a `dialog.showMessageBox` call in this file: every
+   * other window and dialog in the app is owned by main.ts, and provisioning
+   * that cannot open a window is provisioning that can be unit-tested.
+   */
+  readonly onCredentials?: (credentials: AdminCredentials) => Promise<void>;
 }
 
 /** Thrown when `artisan migrate` fails. Carries the output for the dialog. */
@@ -304,9 +352,34 @@ export function backupDatabase(userDataPath: string, reason: string): string | n
  * `--force` is required: Laravel refuses to migrate a production environment
  * interactively, and `APP_ENV` is `production` in the packaged app.
  */
-async function runMigrate(paths: RuntimePaths, appKey: string): Promise<void> {
+interface ArtisanResult {
+  /** Process exit code, or null when it never got that far. */
+  readonly code: number | null;
+  /** stdout and stderr, interleaved in arrival order. */
+  readonly output: string;
+  /** Set when the process could not be started or did not finish in time. */
+  readonly failure?: string;
+}
+
+/**
+ * Runs one artisan command with the packaged PHP and resolves with its result.
+ *
+ * Deliberately does NOT reject on a non-zero exit: "the command ran and said
+ * no" is a different thing from "the command could not run", and the two
+ * callers here want to treat them differently — a failed migration is fatal,
+ * an admin account that already exists is not.
+ *
+ * `secretStdin` exists so a generated password never appears in argv, where
+ * anything able to read the process table could see it.
+ */
+async function runArtisan(
+  paths: RuntimePaths,
+  appKey: string,
+  commandArgs: readonly string[],
+  options: { readonly timeoutMs: number; readonly secretStdin?: string },
+): Promise<ArtisanResult> {
   const env = buildPhpEnv({
-    port: 0, // unused by artisan; APP_URL is irrelevant to a migration
+    port: 0, // unused by artisan; APP_URL is irrelevant here
     userDataPath: paths.userDataPath,
     backendPath: paths.backendPath,
     phpBinaryPath: paths.phpBinaryPath,
@@ -318,16 +391,14 @@ async function runMigrate(paths: RuntimePaths, appKey: string): Promise<void> {
     '-d',
     'variables_order=EGPCS',
     path.join(paths.backendPath, 'artisan'),
-    'migrate',
-    '--force',
-    '--no-interaction',
+    ...commandArgs,
   ];
 
-  const output = await new Promise<string>((resolve, reject) => {
+  return new Promise<ArtisanResult>((resolve) => {
     const child = spawn(paths.phpBinaryPath, args, {
       cwd: paths.backendPath,
       env,
-      stdio: ['ignore', 'pipe', 'pipe'],
+      stdio: [options.secretStdin === undefined ? 'ignore' : 'pipe', 'pipe', 'pipe'],
       windowsHide: true,
     });
 
@@ -338,42 +409,214 @@ async function runMigrate(paths: RuntimePaths, appKey: string): Promise<void> {
     child.stdout?.on('data', capture);
     child.stderr?.on('data', capture);
 
+    if (options.secretStdin !== undefined) {
+      child.stdin?.end(options.secretStdin, 'utf8');
+    }
+
+    let settled = false;
+    const settle = (result: ArtisanResult): void => {
+      if (settled) {
+        return;
+      }
+      settled = true;
+      clearTimeout(timer);
+      resolve(result);
+    };
+
     const timer = setTimeout(() => {
       child.kill();
-      reject(
-        new MigrationFailedError(
-          `Migration timed out after ${String(MIGRATE_TIMEOUT_MS / 1000)}s.`,
-          null,
-          captured,
-        ),
-      );
-    }, MIGRATE_TIMEOUT_MS);
+      settle({
+        code: null,
+        output: captured,
+        failure: `artisan ${commandArgs[0] ?? ''} timed out after ${String(
+          options.timeoutMs / 1000,
+        )}s.`,
+      });
+    }, options.timeoutMs);
 
     child.once('error', (error) => {
-      clearTimeout(timer);
-      reject(new MigrationFailedError(`Could not start PHP: ${error.message}`, null, captured));
+      settle({ code: null, output: captured, failure: `Could not start PHP: ${error.message}` });
     });
 
     child.once('exit', (code) => {
-      clearTimeout(timer);
-      if (code === 0) {
-        resolve(captured);
-      } else {
-        reject(
-          new MigrationFailedError(
-            `artisan migrate exited with code ${String(code)}.`,
-            code,
-            captured,
-          ),
-        );
-      }
+      settle({ code, output: captured });
     });
   });
+}
+
+async function runMigrate(paths: RuntimePaths, appKey: string): Promise<void> {
+  const result = await runArtisan(paths, appKey, ['migrate', '--force', '--no-interaction'], {
+    timeoutMs: MIGRATE_TIMEOUT_MS,
+  });
+
+  if (result.failure !== undefined) {
+    throw new MigrationFailedError(result.failure, result.code, result.output);
+  }
+  if (result.code !== 0) {
+    throw new MigrationFailedError(
+      `artisan migrate exited with code ${String(result.code)}.`,
+      result.code,
+      result.output,
+    );
+  }
 
   // Written to the same log directory the server uses, so "View logs" from the
   // failure dialog shows the migration too.
   const logFile = path.join(paths.userDataPath, 'logs', 'migrate.log');
-  fs.appendFileSync(logFile, `\n[${new Date().toISOString()}] migrate --force\n${output}\n`);
+  fs.appendFileSync(
+    logFile,
+    `\n[${new Date().toISOString()}] migrate --force\n${result.output}\n`,
+  );
+}
+
+// ─── admin account ────────────────────────────────────────────────────────────
+
+/**
+ * A cryptographically random password over PASSWORD_ALPHABET.
+ *
+ * Rejection sampling rather than `byte % alphabet.length`. 256 is not a
+ * multiple of 56, so the plain modulo makes the first 32 symbols of the
+ * alphabet ~14% likelier than the rest. The practical entropy loss is small
+ * (~116 bits either way) and nobody would ever notice — but this is the one
+ * secret the whole feature exists to protect, and the correct version costs
+ * one extra line and an average of 1.14 bytes per character.
+ */
+export function generatePassword(length: number = PASSWORD_LENGTH): string {
+  const alphabet = PASSWORD_ALPHABET;
+  // Largest multiple of the alphabet size that fits in a byte; bytes at or
+  // above it are discarded rather than folded.
+  const limit = 256 - (256 % alphabet.length);
+  let password = '';
+
+  while (password.length < length) {
+    for (const byte of crypto.randomBytes(length)) {
+      if (byte >= limit) {
+        continue;
+      }
+      password += alphabet.charAt(byte % alphabet.length);
+      if (password.length === length) {
+        break;
+      }
+    }
+  }
+
+  return password;
+}
+
+function credentialsFilePath(userDataPath: string): string {
+  return path.join(userDataPath, CREDENTIALS_FILE);
+}
+
+function renderCredentialsFile(email: string, password: string): string {
+  return [
+    'Kawdly People — Admin Credentials',
+    '=================================',
+    '',
+    `Email:    ${email}`,
+    `Password: ${password}`,
+    '',
+    'IMPORTANT:',
+    '  - This password was generated for this installation only. No other',
+    '    install of Kawdly People has the same one.',
+    '  - Change it from Settings after your first login.',
+    '  - Once you have stored the password somewhere safe, delete this file.',
+    '',
+    `Generated: ${new Date().toISOString()}`,
+    '',
+  ].join('\n');
+}
+
+/** Reads the password back out of a credentials file written by a prior run. */
+function readStoredPassword(file: string): string | null {
+  if (!fs.existsSync(file)) {
+    return null;
+  }
+  const match = /^Password:\s*(.+)$/m.exec(fs.readFileSync(file, 'utf8'));
+  const password = match?.[1]?.trim();
+
+  return password === undefined || password === '' ? null : password;
+}
+
+/**
+ * Creates the one administrator account for this installation.
+ *
+ * Returns the credentials to show the user, or null when there is an account
+ * but no password we are entitled to claim (see below).
+ *
+ * ---------------------------------------------------------------------------
+ * Why the credentials FILE is the idempotency guard
+ * ---------------------------------------------------------------------------
+ * The install marker is written after the password dialog is dismissed, so
+ * closing the app while that dialog is open leaves `isFirstRun()` true — and
+ * the next launch runs this function again against a database that already has
+ * an admin in it. Keying off the file means that second run re-shows the same
+ * password instead of failing on the unique email index, and the loop closes
+ * only when the user actually acknowledges the dialog.
+ *
+ * The remaining hole is narrow and handled honestly: if the file is deleted but
+ * the database is kept (and the marker is somehow still absent), there is an
+ * account whose password nobody can recover. That is reported to the log and
+ * the dialog is skipped, because inventing a new password here would silently
+ * lock out a user who had already changed theirs.
+ */
+async function ensureAdminAccount(
+  paths: RuntimePaths,
+  appKey: string,
+): Promise<AdminCredentials | null> {
+  const file = credentialsFilePath(paths.userDataPath);
+
+  const existing = readStoredPassword(file);
+  if (existing !== null) {
+    console.log('[first-run] admin credentials file already present; reusing it');
+
+    return { email: ADMIN_EMAIL, password: existing, credentialsPath: file, created: false };
+  }
+
+  const password = generatePassword();
+  const result = await runArtisan(
+    paths,
+    appKey,
+    [
+      'kawdly:create-admin',
+      `--email=${ADMIN_EMAIL}`,
+      `--name=${ADMIN_NAME}`,
+      '--password-stdin',
+      '--no-interaction',
+    ],
+    { timeoutMs: CREATE_ADMIN_TIMEOUT_MS, secretStdin: password },
+  );
+
+  if (result.code !== 0) {
+    if (/already exists/i.test(result.output)) {
+      console.warn(
+        '[first-run] an admin account exists but no credentials file does. '
+          + 'Not resetting the password: the existing one may be in use. '
+          + `Output: ${result.output.trim()}`,
+      );
+
+      return null;
+    }
+
+    throw new MigrationFailedError(
+      result.failure ?? `kawdly:create-admin exited with code ${String(result.code)}.`,
+      result.code,
+      result.output,
+    );
+  }
+
+  fs.mkdirSync(path.dirname(file), { recursive: true });
+  // 0o600 is honoured on POSIX and a no-op on Windows, where the file inherits
+  // the ACL of %APPDATA% — already per-user. Set anyway: this module is the
+  // only thing standing between a generated password and a world-readable file
+  // if the app is ever packaged for Linux.
+  fs.writeFileSync(file, renderCredentialsFile(ADMIN_EMAIL, password), {
+    encoding: 'utf8',
+    mode: 0o600,
+  });
+
+  console.log(`[first-run] created ${ADMIN_EMAIL}; credentials at ${file}`);
+
+  return { email: ADMIN_EMAIL, password, credentialsPath: file, created: true };
 }
 
 // ─── public entry points ──────────────────────────────────────────────────────
@@ -386,7 +629,7 @@ async function runMigrate(paths: RuntimePaths, appKey: string): Promise<void> {
  * crash anywhere above leaves `isFirstRun()` true and the next launch retries.
  */
 export async function initializeUserData(options: BootstrapOptions): Promise<void> {
-  const { paths, appVersion, onProgress } = options;
+  const { paths, appVersion, onProgress, onCredentials } = options;
 
   onProgress?.('جاري تجهيز التطبيق لأول مرة…');
   ensureUserDataTree(paths.userDataPath);
@@ -399,6 +642,16 @@ export async function initializeUserData(options: BootstrapOptions): Promise<voi
   onProgress?.(fromTemplate ? 'جاري تحديث قاعدة البيانات…' : 'جاري إنشاء قاعدة البيانات…');
   await runMigrate(paths, appKey);
 
+  // After migrate, because the account needs the schema; before the marker,
+  // because an install whose password was never shown is not a finished
+  // install. If the user closes the dialog's window instead of answering, the
+  // marker stays absent and the next launch shows it again.
+  onProgress?.('جاري إنشاء حساب المدير…');
+  const credentials = await ensureAdminAccount(paths, appKey);
+  if (credentials !== null) {
+    await onCredentials?.(credentials);
+  }
+
   writeMarker(paths.userDataPath, {
     version: appVersion,
     installedAt: new Date().toISOString(),
@@ -407,7 +660,7 @@ export async function initializeUserData(options: BootstrapOptions): Promise<voi
 
   console.log(
     `[first-run] provisioned ${paths.userDataPath} for ${appVersion} ` +
-      `(template=${String(fromTemplate)})`,
+      `(template=${String(fromTemplate)}, admin=${String(credentials !== null)})`,
   );
 }
 

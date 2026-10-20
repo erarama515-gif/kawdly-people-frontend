@@ -27,7 +27,17 @@ type TemplateKey = 'employmentCert' | 'salaryCert' | 'experienceLetter';
 // ─── Company info ─────────────────────────────────────────────────────────────
 
 interface CompanyInfo {
+  /** Letterhead text. Falls back to a department label, never to a company. */
   name: string;
+  /**
+   * The `general.companyName` setting exactly as stored, empty string if unset.
+   *
+   * Kept separate from `name` because the two have different right answers when
+   * the setting is missing: a letterhead reading "HR Department" is fine, but
+   * a body sentence reading "employed with HR Department" is not. The letter
+   * templates apply their own fallback to this value.
+   */
+  rawName: string;
   email: string;
 }
 
@@ -45,8 +55,9 @@ function useCompanyInfo(): CompanyInfo {
   )?.value ?? '';
 
   return {
-    name:  companyName || 'HR Department',
-    email: hrEmail || '',
+    name:    companyName || 'HR Department',
+    rawName: companyName,
+    email:   hrEmail || '',
   };
 }
 
@@ -222,12 +233,16 @@ export function LetterGenerator({ open, onOpenChange }: LetterGeneratorProps) {
     [employees, selectedEmployeeId],
   );
 
+  // company.name also feeds the letter BODY, not just the letterhead drawn by
+  // buildPdf — see the FALLBACK_EMPLOYER note in letterTemplates.ts. Keep it in
+  // the dependency list: the settings query resolves after first paint, so a
+  // memo that ignored it would cache a letter built from the fallback name.
   const letterContent: LetterContent | null = useMemo(() => {
     if (!selectedEmployee) return null;
-    if (templateKey === 'employmentCert') return employmentCertificate(selectedEmployee);
-    if (templateKey === 'salaryCert') return salaryCertificate(selectedEmployee);
-    return experienceLetter(selectedEmployee);
-  }, [templateKey, selectedEmployee]);
+    if (templateKey === 'employmentCert') return employmentCertificate(selectedEmployee, company.rawName);
+    if (templateKey === 'salaryCert') return salaryCertificate(selectedEmployee, company.rawName);
+    return experienceLetter(selectedEmployee, company.rawName);
+  }, [templateKey, selectedEmployee, company.rawName]);
 
   function handleDownload() {
     if (!selectedEmployee || !letterContent) return;
