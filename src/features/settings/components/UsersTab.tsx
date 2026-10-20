@@ -30,8 +30,8 @@ interface RoleOption {
 /**
  * Static fallback only. The dropdowns are fed from `GET /roles` so custom
  * roles created in the Roles tab show up here too — but that endpoint
- * requires `roles.manage`, which a user with only `users.manage` may not
- * hold. If the roles query fails (or hasn't resolved yet) we fall back to
+ * requires `platform.roles_permissions.view` (or `.manage`), which a user with only
+ * `users.manage` may not hold. If the roles query fails (or hasn't resolved yet) we fall back to
  * the system-role vocabulary so the dialog never renders an empty dropdown.
  */
 const FALLBACK_ROLE_OPTIONS: RoleOption[] = [
@@ -480,7 +480,7 @@ export function UsersTab() {
   const users = state.data?.data ?? [];
 
   // Live roles (system + custom) from the Roles API; static fallback if the
-  // session can't read /roles (requires roles.manage) or while it loads.
+  // session can't read /roles (requires platform.roles_permissions.view) or while it loads.
   const liveRoles = rolesState.status === 'success' ? rolesState.data : undefined;
   const roleOptions = useMemo<RoleOption[]>(
     () =>

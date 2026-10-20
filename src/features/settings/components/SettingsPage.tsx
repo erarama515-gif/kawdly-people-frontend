@@ -362,14 +362,16 @@ export function SettingsPage() {
   const { t } = useTranslation();
   const [activeTab, setActiveTab] = useState<SettingsTabId>('general');
 
-  // The backend guards every roles.* endpoint behind `roles.manage` (see
-  // RoleController) — hide the tab itself for sessions that don't have it,
-  // rather than let a user land on a tab that 403s on every request.
-  const canManageRoles = useHasPermission('roles.manage');
+  // Role reads require `platform.roles_permissions.view`; mutations need
+  // `.manage` (see routes/api/roles.php). Show the tab to any reader and gate
+  // the create/edit/delete controls inside RolesTab on `.manage`.
+  const canViewRoles = useHasPermission('platform.roles_permissions.view');
+  const canManageUsers = useHasPermission('users.manage');
   const canViewDocumentTypes = useHasPermission('document.document_type.view');
   const visibleTabs = SETTINGS_TABS.filter(
     (tab) =>
-      (tab.id !== 'roles' || canManageRoles) &&
+      (tab.id !== 'users' || canManageUsers) &&
+      (tab.id !== 'roles' || canViewRoles) &&
       (tab.id !== 'document-types' || canViewDocumentTypes),
   );
 
@@ -399,8 +401,8 @@ export function SettingsPage() {
 
       {/* Tab content */}
       {activeTab === 'general' && <GeneralSettingsContent />}
-      {activeTab === 'users' && <UsersTab />}
-      {activeTab === 'roles' && canManageRoles && <RolesTab />}
+      {activeTab === 'users' && canManageUsers && <UsersTab />}
+      {activeTab === 'roles' && canViewRoles && <RolesTab />}
       {activeTab === 'document-types' && canViewDocumentTypes && <DocumentTypesTab />}
 
       <div className="h-10" aria-hidden="true" />

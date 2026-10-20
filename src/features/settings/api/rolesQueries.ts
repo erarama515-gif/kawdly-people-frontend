@@ -8,11 +8,11 @@ import type { FetchContext, QueryKey, QueryState } from '@/lib/query';
  * one file, no mock layer (always hits the real backend regardless of
  * `env.useMockApi`), decoders + cache keys + hooks together.
  *
- * Backend: `RoleController` (routes/api/roles.php). All role CRUD requires
- * `roles.manage`; `GET /permissions` requires `roles.manage` OR
- * `settings.view`. System roles (`is_system: true`) reject name changes and
- * deletion with a 422 — the UI disables those actions rather than letting
- * the request round-trip to fail.
+ * Backend: `RoleController` (routes/api/roles.php). Role reads require
+ * `platform.roles_permissions.view`; mutations require
+ * `platform.roles_permissions.manage`. System roles (`is_system: true`) reject
+ * name changes and deletion with a 422 — the UI disables those actions rather
+ * than letting the request round-trip to fail.
  */
 
 // ─── Wire types ───────────────────────────────────────────────────────────────

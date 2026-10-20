@@ -11,6 +11,7 @@ import { Dialog, DialogContent, DialogClose } from '@/components/ui/Dialog';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { Field, Input } from '@/components/ui/form';
 import { userFacingMessage } from '@/lib/api/errors';
+import { useHasPermission } from '@/auth/session';
 import {
   useRoles,
   useRole,
@@ -327,6 +328,7 @@ function RolesSkeleton() {
 
 export function RolesTab() {
   const { t } = useTranslation();
+  const canManage = useHasPermission('platform.roles_permissions.manage');
   const { state, refetch } = useRoles();
   const { state: catalogState } = usePermissionsCatalog();
   const [addOpen, setAddOpen] = useState(false);
@@ -359,10 +361,12 @@ export function RolesTab() {
             {t('settings.roles.subtitle')}
           </p>
         </div>
-        <Button variant="primary" onClick={() => setAddOpen(true)}>
-          <Plus className="h-4 w-4" strokeWidth={2} aria-hidden="true" />
-          {t('settings.roles.addRole')}
-        </Button>
+        {canManage && (
+          <Button variant="primary" onClick={() => setAddOpen(true)}>
+            <Plus className="h-4 w-4" strokeWidth={2} aria-hidden="true" />
+            {t('settings.roles.addRole')}
+          </Button>
+        )}
       </div>
 
       {/* Table */}
@@ -404,27 +408,29 @@ export function RolesTab() {
               <TypeBadge isSystem={role.is_system} />
               <span className="text-body-sm text-ink-muted">{role.permissions_count}</span>
               <span className="text-body-sm text-ink-muted">{role.users_count ?? '—'}</span>
-              <div className="flex items-center gap-1">
-                <Button
-                  variant="ghost"
-                  className="h-7 w-7 px-0 text-ink-faint hover:text-ink"
-                  aria-label={`${t('settings.roles.actions.edit')}: ${role.name}`}
-                  onClick={() => setEditRole(role)}
-                  title={t('settings.roles.actions.edit')}
-                >
-                  <Pencil className="h-3.5 w-3.5" strokeWidth={1.75} aria-hidden="true" />
-                </Button>
-                <Button
-                  variant="ghost"
-                  className="h-7 w-7 px-0 text-ink-faint hover:text-coral"
-                  aria-label={`${t('settings.roles.actions.delete')}: ${role.name}`}
-                  onClick={() => setDeleteRole(role)}
-                  title={role.is_system ? t('settings.roles.actions.deleteProtected') : t('settings.roles.actions.delete')}
-                  disabled={role.is_system}
-                >
-                  <Trash2 className="h-3.5 w-3.5" strokeWidth={1.75} aria-hidden="true" />
-                </Button>
-              </div>
+              {canManage && (
+                <div className="flex items-center gap-1">
+                  <Button
+                    variant="ghost"
+                    className="h-7 w-7 px-0 text-ink-faint hover:text-ink"
+                    aria-label={`${t('settings.roles.actions.edit')}: ${role.name}`}
+                    onClick={() => setEditRole(role)}
+                    title={t('settings.roles.actions.edit')}
+                  >
+                    <Pencil className="h-3.5 w-3.5" strokeWidth={1.75} aria-hidden="true" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    className="h-7 w-7 px-0 text-ink-faint hover:text-coral"
+                    aria-label={`${t('settings.roles.actions.delete')}: ${role.name}`}
+                    onClick={() => setDeleteRole(role)}
+                    title={role.is_system ? t('settings.roles.actions.deleteProtected') : t('settings.roles.actions.delete')}
+                    disabled={role.is_system}
+                  >
+                    <Trash2 className="h-3.5 w-3.5" strokeWidth={1.75} aria-hidden="true" />
+                  </Button>
+                </div>
+              )}
             </div>
           ))}
       </Card>
