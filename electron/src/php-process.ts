@@ -135,6 +135,9 @@ export function buildPhpEnv(opts: SpawnPhpOptions): NodeJS.ProcessEnv {
     DB_DATABASE: path.join(opts.userDataPath, 'data', 'database.sqlite'),
 
     KAWDLY_STORAGE_PATH: path.join(opts.userDataPath, 'storage'),
+    // dev-reset uses this to keep data/ADMIN-CREDENTIALS.txt in sync. Outside
+    // Electron the variable is absent and the backend simply skips the write.
+    KAWDLY_USERDATA_PATH: opts.userDataPath,
 
     SESSION_DRIVER: 'database',
     CACHE_STORE: 'database',
