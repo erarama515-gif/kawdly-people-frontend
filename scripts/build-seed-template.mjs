@@ -154,10 +154,11 @@ const EXPECTED_COUNTS = {
   attendances: 0,
   payslips: 0,
   roles: 10,
-  // 871 = T5 baseline 869 + employee.sensitive_fields.view (W1.2e)
-  //        + payroll.payslip_item.view (W1.2g).
+  // 875 = T5 baseline 869 + employee.sensitive_fields.view (W1.2e)
+  //        + payroll.payslip_item.view (W1.2g)
+  //        + document.generated_document.{view,create,finalize,revoke} (P0 fix).
   // Keep this in sync when the permission registry changes.
-  permissions: 871,
+  permissions: 875,
   companies: 1,
 };
 
