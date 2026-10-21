@@ -1,62 +1,96 @@
-import { useState, useMemo } from 'react';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { z } from 'zod';
-import { Link } from 'react-router-dom';
-import { CheckCircle2, ArrowLeft } from 'lucide-react';
+import { useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
+import { ArrowLeft, Copy } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
-import { Field, Input } from '@/components/ui/form';
-import { userFacingMessage } from '@/lib/api/errors';
+import { Dialog, DialogContent } from '@/components/ui/Dialog';
 import { appHttpClient as http } from '@/lib/api/appHttpClient';
+import { isApiError } from '@/lib/api/errors';
 import { Brand } from '@/components/layout/Brand';
 
 /**
- * Self-service forgot-password page.
+ * Founder-only local password reset.
  *
- * POST /api/v1/auth/forgot-password  — always returns 200 (avoids enumeration).
- * On success shows a confirmation message without revealing whether the email
- * is registered.
- *
- * Not wired into the app router yet — a route entry in App.tsx is needed:
- *   <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+ * There is no email server in the desktop app, so the usual "send a reset
+ * link" flow cannot work. Electron injects KAWDLY_DEV_RESET=1 only when the
+ * per-user DEV_MODE marker exists; the backend returns 404 otherwise and this
+ * page falls back to the support message. The generated password is shown
+ * once and is never written to the audit log.
  */
 
-const forgotPasswordSchema = z.object({
-  email: z.string().min(1, 'common.requiredField').email('common.invalidEmail'),
-});
+interface DevResetResponse {
+  email: string;
+  password: string;
+  warning: string;
+}
 
-type ForgotPasswordValues = z.infer<typeof forgotPasswordSchema>;
+type Mode = 'initial' | 'contact-support' | 'show-new-password';
 
 export function ForgotPasswordPage() {
-  const [submitted, setSubmitted] = useState(false);
-  const [serverError, setServerError] = useState<string | undefined>(undefined);
+  const { t, i18n } = useTranslation();
+  const navigate = useNavigate();
 
-  const resolver = useMemo(() => zodResolver(forgotPasswordSchema), []);
-  const {
-    register,
-    handleSubmit,
-    formState: { errors, isSubmitting },
-  } = useForm<ForgotPasswordValues>({
-    resolver,
-    defaultValues: { email: '' },
-  });
+  const [mode, setMode] = useState<Mode>('initial');
+  const [credentials, setCredentials] = useState<DevResetResponse | null>(null);
+  const [error, setError] = useState<string | undefined>(undefined);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [copied, setCopied] = useState(false);
 
-  async function onSubmit(values: ForgotPasswordValues) {
-    setServerError(undefined);
+  const isRtl = i18n.language === 'ar';
+
+  async function handleReset() {
+    setError(undefined);
+    setIsSubmitting(true);
+
     try {
-      await http('/auth/forgot-password', {
+      const response = await http<DevResetResponse>('/auth/dev-reset', {
         method: 'POST',
-        body: { email: values.email },
-        ignoreBody: false,
+        body: {},
       });
-      setSubmitted(true);
-    } catch (error) {
-      setServerError(userFacingMessage(error));
+
+      if (!response.data) {
+        throw new Error('Dev reset returned an empty response');
+      }
+
+      setCredentials(response.data);
+      setCopied(false);
+      setMode('show-new-password');
+    } catch (err) {
+      if (isApiError(err) && err.status === 404) {
+        setMode('contact-support');
+      } else {
+        setError(t('auth.forgotPassword.error'));
+      }
+    } finally {
+      setIsSubmitting(false);
+    }
+  }
+
+  async function handleCopy() {
+    if (!credentials) return;
+
+    try {
+      await navigator.clipboard.writeText(credentials.password);
+      setCopied(true);
+      window.setTimeout(() => setCopied(false), 2000);
+    } catch {
+      setError(t('auth.forgotPassword.copyError'));
+    }
+  }
+
+  function handleDialogOpenChange(open: boolean) {
+    if (!open) {
+      setMode('initial');
+      setCredentials(null);
+      setCopied(false);
+      setError(undefined);
     }
   }
 
   return (
     <div
+      dir={isRtl ? 'rtl' : 'ltr'}
+      lang={i18n.language}
       className="relative flex min-h-screen flex-col items-center justify-center px-4 py-12"
       style={{
         background: 'linear-gradient(135deg, #072d4a 0%, #0c4874 40%, #1f7bb8 100%)',
@@ -77,67 +111,54 @@ export function ForgotPasswordPage() {
           <Brand tone="light" className="scale-125" />
         </div>
 
-        {submitted ? (
-          /* ── Success state ── */
+        {mode === 'contact-support' ? (
           <div className="flex flex-col items-center gap-4 text-center">
-            <CheckCircle2 className="h-12 w-12 text-emerald-500" strokeWidth={1.5} aria-hidden="true" />
-            <h1 className="text-section-title font-semibold text-ink">Check your email</h1>
+            <h1 className="text-section-title font-semibold text-ink">
+              {t('auth.forgotPassword.contactSupport.title')}
+            </h1>
             <p className="text-body-sm text-ink-muted">
-              If that email address is registered, you will receive a link to reset your password
-              within a few minutes.
+              {t('auth.forgotPassword.contactSupport.message')}
             </p>
+            <a
+              href={`mailto:${t('auth.forgotPassword.contactSupport.supportEmail')}`}
+              className="text-body-sm font-medium text-navy hover:underline"
+            >
+              {t('auth.forgotPassword.contactSupport.supportEmail')}
+            </a>
             <Link
               to="/login"
               className="mt-2 inline-flex items-center gap-1.5 text-body-sm font-medium text-navy hover:underline"
             >
               <ArrowLeft className="h-3.5 w-3.5" strokeWidth={2} aria-hidden="true" />
-              Back to sign in
+              {t('auth.forgotPassword.backToLogin')}
             </Link>
           </div>
         ) : (
-          /* ── Form state ── */
           <>
             <h1 className="mb-2 text-center text-section-title font-semibold text-ink">
-              Forgot password?
+              {t('auth.forgotPassword.title')}
             </h1>
             <p className="mb-6 text-center text-body-sm text-ink-muted">
-              Enter your email and we'll send you a reset link.
+              {t('auth.forgotPassword.subtitle')}
             </p>
 
-            <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4" noValidate>
-              {serverError ? (
-                <p
-                  role="alert"
-                  className="rounded-lg border border-coral/30 bg-coral/5 px-4 py-2.5 text-caption text-coral"
-                >
-                  {serverError}
-                </p>
-              ) : null}
-
-              <Field
-                label="Email address"
-                htmlFor="fp-email"
-                required
-                error={errors.email?.message}
+            {error ? (
+              <p
+                role="alert"
+                className="mb-4 rounded-lg border border-coral/30 bg-coral/5 px-4 py-2.5 text-caption text-coral"
               >
-                <Input
-                  id="fp-email"
-                  type="email"
-                  autoComplete="email"
-                  invalid={!!errors.email}
-                  {...register('email')}
-                />
-              </Field>
+                {error}
+              </p>
+            ) : null}
 
-              <Button
-                type="submit"
-                variant="primary"
-                isLoading={isSubmitting}
-                className="mt-1 w-full py-2.5 text-[14px] font-semibold"
-              >
-                Send reset link
-              </Button>
-            </form>
+            <Button
+              variant="primary"
+              isLoading={isSubmitting}
+              onClick={() => void handleReset()}
+              className="w-full py-2.5 text-[14px] font-semibold"
+            >
+              {t('auth.forgotPassword.button')}
+            </Button>
 
             <div className="mt-5 text-center">
               <Link
@@ -145,7 +166,7 @@ export function ForgotPasswordPage() {
                 className="inline-flex items-center gap-1.5 text-body-sm font-medium text-ink-muted hover:text-ink"
               >
                 <ArrowLeft className="h-3.5 w-3.5" strokeWidth={2} aria-hidden="true" />
-                Back to sign in
+                {t('auth.forgotPassword.backToLogin')}
               </Link>
             </div>
           </>
@@ -155,6 +176,64 @@ export function ForgotPasswordPage() {
       <p className="rise mt-8 text-[12px] text-on-navy-muted-70" style={{ animationDelay: '150ms' }}>
         Powered by <span className="font-semibold text-on-navy-muted-85">Kawdly</span>
       </p>
+
+      <Dialog open={mode === 'show-new-password'} onOpenChange={handleDialogOpenChange}>
+        {credentials ? (
+          <DialogContent
+            title={t('auth.forgotPassword.newPassword.title')}
+            description={t('auth.forgotPassword.newPassword.warning')}
+            footer={
+              <Button variant="primary" onClick={() => navigate('/login')}>
+                {t('auth.forgotPassword.newPassword.goToLogin')}
+              </Button>
+            }
+          >
+            <div className="flex flex-col gap-4">
+              {error ? (
+                <p role="alert" className="text-caption text-coral">
+                  {error}
+                </p>
+              ) : null}
+
+              <div className="flex flex-col gap-1">
+                <span className="text-caption font-medium text-ink-muted">
+                  {t('auth.forgotPassword.newPassword.emailLabel')}
+                </span>
+                <span
+                  dir="ltr"
+                  className="break-all rounded-lg border border-hairline bg-surface-hover px-3 py-2 text-body-sm text-ink"
+                >
+                  {credentials.email}
+                </span>
+              </div>
+
+              <div className="flex flex-col gap-1">
+                <span className="text-caption font-medium text-ink-muted">
+                  {t('auth.forgotPassword.newPassword.passwordLabel')}
+                </span>
+                <div className="flex items-center gap-2">
+                  <code
+                    dir="ltr"
+                    className="min-w-0 flex-1 break-all rounded-lg border border-hairline bg-surface-hover px-3 py-2 font-mono text-body-sm text-ink"
+                  >
+                    {credentials.password}
+                  </code>
+                  <Button
+                    variant="secondary"
+                    onClick={() => void handleCopy()}
+                    className="shrink-0"
+                  >
+                    <Copy className="h-3.5 w-3.5" strokeWidth={2} aria-hidden="true" />
+                    {copied
+                      ? t('auth.forgotPassword.newPassword.copied')
+                      : t('auth.forgotPassword.newPassword.copyButton')}
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </DialogContent>
+        ) : null}
+      </Dialog>
     </div>
   );
 }

@@ -162,6 +162,19 @@ export function buildPhpEnv(opts: SpawnPhpOptions): NodeJS.ProcessEnv {
     }
   }
 
+  /**
+   * Founder-only dev reset escape hatch. The marker lives in per-user data,
+   * outside the repository and outside the installer, so beta users never get
+   * it. The backend still returns 404 when this variable is absent.
+   *
+   * The CLI flag exists for a source run before a first-run marker is present;
+   * it is not exposed by the packaged app's shortcut.
+   */
+  const devModeMarker = path.join(opts.userDataPath, 'DEV_MODE');
+  if (fs.existsSync(devModeMarker) || process.argv.includes('--dev-reset')) {
+    env.KAWDLY_DEV_RESET = '1';
+  }
+
   return env;
 }
 

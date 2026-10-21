@@ -3,7 +3,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useTranslation } from 'react-i18next';
-import { Navigate, useLocation, useNavigate } from 'react-router-dom';
+import { Link, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import type { Location } from 'react-router-dom';
 import { Eye, EyeOff } from 'lucide-react';
 import { isApiError, userFacingMessage } from '@/lib/api/errors';
@@ -188,14 +188,13 @@ export function LoginPage() {
             <label htmlFor="pw" style={{ fontSize: 13, fontWeight: 500, color: '#2a3a50', lineHeight: 1.5 }}>
               {t('auth.login.password')} <span style={{ color: '#c0392b' }}>*</span>
             </label>
-            <a
-              href="#"
-              onClick={(e) => e.preventDefault()}
+            <Link
+              to="/forgot-password"
               className="text-xs font-medium hover:underline"
               style={{ color: '#0f4a73', textDecoration: 'none' }}
             >
               {t('auth.login.forgotPassword')}
-            </a>
+            </Link>
           </div>
           <div className="relative mt-1.5">
             <input

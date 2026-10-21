@@ -15,6 +15,28 @@
       "hidePassword": "Hide password",
       "tooManyAttempts": "Too many login attempts. Please wait a moment and try again.",
       "youAreHere": "You are here · Workspace"
+    },
+    "forgotPassword": {
+      "title": "Reset password",
+      "subtitle": "Create a new password for the administrator account on this device.",
+      "button": "Reset password",
+      "contactSupport": {
+        "title": "Reset password",
+        "message": "On this device, password reset requires support.",
+        "supportEmail": "support@kawdly.com"
+      },
+      "newPassword": {
+        "title": "✅ New password generated",
+        "emailLabel": "Email",
+        "passwordLabel": "Password",
+        "copyButton": "Copy",
+        "copied": "Copied",
+        "warning": "This password is shown once. Save it now.",
+        "goToLogin": "Go to sign in"
+      },
+      "backToLogin": "Back to sign in",
+      "error": "Could not reset the password. Please try again.",
+      "copyError": "Could not copy the password. Copy it manually."
     }
   },
   "nav": {
