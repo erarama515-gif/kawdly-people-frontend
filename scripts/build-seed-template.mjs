@@ -33,7 +33,7 @@
  * ---------------------------------------------------------------------------
  * Schema is untouched: all 93 migration rows stay, so Laravel's migrator sees
  * a fully-migrated database and does nothing on first run. RBAC stays whole
- * (869 permissions, 10 roles, 2089 role-permission links) because rebuilding
+ * (871 permissions, 10 roles, 2089 role-permission links) because rebuilding
  * it on the user's machine would mean shipping and running the seeders, which
  * is slower and has more ways to fail than shipping the result.
  *
@@ -154,7 +154,10 @@ const EXPECTED_COUNTS = {
   attendances: 0,
   payslips: 0,
   roles: 10,
-  permissions: 869,
+  // 871 = T5 baseline 869 + employee.sensitive_fields.view (W1.2e)
+  //        + payroll.payslip_item.view (W1.2g).
+  // Keep this in sync when the permission registry changes.
+  permissions: 871,
   companies: 1,
 };
 
