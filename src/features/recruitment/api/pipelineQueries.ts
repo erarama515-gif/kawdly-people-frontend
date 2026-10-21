@@ -6,7 +6,7 @@ import { num, object, optional, str, literalUnion, array, passthrough } from '@/
 // ─── Pipeline Stats ───────────────────────────────────────────────────────────
 
 /**
- * Wire shape returned by GET /api/v1/recruitment/pipeline-stats.
+ * Wire shape returned by GET /api/v1/pipeline-stats.
  *
  * The `object()` decoder ignores unknown keys so additive backend changes
  * won't break the client.
@@ -38,7 +38,7 @@ export interface UsePipelineStatsResult {
 }
 
 /**
- * Fetches live pipeline statistics from GET /api/v1/recruitment/pipeline-stats.
+ * Fetches live pipeline statistics from GET /api/v1/pipeline-stats.
  *
  * Falls back gracefully when the request fails — the `state.error` field is set
  * and the caller can render the fallback values from `data.ts` instead.
@@ -48,12 +48,12 @@ export function usePipelineStats(): UsePipelineStatsResult {
   const { state, refetch } = useQuery<PipelineStatsWire>({
     queryKey: PIPELINE_STATS_KEY,
     queryFn: async (context) => {
-      const { data } = await http('/recruitment/pipeline-stats', {
+      const { data } = await http('/pipeline-stats', {
         signal: context.signal,
         schema: pipelineStatsDecoder,
       });
       if (data === undefined) {
-        throw new Error('GET /recruitment/pipeline-stats returned an empty body');
+        throw new Error('GET /pipeline-stats returned an empty body');
       }
       return data.data;
     },
