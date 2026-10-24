@@ -13,12 +13,13 @@ import type { AttendanceListWire, AttendanceWire } from './schema';
 
 /**
  * Real backend values from `StoreAttendanceRequest`:
- *   present | absent | leave | holiday | weekend | half_day
+ *   present | absent | leave | holiday | weekend | half_day | late
  *
- * The old UI mock used 'late' as a status; the real backend does not — late is
- * indicated by `late_minutes > 0` with status = 'present'.
+ * 'late' is a first-class status: the seeder writes it and the shipped data
+ * carries 254 such rows. A record can ALSO be 'present' with
+ * `late_minutes > 0` — the two are not mutually exclusive.
  */
-export type AttendanceStatus = 'present' | 'absent' | 'leave' | 'holiday' | 'weekend' | 'half_day';
+export type AttendanceStatus = 'present' | 'absent' | 'leave' | 'holiday' | 'weekend' | 'half_day' | 'late';
 
 export type CheckInMethod = 'web' | 'mobile' | 'biometric' | 'qr' | 'manual';
 

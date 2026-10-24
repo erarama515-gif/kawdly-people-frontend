@@ -17,6 +17,7 @@ export const attendanceStatusDecoder = literalUnion([
   'holiday',
   'weekend',
   'half_day',
+  'late',
 ] as const);
 
 export const checkInMethodDecoder = literalUnion(['web', 'mobile', 'biometric', 'qr', 'manual'] as const);

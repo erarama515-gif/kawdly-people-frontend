@@ -20,14 +20,15 @@ import type { AttendanceWire } from '../api/schema';
  *
  * Key differences vs. Employees:
  *  - Employee picker: native `<select>` fed by `useEmployeeList({ page:1, perPage:100 })`.
- *  - No `late` status in the real backend; lateness is `present` + `late_minutes > 0`.
+ *  - 'late' is a first-class status (the seeder writes it, the backend
+ *    accepts it); a 'present' record may also carry `late_minutes > 0`.
  *  - `check_in`/`check_out` stored as `YYYY-MM-DD HH:mm:ss` on the wire.
  */
 
 const REQUIRED = 'common.requiredField';
 
 const ATTENDANCE_STATUSES: readonly AttendanceStatus[] = [
-  'present', 'absent', 'leave', 'holiday', 'weekend', 'half_day',
+  'present', 'absent', 'leave', 'holiday', 'weekend', 'half_day', 'late',
 ];
 
 // Default work_schedule_id = 1 (only one schedule in mock, real API requires it)

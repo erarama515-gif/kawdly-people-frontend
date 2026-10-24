@@ -76,6 +76,7 @@ const ATTENDANCE_STATUS_CLASSES: Record<AttendanceWireStatus, string> = {
   holiday: 'bg-violet-50 text-violet-700',
   weekend: 'bg-slate-100 text-slate-500',
   half_day: 'bg-orange-50 text-orange-600',
+  late: 'bg-amber-50 text-amber-700',
 };
 
 // ─── Reusable sub-components ──────────────────────────────────────────────────

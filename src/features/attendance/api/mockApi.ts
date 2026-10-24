@@ -15,8 +15,8 @@ import type { AttendanceApi, AttendanceStatus } from './resource';
  * decoders a real HTTP response would go through, so the two transports are
  * indistinguishable to the rest of the app.
  *
- * NOTE: The real backend has no `late` status — lateness is indicated by
- * `late_minutes > 0` on a `present` record. This mock follows the real schema.
+ * NOTE: 'late' is a first-class status, exactly as in the real backend and
+ * in the seeded data. A record can ALSO be 'present' with `late_minutes > 0`.
  */
 
 interface StoredAttendance {
@@ -67,7 +67,7 @@ const EMPLOYEE_IDS = EMPLOYEE_STUBS.map((e) => e.id);
 
 const STATUSES: AttendanceStatus[] = [
   'present', 'present', 'present', 'present', 'present',
-  'absent', 'leave', 'half_day', 'holiday', 'weekend',
+  'absent', 'leave', 'half_day', 'holiday', 'weekend', 'late',
 ];
 const CHECK_IN_METHODS = ['web', 'mobile', 'biometric', 'qr', 'manual'] as const;
 
@@ -84,8 +84,9 @@ function generateFiller(count: number, startId: number, baseDate: string): Store
     const date = d.toISOString().slice(0, 10);
 
     const status = STATUSES[index % STATUSES.length];
-    const isWorking = status === 'present' || status === 'half_day';
-    const lateMinutes = isWorking && index % 5 === 2 ? 15 + (index % 4) * 10 : undefined;
+    const isWorking = status === 'present' || status === 'half_day' || status === 'late';
+    const lateMinutes =
+      status === 'late' ? 20 + (index % 3) * 5 : isWorking && index % 5 === 2 ? 15 + (index % 4) * 10 : undefined;
     const checkInHour = 8 + (index % 2);
     const checkInMin = isWorking ? (lateMinutes ? lateMinutes : (index % 10)) : undefined;
     const checkIn = isWorking

@@ -28,12 +28,14 @@ import type { DateRange } from '@/components/ui/DateRangeFilter';
  * - Delete via `ConfirmDialog` + optimistic `useDeleteAttendance`
  * - `Pagination` for page controls
  * - Debounced search (employee name)
- * - Status filter chips (real backend values: present/absent/leave/holiday/weekend/half_day)
+ * - Status filter chips (real backend values: present/absent/leave/holiday/weekend/half_day/late)
  * - Stat cards backed by cheap `perPage:1` filtered queries (total/present/absent)
  *
- * NOTE: The real backend has no `late` status — lateness is `present` with
- * `late_minutes > 0`. The old mock's `late` status is gone. Filter chips
- * reflect the real schema.
+ * NOTE: 'late' is a first-class status. The seeder has always written it and
+ * the shipped data carries 254 such rows, so the backend accepts it
+ * (StoreAttendanceRequest / UpdateAttendanceRequest / the correction
+ * endpoint) and the decoder expects it. A record can ALSO be 'present' with
+ * `late_minutes > 0` - that combination still renders as "Present (+Nm)".
  */
 
 const PER_PAGE = 10;
@@ -45,7 +47,8 @@ const STATUS_CLASSES: Record<AttendanceStatus, string> = {
   leave: 'bg-sky-50 text-sky-700',
   holiday: 'bg-violet-50 text-violet-700',
   weekend: 'bg-slate-100 text-slate-600',
-  half_day: 'bg-amber-50 text-amber-700',
+  half_day: 'bg-teal-50 text-teal-700',
+  late: 'bg-amber-50 text-amber-700',
 };
 
 function formatTime(wireDateTime: string | undefined): string {
@@ -87,11 +90,14 @@ function StatCard({ label, value, accent }: { label: string; value: number | und
 
 function StatusBadge({ status, lateMinutes }: { status: AttendanceStatus; lateMinutes?: number | undefined }) {
   const { t } = useTranslation();
-  // Show "Late" annotation on present records with late_minutes > 0
+  // "Late" is its own status; a 'present' record can still carry late
+  // minutes, and both read better with the minutes next to the label.
   const label =
-    status === 'present' && lateMinutes && lateMinutes > 0
-      ? `${t('attendance.status.present')} (+${lateMinutes}m)`
-      : t(`attendance.status.${status}`);
+    status === 'late'
+      ? `${t('attendance.status.late')}${lateMinutes && lateMinutes > 0 ? ` (+${lateMinutes}m)` : ''}`
+      : status === 'present' && lateMinutes && lateMinutes > 0
+        ? `${t('attendance.status.present')} (+${lateMinutes}m)`
+        : t(`attendance.status.${status}`);
 
   return (
     <span className={cn('rounded-full px-2.5 py-0.5 text-[11px] font-semibold', STATUS_CLASSES[status])}>
@@ -131,6 +137,7 @@ const FILTER_OPTIONS: Array<{ key: string; value: AttendanceStatus | 'all' }> = 
   { key: 'holiday', value: 'holiday' },
   { key: 'weekend', value: 'weekend' },
   { key: 'half_day', value: 'half_day' },
+  { key: 'late', value: 'late' },
 ];
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
