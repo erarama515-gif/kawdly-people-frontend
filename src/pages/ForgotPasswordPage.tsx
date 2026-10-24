@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { ArrowLeft, Copy } from 'lucide-react';
@@ -13,9 +13,10 @@ import { Brand } from '@/components/layout/Brand';
  *
  * There is no email server in the desktop app, so the usual "send a reset
  * link" flow cannot work. Electron injects KAWDLY_DEV_RESET=1 only when the
- * per-user DEV_MODE marker exists; the backend returns 404 otherwise and this
- * page falls back to the support message. The generated password is shown
- * once and is never written to the audit log.
+ * per-user DEV_MODE marker exists; the read-only GET probe on /auth/dev-reset
+ * tells this page whether the reset exists, so a beta user on a normal install
+ * sees the support message straight away instead of a button that 404s. The
+ * generated password is shown once and is never written to the audit log.
  */
 
 interface DevResetResponse {
@@ -26,17 +27,53 @@ interface DevResetResponse {
 
 type Mode = 'initial' | 'contact-support' | 'show-new-password';
 
+/**
+ * Whether this install exposes the founder-only reset at all. The POST returns
+ * 404 when Electron did not inject KAWDLY_DEV_RESET=1, so we ask the read-only
+ * GET probe on mount: a beta user should never see a button that is guaranteed
+ * to dead-end.
+ */
+type Capability = 'probing' | 'available' | 'unavailable';
+
 export function ForgotPasswordPage() {
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
 
   const [mode, setMode] = useState<Mode>('initial');
+  const [capability, setCapability] = useState<Capability>('probing');
   const [credentials, setCredentials] = useState<DevResetResponse | null>(null);
   const [error, setError] = useState<string | undefined>(undefined);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [copied, setCopied] = useState(false);
 
   const isRtl = i18n.language === 'ar';
+
+  useEffect(() => {
+    let cancelled = false;
+
+    http<{ available: boolean }>('/auth/dev-reset', { method: 'GET' })
+      .then((response) => {
+        if (cancelled) return;
+
+        if (response.data?.available === true) {
+          setCapability('available');
+        } else {
+          setCapability('unavailable');
+          setMode('contact-support');
+        }
+      })
+      .catch(() => {
+        if (cancelled) return;
+        // An older backend has no probe at all: treat that as "no reset here"
+        // rather than showing a button that would 404 on click.
+        setCapability('unavailable');
+        setMode('contact-support');
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   async function handleReset() {
     setError(undefined);
@@ -153,7 +190,8 @@ export function ForgotPasswordPage() {
 
             <Button
               variant="primary"
-              isLoading={isSubmitting}
+              isLoading={isSubmitting || capability === 'probing'}
+              disabled={capability !== 'available'}
               onClick={() => void handleReset()}
               className="w-full py-2.5 text-[14px] font-semibold"
             >
