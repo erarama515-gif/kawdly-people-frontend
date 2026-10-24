@@ -74,3 +74,27 @@ export type AttendanceListWire = ReturnType<typeof attendanceListDecoder.decode>
 
 export const attendanceEnvelopeDecoder = object({ data: attendanceDecoder });
 export type AttendanceEnvelopeWire = ReturnType<typeof attendanceEnvelopeDecoder.decode>;
+
+/**
+ * Work schedule as returned by GET /work-schedules. Only the fields the
+ * attendance form needs are decoded; the resource carries the full shift
+ * definition but the picker just needs an id and a human-readable name.
+ */
+export const workScheduleDecoder = object({
+  id: num(),
+  name: str(),
+  type: optional(str()),
+  start_time: optional(str()),
+  end_time: optional(str()),
+  is_active: optional(bool()),
+  is_default: optional(bool()),
+});
+
+export type WorkScheduleWire = ReturnType<typeof workScheduleDecoder.decode>;
+
+export const workScheduleListDecoder = object({
+  data: array(workScheduleDecoder),
+  meta: optional(pageMetaDecoder),
+});
+
+export type WorkScheduleListWire = ReturnType<typeof workScheduleListDecoder.decode>;

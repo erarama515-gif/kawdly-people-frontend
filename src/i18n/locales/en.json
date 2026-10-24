@@ -828,6 +828,9 @@
       "checkOut": "Check Out",
       "lateMinutes": "Late Minutes",
       "workScheduleId": "Work Schedule ID",
+      "workSchedule": "Work schedule",
+      "workScheduleInactive": "inactive",
+      "workScheduleFallback": "The schedule list could not be loaded — enter the schedule id instead.",
       "notes": "Notes"
     },
     "deleteConfirm": {

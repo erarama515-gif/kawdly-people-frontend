@@ -10,7 +10,7 @@ import { Field, Input, Select } from '@/components/ui/form';
 import { userFacingMessage } from '@/lib/api/errors';
 import type { ApiError } from '@/lib/api/errors';
 import { useEmployeeList } from '@/features/employees/api/queries';
-import { useCreateAttendance, useUpdateAttendance } from '../api/queries';
+import { useCreateAttendance, useUpdateAttendance, useWorkScheduleOptions } from '../api/queries';
 import type { AttendanceInput, AttendanceStatus } from '../api/resource';
 import type { AttendanceWire } from '../api/schema';
 
@@ -20,6 +20,8 @@ import type { AttendanceWire } from '../api/schema';
  *
  * Key differences vs. Employees:
  *  - Employee picker: native `<select>` fed by `useEmployeeList({ page:1, perPage:100 })`.
+ *  - Work schedule: native `<select>` fed by `useWorkScheduleOptions()`; falls
+ *    back to a numeric input (with a hint) if the list cannot be loaded.
  *  - 'late' is a first-class status (the seeder writes it, the backend
  *    accepts it); a 'present' record may also carry `late_minutes > 0`.
  *  - `check_in`/`check_out` stored as `YYYY-MM-DD HH:mm:ss` on the wire.
@@ -31,7 +33,8 @@ const ATTENDANCE_STATUSES: readonly AttendanceStatus[] = [
   'present', 'absent', 'leave', 'holiday', 'weekend', 'half_day', 'late',
 ];
 
-// Default work_schedule_id = 1 (only one schedule in mock, real API requires it)
+// Fallback when the schedule list cannot be loaded: the API requires an id and
+// every seeded install has this one, so the form stays usable offline.
 const DEFAULT_WORK_SCHEDULE_ID = 1;
 
 const attendanceFormSchema = z.object({
@@ -135,6 +138,10 @@ export function AttendanceFormDialog({ open, onOpenChange, record }: AttendanceF
   const { state: employeeState } = useEmployeeList({ page: 1, perPage: 100 });
   const employees = employeeState.data?.data ?? [];
 
+  // Work schedules are chosen by name rather than by typing an id
+  const scheduleState = useWorkScheduleOptions();
+  const schedules = scheduleState.data ?? [];
+
   const resolver = useMemo(() => zodResolver(attendanceFormSchema), []);
 
   const {
@@ -142,6 +149,8 @@ export function AttendanceFormDialog({ open, onOpenChange, record }: AttendanceF
     handleSubmit,
     reset,
     setError,
+    getValues,
+    setValue,
     formState: { errors },
   } = useForm<AttendanceFormValues>({
     resolver,
@@ -152,6 +161,23 @@ export function AttendanceFormDialog({ open, onOpenChange, record }: AttendanceF
   useEffect(() => {
     if (open) reset(buildDefaultValues(record));
   }, [open, record, reset]);
+
+  // Once the schedules arrive, point a new record at the default (or first
+  // active) schedule instead of the hard-coded fallback id. The guard means a
+  // schedule the user picked is never overwritten by a background refetch.
+  useEffect(() => {
+    if (!open || isEdit || schedules.length === 0) return;
+    if (getValues('work_schedule_id') !== String(DEFAULT_WORK_SCHEDULE_ID)) return;
+
+    const preferred =
+      schedules.find((schedule) => schedule.isDefault && schedule.isActive) ??
+      schedules.find((schedule) => schedule.isActive) ??
+      schedules[0];
+
+    if (preferred && String(preferred.id) !== String(DEFAULT_WORK_SCHEDULE_ID)) {
+      setValue('work_schedule_id', String(preferred.id));
+    }
+  }, [open, isEdit, schedules, getValues, setValue]);
 
   function handleOpenChange(next: boolean) {
     if (!next) {
@@ -242,8 +268,28 @@ export function AttendanceFormDialog({ open, onOpenChange, record }: AttendanceF
             <Field label={t('attendance.form.lateMinutes')} htmlFor="late_minutes" error={translate(t, errors.late_minutes?.message)}>
               <Input id="late_minutes" type="number" min="0" invalid={!!errors.late_minutes} {...register('late_minutes')} />
             </Field>
-            <Field label={t('attendance.form.workScheduleId')} htmlFor="work_schedule_id" required error={translate(t, errors.work_schedule_id?.message)}>
-              <Input id="work_schedule_id" type="number" min="1" invalid={!!errors.work_schedule_id} {...register('work_schedule_id')} />
+            <Field label={t('attendance.form.workSchedule')} htmlFor="work_schedule_id" required error={translate(t, errors.work_schedule_id?.message)}>
+              {schedules.length > 0 ? (
+                <Select id="work_schedule_id" invalid={!!errors.work_schedule_id} {...register('work_schedule_id')}>
+                  {schedules.map((schedule) => (
+                    <option key={schedule.id} value={schedule.id}>
+                      {schedule.name}
+                      {schedule.isActive ? '' : ` — ${t('attendance.form.workScheduleInactive')}`}
+                    </option>
+                  ))}
+                </Select>
+              ) : (
+                <>
+                  <Input
+                    id="work_schedule_id"
+                    type="number"
+                    min="1"
+                    invalid={!!errors.work_schedule_id}
+                    {...register('work_schedule_id')}
+                  />
+                  <p className="mt-1 text-[11px] text-ink-muted">{t('attendance.form.workScheduleFallback')}</p>
+                </>
+              )}
             </Field>
           </div>
 

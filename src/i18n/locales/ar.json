@@ -828,6 +828,9 @@
       "checkOut": "وقت الانصراف",
       "lateMinutes": "دقائق التأخير",
       "workScheduleId": "رقم جدول العمل",
+      "workSchedule": "جدول العمل",
+      "workScheduleInactive": "غير مفعّل",
+      "workScheduleFallback": "تعذّر تحميل قائمة الجداول — أدخل رقم الجدول بدلًا منها.",
       "notes": "ملاحظات"
     },
     "deleteConfirm": {

@@ -1,7 +1,8 @@
 import { env } from '@/config/env';
 import { appHttpClient as http } from '@/lib/api/appHttpClient';
+import type { FetchContext } from '@/lib/query';
 import { mockAttendanceApi, resetMockAttendances, setMockFailureRate } from './mockApi';
-import { attendanceEnvelopeDecoder, attendanceListDecoder } from './schema';
+import { attendanceEnvelopeDecoder, attendanceListDecoder, workScheduleListDecoder } from './schema';
 import type { AttendanceApi, AttendanceInput, AttendanceListParams, AttendanceUpdateInput } from './resource';
 
 /**
@@ -67,6 +68,41 @@ export const httpAttendanceApi: AttendanceApi = {
 function requireData<T>(data: T | undefined, endpoint: string): T {
   if (data === undefined) throw new Error(`${endpoint} returned an empty body`);
   return data;
+}
+
+/** What the attendance form's work-schedule picker needs from each row. */
+export interface WorkScheduleOption {
+  id: number;
+  name: string;
+  isActive: boolean;
+  isDefault: boolean;
+}
+
+/**
+ * Work-schedule choices for the attendance form.
+ *
+ * `attendances.work_schedule_id` is required by the API but the form used to
+ * ask for a raw numeric id with no context. The list is small (one per shift
+ * pattern) so it is fetched whole rather than paged; inactive schedules are
+ * kept so an existing record that points at one still renders its name.
+ */
+export async function fetchWorkScheduleOptions({ signal }: FetchContext): Promise<WorkScheduleOption[]> {
+  if (env.useMockApi) {
+    return [{ id: 1, name: 'Standard 9-to-5', isActive: true, isDefault: true }];
+  }
+
+  const { data } = await http('/work-schedules', {
+    query: { per_page: 100 },
+    signal,
+    schema: workScheduleListDecoder,
+  });
+
+  return requireData(data, 'GET /work-schedules').data.map((row) => ({
+    id: row.id,
+    name: row.name,
+    isActive: row.is_active ?? true,
+    isDefault: row.is_default ?? false,
+  }));
 }
 
 /**

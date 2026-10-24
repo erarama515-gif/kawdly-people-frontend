@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@/lib/query';
 import type { QueryState } from '@/lib/query';
-import { attendanceApi } from './client';
+import { attendanceApi, fetchWorkScheduleOptions } from './client';
+import type { WorkScheduleOption } from './client';
 import { attendanceKeys } from './resource';
 import type { AttendanceInput, AttendanceListParams, AttendanceUpdateInput } from './resource';
 import type { AttendanceListWire, AttendanceWire } from './schema';
@@ -25,6 +26,21 @@ export function useAttendanceList(params: AttendanceListParams): AttendanceListD
   });
 
   return { state, refetch };
+}
+
+/**
+ * Work-schedule choices for the create/edit form. Cached for five minutes:
+ * shift patterns change far less often than attendance records, and the list
+ * is needed again every time the dialog opens.
+ */
+export function useWorkScheduleOptions(): QueryState<WorkScheduleOption[]> {
+  const { state } = useQuery<WorkScheduleOption[]>({
+    queryKey: ['work-schedules', 'options'],
+    queryFn: (context) => fetchWorkScheduleOptions(context),
+    staleTime: 5 * 60_000,
+  });
+
+  return state;
 }
 
 /** True for any cached key under this module, list or single-item alike. */
