@@ -51,11 +51,11 @@ export function ForgotPasswordPage() {
   useEffect(() => {
     let cancelled = false;
 
-    http<{ available: boolean }>('/auth/dev-reset', { method: 'GET' })
+    http<{ data: { available: boolean } }>('/auth/dev-reset', { method: 'GET' })
       .then((response) => {
         if (cancelled) return;
 
-        if (response.data?.available === true) {
+        if (response.data?.data?.available === true) {
           setCapability('available');
         } else {
           setCapability('unavailable');
