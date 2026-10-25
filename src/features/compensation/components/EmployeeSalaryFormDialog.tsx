@@ -65,12 +65,15 @@ function buildDefaultValues(record: EmployeeSalaryWire | undefined): EmployeeSal
   };
 }
 
-function toEmployeeSalaryInput(values: EmployeeSalaryFormValues): EmployeeSalaryInput {
+function toEmployeeSalaryInput(
+  values: EmployeeSalaryFormValues,
+  existingComponents?: unknown[]
+): EmployeeSalaryInput {
   return {
     employee_id: Number(values.employee_id),
     salary_structure_id: Number(values.salary_structure_id),
     effective_date: values.effective_date,
-    components: [],
+    components: existingComponents ?? [],
     gross_salary: Number(values.gross_salary),
     net_salary: Number(values.net_salary),
     is_current: values.is_current === 'false' ? false : true,
@@ -143,7 +146,7 @@ export function EmployeeSalaryFormDialog({ open, onOpenChange, record }: Employe
   }
 
   async function onSubmit(values: EmployeeSalaryFormValues) {
-    const input = toEmployeeSalaryInput(values);
+    const input = toEmployeeSalaryInput(values, record?.components);
     const result = isEdit
       ? await updateMutation.mutate({ id: record.id, ...input })
       : await createMutation.mutate(input);
