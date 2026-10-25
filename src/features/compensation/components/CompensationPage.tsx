@@ -9,6 +9,8 @@ import { Button } from '@/components/ui/Button';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { Pagination } from '@/components/ui/Pagination';
 import { userFacingMessage } from '@/lib/api/errors';
+import { useLocalizeEntity } from '@/lib/localizeEntity';
+import { useHasPermission } from '@/auth/session';
 import {
   useSalaryStructureList,
   useDeleteSalaryStructure,
@@ -77,26 +79,36 @@ function StatCard({
 
 // ─── Row Actions ──────────────────────────────────────────────────────────────
 
-function RowActions({ onEdit, onDelete }: { onEdit: () => void; onDelete: () => void }) {
+function RowActions({
+  onEdit,
+  onDelete,
+}: {
+  onEdit?: (() => void) | undefined;
+  onDelete?: (() => void) | undefined;
+}) {
   const { t } = useTranslation();
   return (
     <div className="flex items-center gap-1">
-      <Button
-        variant="ghost"
-        className="h-7 w-7 px-0"
-        aria-label={t('common.edit')}
-        onClick={onEdit}
-      >
-        <Pencil className="h-3.5 w-3.5" strokeWidth={1.75} aria-hidden="true" />
-      </Button>
-      <Button
-        variant="ghost"
-        className="h-7 w-7 px-0 hover:!text-coral"
-        aria-label={t('common.delete')}
-        onClick={onDelete}
-      >
-        <Trash2 className="h-3.5 w-3.5" strokeWidth={1.75} aria-hidden="true" />
-      </Button>
+      {onEdit ? (
+        <Button
+          variant="ghost"
+          className="h-7 w-7 px-0"
+          aria-label={t('common.edit')}
+          onClick={onEdit}
+        >
+          <Pencil className="h-3.5 w-3.5" strokeWidth={1.75} aria-hidden="true" />
+        </Button>
+      ) : null}
+      {onDelete ? (
+        <Button
+          variant="ghost"
+          className="h-7 w-7 px-0 hover:!text-coral"
+          aria-label={t('common.delete')}
+          onClick={onDelete}
+        >
+          <Trash2 className="h-3.5 w-3.5" strokeWidth={1.75} aria-hidden="true" />
+        </Button>
+      ) : null}
     </div>
   );
 }
@@ -169,6 +181,7 @@ function SearchInput({
 
 function SalaryStructuresSection() {
   const { t } = useTranslation();
+  const localize = useLocalizeEntity();
 
   const [searchInput, setSearchInput] = useState('');
   const [search, setSearch] = useState('');
@@ -193,6 +206,9 @@ function SalaryStructuresSection() {
 
   const { state, refetch } = useSalaryStructureList(params);
   const deleteMutation = useDeleteSalaryStructure(params);
+  const canCreate = useHasPermission('payroll.salary_structure.create');
+  const canEdit = useHasPermission('payroll.salary_structure.edit');
+  const canDelete = useHasPermission('payroll.salary_structure.delete');
 
   const records = state.data?.data ?? [];
   const meta = state.data?.meta;
@@ -224,10 +240,12 @@ function SalaryStructuresSection() {
             onChange={setSearchInput}
             placeholder={t('compensation.structure.searchPlaceholder')}
           />
-          <Button variant="primary" onClick={openAddForm}>
-            <Plus className="h-3.5 w-3.5" strokeWidth={2} aria-hidden="true" />
-            {t('compensation.structure.add')}
-          </Button>
+          {canCreate ? (
+            <Button variant="primary" onClick={openAddForm}>
+              <Plus className="h-3.5 w-3.5" strokeWidth={2} aria-hidden="true" />
+              {t('compensation.structure.add')}
+            </Button>
+          ) : null}
         </div>
       </div>
 
@@ -281,11 +299,14 @@ function SalaryStructuresSection() {
                   'transition-colors hover:bg-surface/60',
                 )}
               >
-                <span className="truncate text-body-sm font-semibold text-ink">{rec.name}</span>
+                <span className="truncate text-body-sm font-semibold text-ink">{localize(rec.name)}</span>
                 <span className="truncate text-body-sm text-ink-muted">{rec.description ?? '—'}</span>
                 <BoolPill value={rec.is_default} />
                 <BoolPill value={rec.is_active} />
-                <RowActions onEdit={() => openEditForm(rec)} onDelete={() => setDeleteTarget(rec)} />
+                <RowActions
+                  onEdit={canEdit ? () => openEditForm(rec) : undefined}
+                  onDelete={canDelete ? () => setDeleteTarget(rec) : undefined}
+                />
               </div>
             ))}
           </Card>
@@ -295,8 +316,11 @@ function SalaryStructuresSection() {
             {records.map((rec) => (
               <Card key={rec.id} className="flex flex-col gap-3 p-4">
                 <div className="flex items-start justify-between gap-3">
-                  <p className="text-body-sm font-semibold text-ink">{rec.name}</p>
-                  <RowActions onEdit={() => openEditForm(rec)} onDelete={() => setDeleteTarget(rec)} />
+                  <p className="text-body-sm font-semibold text-ink">{localize(rec.name)}</p>
+                  <RowActions
+                    onEdit={canEdit ? () => openEditForm(rec) : undefined}
+                    onDelete={canDelete ? () => setDeleteTarget(rec) : undefined}
+                  />
                 </div>
                 {rec.description ? (
                   <p className="text-caption text-ink-muted">{rec.description}</p>
@@ -349,6 +373,7 @@ function SalaryStructuresSection() {
 
 function SalaryComponentsSection() {
   const { t } = useTranslation();
+  const localize = useLocalizeEntity();
 
   const [searchInput, setSearchInput] = useState('');
   const [search, setSearch] = useState('');
@@ -382,6 +407,9 @@ function SalaryComponentsSection() {
 
   const { state, refetch } = useSalaryComponentList(params);
   const deleteMutation = useDeleteSalaryComponent(params);
+  const canCreate = useHasPermission('payroll.salary_component.create');
+  const canEdit = useHasPermission('payroll.salary_component.edit');
+  const canDelete = useHasPermission('payroll.salary_component.delete');
 
   // Structures for filter dropdown
   const { state: structureState } = useSalaryStructureList({ page: 1, perPage: 100 });
@@ -414,10 +442,12 @@ function SalaryComponentsSection() {
       {/* Section header */}
       <div className="flex items-center justify-between gap-3">
         <h2 className="text-body font-semibold text-ink">{t('compensation.component.title')}</h2>
-        <Button variant="primary" onClick={openAddForm}>
-          <Plus className="h-3.5 w-3.5" strokeWidth={2} aria-hidden="true" />
-          {t('compensation.component.add')}
-        </Button>
+        {canCreate ? (
+          <Button variant="primary" onClick={openAddForm}>
+            <Plus className="h-3.5 w-3.5" strokeWidth={2} aria-hidden="true" />
+            {t('compensation.component.add')}
+          </Button>
+        ) : null}
       </div>
 
       {/* Toolbar: search + filters */}
@@ -437,7 +467,7 @@ function SalaryComponentsSection() {
           <option value="">{t('compensation.component.filterAllStructures')}</option>
           {structures.map((s) => (
             <option key={s.id} value={s.id}>
-              {s.name}
+              {localize(s.name)}
             </option>
           ))}
         </select>
@@ -514,8 +544,8 @@ function SalaryComponentsSection() {
                   'transition-colors hover:bg-surface/60',
                 )}
               >
-                <span className="truncate text-body-sm font-semibold text-ink">{rec.name}</span>
-                <span className="truncate text-body-sm text-ink-muted">{structureName(rec.salary_structure_id)}</span>
+                <span className="truncate text-body-sm font-semibold text-ink">{localize(rec.name)}</span>
+                <span className="truncate text-body-sm text-ink-muted">{localize(structureName(rec.salary_structure_id))}</span>
                 <TypeBadge type={rec.type} />
                 <span className="nums font-mono text-[12px] text-ink-muted">{rec.code ?? '—'}</span>
                 <span className="text-body-sm text-ink-muted">
@@ -526,7 +556,10 @@ function SalaryComponentsSection() {
                 </span>
                 <BoolPill value={rec.is_taxable} />
                 <BoolPill value={rec.is_variable} />
-                <RowActions onEdit={() => openEditForm(rec)} onDelete={() => setDeleteTarget(rec)} />
+                <RowActions
+                  onEdit={canEdit ? () => openEditForm(rec) : undefined}
+                  onDelete={canDelete ? () => setDeleteTarget(rec) : undefined}
+                />
               </div>
             ))}
           </Card>
@@ -537,14 +570,17 @@ function SalaryComponentsSection() {
               <Card key={rec.id} className="flex flex-col gap-3 p-4">
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">
-                    <p className="truncate text-body-sm font-semibold text-ink">{rec.name}</p>
+                    <p className="truncate text-body-sm font-semibold text-ink">{localize(rec.name)}</p>
                     <p className="truncate text-caption text-ink-muted">
-                      {structureName(rec.salary_structure_id)}
+                      {localize(structureName(rec.salary_structure_id))}
                     </p>
                   </div>
                   <div className="flex shrink-0 flex-col items-end gap-1.5">
                     <TypeBadge type={rec.type} />
-                    <RowActions onEdit={() => openEditForm(rec)} onDelete={() => setDeleteTarget(rec)} />
+                    <RowActions
+                      onEdit={canEdit ? () => openEditForm(rec) : undefined}
+                      onDelete={canDelete ? () => setDeleteTarget(rec) : undefined}
+                    />
                   </div>
                 </div>
 
@@ -613,6 +649,7 @@ function SalaryComponentsSection() {
 
 function EmployeeSalaryAssignmentsSection() {
   const { t } = useTranslation();
+  const localize = useLocalizeEntity();
 
   const [page, setPage] = useState(1);
   const [employeeFilter, setEmployeeFilter] = useState<number | undefined>(undefined);
@@ -640,6 +677,9 @@ function EmployeeSalaryAssignmentsSection() {
 
   const { state, refetch } = useEmployeeSalaryList(params);
   const deleteMutation = useDeleteEmployeeSalary(params);
+  const canCreate = useHasPermission('payroll.employee_salary.create');
+  const canEdit = useHasPermission('payroll.employee_salary.edit');
+  const canDelete = useHasPermission('payroll.employee_salary.delete');
 
   // Employees + structures for filter dropdowns and name resolution.
   const { state: employeeState } = useEmployeeList({ page: 1, perPage: 100 });
@@ -679,10 +719,12 @@ function EmployeeSalaryAssignmentsSection() {
       {/* Section header */}
       <div className="flex items-center justify-between gap-3">
         <h2 className="text-body font-semibold text-ink">{t('compensation.employeeSalary.title')}</h2>
-        <Button variant="primary" onClick={openAddForm}>
-          <Plus className="h-3.5 w-3.5" strokeWidth={2} aria-hidden="true" />
-          {t('compensation.employeeSalary.add')}
-        </Button>
+        {canCreate ? (
+          <Button variant="primary" onClick={openAddForm}>
+            <Plus className="h-3.5 w-3.5" strokeWidth={2} aria-hidden="true" />
+            {t('compensation.employeeSalary.add')}
+          </Button>
+        ) : null}
       </div>
 
       {/* Toolbar: filters */}
@@ -708,7 +750,7 @@ function EmployeeSalaryAssignmentsSection() {
           <option value="">{t('compensation.employeeSalary.filterAllStructures')}</option>
           {structures.map((s) => (
             <option key={s.id} value={s.id}>
-              {s.name}
+              {localize(s.name)}
             </option>
           ))}
         </select>
@@ -784,13 +826,16 @@ function EmployeeSalaryAssignmentsSection() {
               >
                 <span className="truncate text-body-sm font-semibold text-ink">{employeeName(rec)}</span>
                 <span className="truncate text-body-sm text-ink-muted">
-                  {rec.salaryStructure?.name ?? structureName(rec.salary_structure_id)}
+                  {localize(rec.salaryStructure?.name ?? structureName(rec.salary_structure_id))}
                 </span>
                 <span className="nums font-mono text-[12px] text-ink-muted">{rec.effective_date.slice(0, 10)}</span>
                 <span className="nums font-mono text-body-sm text-ink">{rec.gross_salary.toLocaleString()}</span>
                 <span className="nums font-mono text-body-sm text-ink">{rec.net_salary.toLocaleString()}</span>
                 <BoolPill value={rec.is_current} />
-                <RowActions onEdit={() => openEditForm(rec)} onDelete={() => setDeleteTarget(rec)} />
+                <RowActions
+                  onEdit={canEdit ? () => openEditForm(rec) : undefined}
+                  onDelete={canDelete ? () => setDeleteTarget(rec) : undefined}
+                />
               </div>
             ))}
           </Card>
@@ -803,12 +848,15 @@ function EmployeeSalaryAssignmentsSection() {
                   <div className="min-w-0">
                     <p className="truncate text-body-sm font-semibold text-ink">{employeeName(rec)}</p>
                     <p className="truncate text-caption text-ink-muted">
-                      {rec.salaryStructure?.name ?? structureName(rec.salary_structure_id)}
+                      {localize(rec.salaryStructure?.name ?? structureName(rec.salary_structure_id))}
                     </p>
                   </div>
                   <div className="flex shrink-0 flex-col items-end gap-1.5">
                     <BoolPill value={rec.is_current} />
-                    <RowActions onEdit={() => openEditForm(rec)} onDelete={() => setDeleteTarget(rec)} />
+                    <RowActions
+                      onEdit={canEdit ? () => openEditForm(rec) : undefined}
+                      onDelete={canDelete ? () => setDeleteTarget(rec) : undefined}
+                    />
                   </div>
                 </div>
 

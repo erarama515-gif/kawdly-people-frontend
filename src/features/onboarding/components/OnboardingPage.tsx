@@ -11,6 +11,7 @@ import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { Pagination } from '@/components/ui/Pagination';
 import { Select } from '@/components/ui/form';
 import { userFacingMessage } from '@/lib/api/errors';
+import { useHasPermission } from '@/auth/session';
 import {
   useOnboardingInstanceList,
   useDeleteOnboardingInstance,
@@ -156,10 +157,12 @@ function TaskRow({
   task,
   onToggle,
   isToggling,
+  canEditTask,
 }: {
   task: OnboardingTaskWire;
   onToggle: (task: OnboardingTaskWire) => void;
   isToggling: boolean;
+  canEditTask: boolean;
 }) {
   const { t } = useTranslation();
   const today = new Date().toISOString().slice(0, 10);
@@ -198,7 +201,7 @@ function TaskRow({
         >
           {t(`onboarding.taskStatusOptions.${task.status ?? 'pending'}`)}
         </span>
-        {task.status !== 'completed' && task.status !== 'skipped' && (
+        {canEditTask && task.status !== 'completed' && task.status !== 'skipped' && (
           <button
             type="button"
             disabled={isToggling}
@@ -243,10 +246,16 @@ function OnboardingCard({
   instance,
   onEdit,
   onDelete,
+  canEdit,
+  canDelete,
+  canEditTask,
 }: {
   instance: OnboardingInstanceWire;
   onEdit: () => void;
   onDelete: () => void;
+  canEdit?: boolean;
+  canDelete?: boolean;
+  canEditTask?: boolean;
 }) {
   const { t } = useTranslation();
   const [expanded, setExpanded] = useState(false);
@@ -292,22 +301,26 @@ function OnboardingCard({
         <div className="flex shrink-0 flex-col items-end gap-1.5">
           <InstanceStatusBadge status={instance.status} isOverdue={isOverdue} />
           <div className="flex items-center gap-1">
-            <Button
-              variant="ghost"
-              className="h-6 w-6 px-0"
-              aria-label={t('onboarding.editAction')}
-              onClick={onEdit}
-            >
-              <Pencil className="h-3.5 w-3.5" strokeWidth={1.75} aria-hidden="true" />
-            </Button>
-            <Button
-              variant="ghost"
-              className="h-6 w-6 px-0 hover:!text-coral"
-              aria-label={t('onboarding.deleteAction')}
-              onClick={onDelete}
-            >
-              <Trash2 className="h-3.5 w-3.5" strokeWidth={1.75} aria-hidden="true" />
-            </Button>
+            {canEdit ? (
+              <Button
+                variant="ghost"
+                className="h-6 w-6 px-0"
+                aria-label={t('onboarding.editAction')}
+                onClick={onEdit}
+              >
+                <Pencil className="h-3.5 w-3.5" strokeWidth={1.75} aria-hidden="true" />
+              </Button>
+            ) : null}
+            {canDelete ? (
+              <Button
+                variant="ghost"
+                className="h-6 w-6 px-0 hover:!text-coral"
+                aria-label={t('onboarding.deleteAction')}
+                onClick={onDelete}
+              >
+                <Trash2 className="h-3.5 w-3.5" strokeWidth={1.75} aria-hidden="true" />
+              </Button>
+            ) : null}
           </div>
         </div>
       </div>
@@ -373,6 +386,7 @@ function OnboardingCard({
               task={task}
               onToggle={(t) => void handleToggleTask(t)}
               isToggling={updateTaskMutation.isPending}
+              canEditTask={canEditTask ?? false}
             />
           ))}
         </div>
@@ -493,6 +507,13 @@ export function OnboardingPage() {
   }, [completedBatchState.data, currentMonth]);
 
   const deleteMutation = useDeleteOnboardingInstance(params);
+  const canCreateInstance = useHasPermission('onboarding.instance.create');
+  const canEditInstance = useHasPermission('onboarding.instance.edit');
+  const canDeleteInstance = useHasPermission('onboarding.instance.delete');
+  const canEditTask = useHasPermission('onboarding.task.edit');
+  const canCreateTemplateTask = useHasPermission('onboarding.template_task.create');
+  const canEditTemplateTask = useHasPermission('onboarding.template_task.edit');
+  const canDeleteTemplateTask = useHasPermission('onboarding.template_task.delete');
 
   const instances = state.data?.data ?? [];
   const meta = state.data?.meta;
@@ -553,10 +574,12 @@ export function OnboardingPage() {
       <PageHeader
         title={t('onboarding.title')}
         actions={
-          <Button variant="primary" onClick={openAddForm}>
-            <Plus className="h-3.5 w-3.5" strokeWidth={2} aria-hidden="true" />
-            {t('onboarding.newOnboardingPlan')}
-          </Button>
+          canCreateInstance ? (
+            <Button variant="primary" onClick={openAddForm}>
+              <Plus className="h-3.5 w-3.5" strokeWidth={2} aria-hidden="true" />
+              {t('onboarding.newOnboardingPlan')}
+            </Button>
+          ) : undefined
         }
       />
 
@@ -679,6 +702,9 @@ export function OnboardingPage() {
                 instance={instance}
                 onEdit={() => openEditForm(instance)}
                 onDelete={() => setDeleteTarget(instance)}
+                canEdit={canEditInstance}
+                canDelete={canDeleteInstance}
+                canEditTask={canEditTask}
               />
             ))}
           </div>
@@ -730,7 +756,7 @@ export function OnboardingPage() {
                 </option>
               ))}
             </Select>
-            {selectedTemplateId !== undefined ? (
+            {selectedTemplateId !== undefined && canCreateTemplateTask ? (
               <Button variant="primary" onClick={openAddTt}>
                 <Plus className="h-3.5 w-3.5" strokeWidth={2} aria-hidden="true" />
                 {t('onboarding.templateTask.add')}
@@ -813,22 +839,26 @@ export function OnboardingPage() {
                   {task.sort_order !== undefined ? task.sort_order : '—'}
                 </span>
                 <div className="flex items-center gap-1">
-                  <Button
-                    variant="ghost"
-                    className="h-7 w-7 px-0"
-                    aria-label={t('onboarding.templateTask.editAction')}
-                    onClick={() => openEditTt(task)}
-                  >
-                    <Pencil className="h-3.5 w-3.5" strokeWidth={1.75} aria-hidden="true" />
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    className="h-7 w-7 px-0 hover:!text-coral"
-                    aria-label={t('onboarding.templateTask.deleteAction')}
-                    onClick={() => setTtDeleteTarget(task)}
-                  >
-                    <Trash2 className="h-3.5 w-3.5" strokeWidth={1.75} aria-hidden="true" />
-                  </Button>
+                  {canEditTemplateTask ? (
+                    <Button
+                      variant="ghost"
+                      className="h-7 w-7 px-0"
+                      aria-label={t('onboarding.templateTask.editAction')}
+                      onClick={() => openEditTt(task)}
+                    >
+                      <Pencil className="h-3.5 w-3.5" strokeWidth={1.75} aria-hidden="true" />
+                    </Button>
+                  ) : null}
+                  {canDeleteTemplateTask ? (
+                    <Button
+                      variant="ghost"
+                      className="h-7 w-7 px-0 hover:!text-coral"
+                      aria-label={t('onboarding.templateTask.deleteAction')}
+                      onClick={() => setTtDeleteTarget(task)}
+                    >
+                      <Trash2 className="h-3.5 w-3.5" strokeWidth={1.75} aria-hidden="true" />
+                    </Button>
+                  ) : null}
                 </div>
               </div>
             ))}
@@ -871,22 +901,26 @@ export function OnboardingPage() {
                 </div>
                 <div className="flex justify-end border-t border-divider pt-2">
                   <div className="flex items-center gap-1">
-                    <Button
-                      variant="ghost"
-                      className="h-7 w-7 px-0"
-                      aria-label={t('onboarding.templateTask.editAction')}
-                      onClick={() => openEditTt(task)}
-                    >
-                      <Pencil className="h-3.5 w-3.5" strokeWidth={1.75} aria-hidden="true" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      className="h-7 w-7 px-0 hover:!text-coral"
-                      aria-label={t('onboarding.templateTask.deleteAction')}
-                      onClick={() => setTtDeleteTarget(task)}
-                    >
-                      <Trash2 className="h-3.5 w-3.5" strokeWidth={1.75} aria-hidden="true" />
-                    </Button>
+                    {canEditTemplateTask ? (
+                      <Button
+                        variant="ghost"
+                        className="h-7 w-7 px-0"
+                        aria-label={t('onboarding.templateTask.editAction')}
+                        onClick={() => openEditTt(task)}
+                      >
+                        <Pencil className="h-3.5 w-3.5" strokeWidth={1.75} aria-hidden="true" />
+                      </Button>
+                    ) : null}
+                    {canDeleteTemplateTask ? (
+                      <Button
+                        variant="ghost"
+                        className="h-7 w-7 px-0 hover:!text-coral"
+                        aria-label={t('onboarding.templateTask.deleteAction')}
+                        onClick={() => setTtDeleteTarget(task)}
+                      >
+                        <Trash2 className="h-3.5 w-3.5" strokeWidth={1.75} aria-hidden="true" />
+                      </Button>
+                    ) : null}
                   </div>
                 </div>
               </Card>

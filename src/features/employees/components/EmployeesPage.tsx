@@ -18,7 +18,9 @@ import { useSort, sortData } from '@/hooks/useSort';
 import { useBulkSelect } from '@/hooks/useBulkSelect';
 import { userFacingMessage } from '@/lib/api/errors';
 import { exportToExcel } from '@/lib/export';
+import { useLocalizeEntity } from '@/lib/localizeEntity';
 import { useDeleteEmployee, useEmployeeList } from '../api/queries';
+import { useHasPermission } from '@/auth/session';
 import type { EmployeeListParams } from '../api/resource';
 import type { EmployeeStatus } from '../api/resource';
 import type { EmployeeWire } from '../api/schema';
@@ -81,21 +83,36 @@ function StatusBadge({ status }: { status: EmployeeStatus }) {
 
 // ─── Row actions ──────────────────────────────────────────────────────────────
 
-function RowActions({ onEdit, onDelete }: { onEdit: () => void; onDelete: () => void }) {
+function RowActions({
+  onEdit,
+  onDelete,
+  canEdit = true,
+  canDelete = true,
+}: {
+  onEdit: () => void;
+  onDelete: () => void;
+  canEdit?: boolean;
+  canDelete?: boolean;
+}) {
   const { t } = useTranslation();
+  if (!canEdit && !canDelete) return null;
   return (
     <div className="flex items-center gap-1">
-      <Button variant="ghost" className="h-7 w-7 px-0" aria-label={t('employees.editAction')} onClick={onEdit}>
-        <Pencil className="h-3.5 w-3.5" strokeWidth={1.75} aria-hidden="true" />
-      </Button>
-      <Button
-        variant="ghost"
-        className="h-7 w-7 px-0 hover:!text-coral"
-        aria-label={t('employees.deleteAction')}
-        onClick={onDelete}
-      >
-        <Trash2 className="h-3.5 w-3.5" strokeWidth={1.75} aria-hidden="true" />
-      </Button>
+      {canEdit && (
+        <Button variant="ghost" className="h-7 w-7 px-0" aria-label={t('employees.editAction')} onClick={onEdit}>
+          <Pencil className="h-3.5 w-3.5" strokeWidth={1.75} aria-hidden="true" />
+        </Button>
+      )}
+      {canDelete && (
+        <Button
+          variant="ghost"
+          className="h-7 w-7 px-0 hover:!text-coral"
+          aria-label={t('employees.deleteAction')}
+          onClick={onDelete}
+        >
+          <Trash2 className="h-3.5 w-3.5" strokeWidth={1.75} aria-hidden="true" />
+        </Button>
+      )}
     </div>
   );
 }
@@ -115,6 +132,7 @@ const FILTER_OPTIONS: Array<{ key: string; value: EmployeeStatus | 'all' }> = [
 
 export function EmployeesPage() {
   const { t } = useTranslation();
+  const localize = useLocalizeEntity();
 
   const [searchInput, setSearchInput] = useState('');
   const [search, setSearch] = useState('');
@@ -154,6 +172,9 @@ export function EmployeesPage() {
   const { state: onLeaveState } = useEmployeeList({ page: 1, perPage: 1, status: 'on_leave' });
 
   const deleteMutation = useDeleteEmployee(params);
+  const canCreate = useHasPermission('employee.list.create');
+  const canEdit = useHasPermission('employee.list.edit');
+  const canDelete = useHasPermission('employee.list.delete');
 
   // Client-side sorting
   type EmpSortCol = 'employee' | 'id' | 'department' | 'position' | 'status' | 'joined';
@@ -199,8 +220,8 @@ export function EmployeesPage() {
   const exportData = employees.map((emp) => ({
     name: `${emp.first_name} ${emp.last_name}`,
     employee_number: emp.employee_number,
-    department: emp.department?.name ?? '',
-    position: emp.job_position?.title ?? '',
+    department: localize(emp.department?.name) || '',
+    position: localize(emp.job_position?.title) || '',
     status: t(`employees.status.${emp.status}`),
     joining_date: formatJoined(emp.joining_date),
   }));
@@ -244,10 +265,12 @@ export function EmployeesPage() {
         actions={
           <div className="flex items-center gap-2">
             <ExportButton data={exportData} columns={exportColumns} filename="employees" />
-            <Button variant="primary" onClick={openAddForm}>
-              <Plus className="h-3.5 w-3.5" strokeWidth={2} aria-hidden="true" />
-              {t('employees.addEmployee')}
-            </Button>
+            {canCreate && (
+              <Button variant="primary" onClick={openAddForm}>
+                <Plus className="h-3.5 w-3.5" strokeWidth={2} aria-hidden="true" />
+                {t('employees.addEmployee')}
+              </Button>
+            )}
           </div>
         }
       />
@@ -323,10 +346,12 @@ export function EmployeesPage() {
           {isUnfiltered ? (
             <>
               <span className="text-caption text-ink-faint">{t('employees.emptyNoEmployeesHint')}</span>
-              <Button variant="primary" onClick={openAddForm}>
-                <Plus className="h-3.5 w-3.5" strokeWidth={2} aria-hidden="true" />
-                {t('employees.emptyAddFirst')}
-              </Button>
+              {canCreate && (
+                <Button variant="primary" onClick={openAddForm}>
+                  <Plus className="h-3.5 w-3.5" strokeWidth={2} aria-hidden="true" />
+                  {t('employees.emptyAddFirst')}
+                </Button>
+              )}
             </>
           ) : null}
         </Card>
@@ -403,10 +428,10 @@ export function EmployeesPage() {
                 <span className="nums font-mono text-[12px] text-ink-muted">{emp.employee_number}</span>
 
                 {/* Department */}
-                <span className="truncate text-body-sm text-ink">{emp.department?.name ?? '—'}</span>
+                <span className="truncate text-body-sm text-ink">{localize(emp.department?.name) || '—'}</span>
 
                 {/* Position */}
-                <span className="truncate text-body-sm text-ink-muted">{emp.job_position?.title ?? '—'}</span>
+                <span className="truncate text-body-sm text-ink-muted">{localize(emp.job_position?.title) || '—'}</span>
 
                 {/* Status */}
                 <StatusBadge status={emp.status} />
@@ -415,7 +440,12 @@ export function EmployeesPage() {
                 <span className="nums font-mono text-[12px] text-ink-muted">{formatJoined(emp.joining_date)}</span>
 
                 {/* Actions */}
-                <RowActions onEdit={() => openEditForm(emp)} onDelete={() => setDeleteTarget(emp)} />
+                <RowActions
+                  onEdit={() => openEditForm(emp)}
+                  onDelete={() => setDeleteTarget(emp)}
+                  canEdit={canEdit}
+                  canDelete={canDelete}
+                />
               </div>
             ))}
           </Card>
@@ -458,7 +488,12 @@ export function EmployeesPage() {
                   </div>
                   <div className="flex shrink-0 flex-col items-end gap-2">
                     <StatusBadge status={emp.status} />
-                    <RowActions onEdit={() => openEditForm(emp)} onDelete={() => setDeleteTarget(emp)} />
+                    <RowActions
+                      onEdit={() => openEditForm(emp)}
+                      onDelete={() => setDeleteTarget(emp)}
+                      canEdit={canEdit}
+                      canDelete={canDelete}
+                    />
                   </div>
                 </div>
 
@@ -470,11 +505,11 @@ export function EmployeesPage() {
                   </div>
                   <div className="flex flex-col gap-0.5">
                     <span className="text-caption text-ink-faint">{t('employees.table.department')}</span>
-                    <span className="truncate text-body-sm text-ink">{emp.department?.name ?? '—'}</span>
+                    <span className="truncate text-body-sm text-ink">{localize(emp.department?.name) || '—'}</span>
                   </div>
                   <div className="flex flex-col gap-0.5">
                     <span className="text-caption text-ink-faint">{t('employees.table.position')}</span>
-                    <span className="truncate text-body-sm text-ink">{emp.job_position?.title ?? '—'}</span>
+                    <span className="truncate text-body-sm text-ink">{localize(emp.job_position?.title) || '—'}</span>
                   </div>
                   <div className="flex flex-col gap-0.5">
                     <span className="text-caption text-ink-faint">{t('employees.table.joined')}</span>
@@ -531,12 +566,16 @@ export function EmployeesPage() {
             icon: Download,
             onClick: handleBulkExport,
           },
-          {
-            label: t('common.deleteSelected'),
-            icon: Trash2,
-            onClick: () => setBulkDeleteOpen(true),
-            variant: 'danger',
-          },
+          ...(canDelete
+            ? [
+                {
+                  label: t('common.deleteSelected'),
+                  icon: Trash2,
+                  onClick: () => setBulkDeleteOpen(true),
+                  variant: 'danger' as const,
+                },
+              ]
+            : []),
         ]}
       />
     </div>

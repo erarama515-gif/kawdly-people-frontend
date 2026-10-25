@@ -89,10 +89,19 @@ interface RowActionsProps {
   onEdit: () => void;
   onDelete: () => void;
   onTerminate?: (() => void) | undefined;
+  canEdit?: boolean;
+  canDelete?: boolean;
 }
 
-function RowActions({ onEdit, onDelete, onTerminate }: RowActionsProps) {
+function RowActions({
+  onEdit,
+  onDelete,
+  onTerminate,
+  canEdit = true,
+  canDelete = true,
+}: RowActionsProps) {
   const { t } = useTranslation();
+  if (!canEdit && !canDelete && !onTerminate) return null;
   return (
     <div className="flex items-center gap-1">
       {onTerminate ? (
@@ -105,17 +114,21 @@ function RowActions({ onEdit, onDelete, onTerminate }: RowActionsProps) {
           <Ban className="h-3.5 w-3.5" strokeWidth={1.75} aria-hidden="true" />
         </Button>
       ) : null}
-      <Button variant="ghost" className="h-7 w-7 px-0" aria-label={t('contracts.editAction')} onClick={onEdit}>
-        <Pencil className="h-3.5 w-3.5" strokeWidth={1.75} aria-hidden="true" />
-      </Button>
-      <Button
-        variant="ghost"
-        className="h-7 w-7 px-0 hover:!text-coral"
-        aria-label={t('contracts.deleteAction')}
-        onClick={onDelete}
-      >
-        <Trash2 className="h-3.5 w-3.5" strokeWidth={1.75} aria-hidden="true" />
-      </Button>
+      {canEdit && (
+        <Button variant="ghost" className="h-7 w-7 px-0" aria-label={t('contracts.editAction')} onClick={onEdit}>
+          <Pencil className="h-3.5 w-3.5" strokeWidth={1.75} aria-hidden="true" />
+        </Button>
+      )}
+      {canDelete && (
+        <Button
+          variant="ghost"
+          className="h-7 w-7 px-0 hover:!text-coral"
+          aria-label={t('contracts.deleteAction')}
+          onClick={onDelete}
+        >
+          <Trash2 className="h-3.5 w-3.5" strokeWidth={1.75} aria-hidden="true" />
+        </Button>
+      )}
     </div>
   );
 }
@@ -178,6 +191,9 @@ export function ContractsPage() {
   const deleteMutation = useDeleteContract(params);
   const terminateMutation = useTerminateContract();
   const canTerminate = useHasPermission('contract.contract.edit');
+  const canCreate = useHasPermission('contract.contract.create');
+  const canEdit = useHasPermission('contract.contract.edit');
+  const canDelete = useHasPermission('contract.contract.delete');
 
   // Client-side sorting
   type ContractSortCol = 'employee' | 'type' | 'startDate' | 'endDate' | 'salary' | 'status';
@@ -265,10 +281,12 @@ export function ContractsPage() {
         actions={
           <div className="flex items-center gap-2">
             <ExportButton data={exportData} columns={exportColumns} filename="contracts" />
-            <Button variant="primary" onClick={openAddForm}>
-              <Plus className="h-3.5 w-3.5" strokeWidth={2} aria-hidden="true" />
-              {t('contracts.addContract')}
-            </Button>
+            {canCreate && (
+              <Button variant="primary" onClick={openAddForm}>
+                <Plus className="h-3.5 w-3.5" strokeWidth={2} aria-hidden="true" />
+                {t('contracts.addContract')}
+              </Button>
+            )}
           </div>
         }
       />
@@ -450,6 +468,8 @@ export function ContractsPage() {
                         ? () => setTerminateTarget(contract)
                         : undefined
                     }
+                    canEdit={canEdit}
+                    canDelete={canDelete}
                   />
                 </div>
               );
@@ -498,14 +518,16 @@ export function ContractsPage() {
                     <div className="flex shrink-0 flex-col items-end gap-2">
                       <StatusBadge status={contract.status} />
                       <RowActions
-                    onEdit={() => openEditForm(contract)}
-                    onDelete={() => setDeleteTarget(contract)}
-                    onTerminate={
-                      canTerminate && contract.status !== 'terminated'
-                        ? () => setTerminateTarget(contract)
-                        : undefined
-                    }
-                  />
+                        onEdit={() => openEditForm(contract)}
+                        onDelete={() => setDeleteTarget(contract)}
+                        onTerminate={
+                          canTerminate && contract.status !== 'terminated'
+                            ? () => setTerminateTarget(contract)
+                            : undefined
+                        }
+                        canEdit={canEdit}
+                        canDelete={canDelete}
+                      />
                     </div>
                   </div>
 
@@ -612,12 +634,16 @@ export function ContractsPage() {
             icon: Download,
             onClick: handleBulkExport,
           },
-          {
-            label: t('common.deleteSelected'),
-            icon: Trash2,
-            onClick: () => setBulkDeleteOpen(true),
-            variant: 'danger',
-          },
+          ...(canDelete
+            ? [
+                {
+                  label: t('common.deleteSelected'),
+                  icon: Trash2,
+                  onClick: () => setBulkDeleteOpen(true),
+                  variant: 'danger' as const,
+                },
+              ]
+            : []),
         ]}
       />
     </div>

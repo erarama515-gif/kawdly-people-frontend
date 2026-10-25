@@ -20,6 +20,7 @@ import {
   useDocumentTypeList,
   useDocumentTemplateCount,
 } from '../api/queries';
+import { useHasPermission } from '@/auth/session';
 import type { EmployeeDocumentListParams, EmployeeDocumentStatus } from '../api/resource';
 import type { EmployeeDocumentWire } from '../api/schema';
 import { EmployeeDocumentFormDialog } from './EmployeeDocumentFormDialog';
@@ -136,21 +137,36 @@ function StatusBadge({
 
 // ─── Row Actions ──────────────────────────────────────────────────────────────
 
-function RowActions({ onEdit, onDelete }: { onEdit: () => void; onDelete: () => void }) {
+function RowActions({
+  onEdit,
+  onDelete,
+  canEdit = true,
+  canDelete = true,
+}: {
+  onEdit: () => void;
+  onDelete: () => void;
+  canEdit?: boolean;
+  canDelete?: boolean;
+}) {
   const { t } = useTranslation();
+  if (!canEdit && !canDelete) return null;
   return (
     <div className="flex items-center gap-1">
-      <Button variant="ghost" className="h-7 w-7 px-0" aria-label={t('documents.editAction')} onClick={onEdit}>
-        <Pencil className="h-3.5 w-3.5" strokeWidth={1.75} aria-hidden="true" />
-      </Button>
-      <Button
-        variant="ghost"
-        className="h-7 w-7 px-0 hover:!text-coral"
-        aria-label={t('documents.deleteAction')}
-        onClick={onDelete}
-      >
-        <Trash2 className="h-3.5 w-3.5" strokeWidth={1.75} aria-hidden="true" />
-      </Button>
+      {canEdit && (
+        <Button variant="ghost" className="h-7 w-7 px-0" aria-label={t('documents.editAction')} onClick={onEdit}>
+          <Pencil className="h-3.5 w-3.5" strokeWidth={1.75} aria-hidden="true" />
+        </Button>
+      )}
+      {canDelete && (
+        <Button
+          variant="ghost"
+          className="h-7 w-7 px-0 hover:!text-coral"
+          aria-label={t('documents.deleteAction')}
+          onClick={onDelete}
+        >
+          <Trash2 className="h-3.5 w-3.5" strokeWidth={1.75} aria-hidden="true" />
+        </Button>
+      )}
     </div>
   );
 }
@@ -220,6 +236,10 @@ export function DocumentsPage() {
   }, [docTypeState.data]);
 
   const deleteMutation = useDeleteEmployeeDocument(params);
+  const canCreate = useHasPermission('document.employee_document.create');
+  const canEdit = useHasPermission('document.employee_document.edit');
+  const canDelete = useHasPermission('document.employee_document.delete');
+  const canGenerate = useHasPermission(['document.document_template.view', 'document.generated_document.view']);
 
   // Client-side sorting
   type DocSortCol = 'employee' | 'documentType' | 'documentNumber' | 'issueDate' | 'expiryDate' | 'status';
@@ -277,14 +297,18 @@ export function DocumentsPage() {
         actions={
           <div className="flex items-center gap-2">
             <ExportButton data={exportData} columns={exportColumns} filename="documents" />
-            <Button variant="secondary" onClick={() => setLetterOpen(true)}>
-              <FileText className="h-3.5 w-3.5" strokeWidth={1.75} aria-hidden="true" />
-              {t('documents.generateLetter')}
-            </Button>
-            <Button variant="primary" onClick={openAddForm}>
-              <Plus className="h-3.5 w-3.5" strokeWidth={2} aria-hidden="true" />
-              {t('documents.addDocument')}
-            </Button>
+            {canGenerate && (
+              <Button variant="secondary" onClick={() => setLetterOpen(true)}>
+                <FileText className="h-3.5 w-3.5" strokeWidth={1.75} aria-hidden="true" />
+                {t('documents.generateLetter')}
+              </Button>
+            )}
+            {canCreate && (
+              <Button variant="primary" onClick={openAddForm}>
+                <Plus className="h-3.5 w-3.5" strokeWidth={2} aria-hidden="true" />
+                {t('documents.addDocument')}
+              </Button>
+            )}
           </div>
         }
       />
@@ -443,7 +467,12 @@ export function DocumentsPage() {
                 <StatusBadge status={doc.status} expiryDate={doc.expiry_date} />
 
                 {/* Actions */}
-                <RowActions onEdit={() => openEditForm(doc)} onDelete={() => setDeleteTarget(doc)} />
+                <RowActions
+                  onEdit={() => openEditForm(doc)}
+                  onDelete={() => setDeleteTarget(doc)}
+                  canEdit={canEdit}
+                  canDelete={canDelete}
+                />
               </div>
             ))}
           </Card>
@@ -477,7 +506,12 @@ export function DocumentsPage() {
                   </div>
                   <div className="flex shrink-0 flex-col items-end gap-2">
                     <StatusBadge status={doc.status} expiryDate={doc.expiry_date} />
-                    <RowActions onEdit={() => openEditForm(doc)} onDelete={() => setDeleteTarget(doc)} />
+                    <RowActions
+                      onEdit={() => openEditForm(doc)}
+                      onDelete={() => setDeleteTarget(doc)}
+                      canEdit={canEdit}
+                      canDelete={canDelete}
+                    />
                   </div>
                 </div>
 

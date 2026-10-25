@@ -242,8 +242,14 @@ export function getCurrentUserId(): number {
  * can't perform — the backend still enforces the real check, this is purely
  * so a 403 isn't the first feedback a user gets.
  */
-export function useHasPermission(permission: string): boolean {
-  return useSessionStore((state) => state.permissions.includes(permission));
+export function useHasPermission(permission: string | string[]): boolean {
+  return useSessionStore((state) => {
+    if (state.role === 'super_admin') return true;
+    if (Array.isArray(permission)) {
+      return permission.some((p) => state.permissions.includes(p));
+    }
+    return state.permissions.includes(permission);
+  });
 }
 
 export function useRoleOverride(): { role: Role; setRole: (role: Role) => void; isOverridden: boolean } {

@@ -11,6 +11,7 @@ import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { Pagination } from '@/components/ui/Pagination';
 import { Select } from '@/components/ui/form';
 import { userFacingMessage } from '@/lib/api/errors';
+import { useHasPermission } from '@/auth/session';
 import {
   useCareerPathList,
   useDeleteCareerPath,
@@ -93,24 +94,28 @@ function StatCard({ label, value, accent }: { label: string; value: number | und
 // ─── Row Actions ──────────────────────────────────────────────────────────────
 
 function RowActions({ onEdit, onDelete, editLabel, deleteLabel }: {
-  onEdit: () => void;
-  onDelete: () => void;
+  onEdit?: (() => void) | undefined;
+  onDelete?: (() => void) | undefined;
   editLabel: string;
   deleteLabel: string;
 }) {
   return (
     <div className="flex items-center gap-1">
-      <Button variant="ghost" className="h-7 w-7 px-0" aria-label={editLabel} onClick={onEdit}>
-        <Pencil className="h-3.5 w-3.5" strokeWidth={1.75} aria-hidden="true" />
-      </Button>
-      <Button
-        variant="ghost"
-        className="h-7 w-7 px-0 hover:!text-coral"
-        aria-label={deleteLabel}
-        onClick={onDelete}
-      >
-        <Trash2 className="h-3.5 w-3.5" strokeWidth={1.75} aria-hidden="true" />
-      </Button>
+      {onEdit ? (
+        <Button variant="ghost" className="h-7 w-7 px-0" aria-label={editLabel} onClick={onEdit}>
+          <Pencil className="h-3.5 w-3.5" strokeWidth={1.75} aria-hidden="true" />
+        </Button>
+      ) : null}
+      {onDelete ? (
+        <Button
+          variant="ghost"
+          className="h-7 w-7 px-0 hover:!text-coral"
+          aria-label={deleteLabel}
+          onClick={onDelete}
+        >
+          <Trash2 className="h-3.5 w-3.5" strokeWidth={1.75} aria-hidden="true" />
+        </Button>
+      ) : null}
     </div>
   );
 }
@@ -127,8 +132,8 @@ function CareerPathCard({
   onDelete,
 }: {
   path: CareerPathWire;
-  onEdit: () => void;
-  onDelete: () => void;
+  onEdit?: (() => void) | undefined;
+  onDelete?: (() => void) | undefined;
 }) {
   const { t } = useTranslation();
   return (
@@ -242,6 +247,12 @@ export function CareerPage() {
   const { state: totalPlanState } = useSuccessionPlanList({ page: 1, perPage: 1 });
   const { state: readyNowState } = useSuccessionPlanList({ page: 1, perPage: 1, readiness: 'ready_now' });
   const deletePlanMutation = useDeleteSuccessionPlan(planParams);
+  const canCreatePath = useHasPermission('career.career_path.create');
+  const canEditPath = useHasPermission('career.career_path.edit');
+  const canDeletePath = useHasPermission('career.career_path.delete');
+  const canCreatePlan = useHasPermission('career.succession_plan.create');
+  const canEditPlan = useHasPermission('career.succession_plan.edit');
+  const canDeletePlan = useHasPermission('career.succession_plan.delete');
 
   const plans = planState.data?.data ?? [];
   const planMeta = planState.data?.meta;
@@ -289,10 +300,12 @@ export function CareerPage() {
       <PageHeader
         title={t('career.title')}
         actions={
-          <Button variant="primary" onClick={openAddPath}>
-            <Plus className="h-3.5 w-3.5" strokeWidth={2} aria-hidden="true" />
-            {t('career.addPath')}
-          </Button>
+          canCreatePath ? (
+            <Button variant="primary" onClick={openAddPath}>
+              <Plus className="h-3.5 w-3.5" strokeWidth={2} aria-hidden="true" />
+              {t('career.addPath')}
+            </Button>
+          ) : undefined
         }
       />
 
@@ -309,10 +322,12 @@ export function CareerPage() {
       <div className="mb-10">
         <div className="mb-4 flex items-center justify-between">
           <h2 className="text-body font-semibold text-ink">{t('career.careerPaths')}</h2>
-          <Button variant="secondary" onClick={openAddPath}>
-            <Plus className="h-3.5 w-3.5" strokeWidth={2} aria-hidden="true" />
-            {t('career.addPath')}
-          </Button>
+          {canCreatePath ? (
+            <Button variant="secondary" onClick={openAddPath}>
+              <Plus className="h-3.5 w-3.5" strokeWidth={2} aria-hidden="true" />
+              {t('career.addPath')}
+            </Button>
+          ) : null}
         </div>
 
         {/* Load failure */}
@@ -342,8 +357,8 @@ export function CareerPage() {
                 <CareerPathCard
                   key={path.id}
                   path={path}
-                  onEdit={() => openEditPath(path)}
-                  onDelete={() => setDeletePath(path)}
+                  onEdit={canEditPath ? () => openEditPath(path) : undefined}
+                  onDelete={canDeletePath ? () => setDeletePath(path) : undefined}
                 />
               ))}
             </div>
@@ -367,10 +382,12 @@ export function CareerPage() {
       <div>
         <div className="mb-4 flex items-center justify-between">
           <h2 className="text-body font-semibold text-ink">{t('career.successionPlans')}</h2>
-          <Button variant="primary" onClick={openAddPlan}>
-            <Plus className="h-3.5 w-3.5" strokeWidth={2} aria-hidden="true" />
-            {t('career.newPlan')}
-          </Button>
+          {canCreatePlan ? (
+            <Button variant="primary" onClick={openAddPlan}>
+              <Plus className="h-3.5 w-3.5" strokeWidth={2} aria-hidden="true" />
+              {t('career.newPlan')}
+            </Button>
+          ) : null}
         </div>
 
         {/* Load failure */}
@@ -476,8 +493,8 @@ export function CareerPage() {
 
                     {/* Actions */}
                     <RowActions
-                      onEdit={() => openEditPlan(plan)}
-                      onDelete={() => setDeletePlan(plan)}
+                      onEdit={canEditPlan ? () => openEditPlan(plan) : undefined}
+                      onDelete={canDeletePlan ? () => setDeletePlan(plan) : undefined}
                       editLabel={t('career.editPlanAction')}
                       deleteLabel={t('career.deletePlanAction')}
                     />
@@ -503,8 +520,8 @@ export function CareerPage() {
                       <div className="flex shrink-0 flex-col items-end gap-2">
                         <ReadinessBadge readiness={plan.readiness} />
                         <RowActions
-                          onEdit={() => openEditPlan(plan)}
-                          onDelete={() => setDeletePlan(plan)}
+                          onEdit={canEditPlan ? () => openEditPlan(plan) : undefined}
+                          onDelete={canDeletePlan ? () => setDeletePlan(plan) : undefined}
                           editLabel={t('career.editPlanAction')}
                           deleteLabel={t('career.deletePlanAction')}
                         />
@@ -595,10 +612,12 @@ export function CareerPage() {
               ))}
             </Select>
 
-            <Button variant="secondary" onClick={openAddLevel}>
-              <Plus className="h-3.5 w-3.5" strokeWidth={2} aria-hidden="true" />
-              {t('career.addLevel')}
-            </Button>
+            {canCreatePath ? (
+              <Button variant="secondary" onClick={openAddLevel}>
+                <Plus className="h-3.5 w-3.5" strokeWidth={2} aria-hidden="true" />
+                {t('career.addLevel')}
+              </Button>
+            ) : null}
           </div>
         </div>
 
@@ -672,8 +691,8 @@ export function CareerPage() {
                     <span className="truncate text-body-sm text-ink-muted">{competencies}</span>
                     <span className="truncate text-body-sm text-ink-muted">{certifications}</span>
                     <RowActions
-                      onEdit={() => openEditLevel(lvl)}
-                      onDelete={() => setDeleteLevel(lvl)}
+                      onEdit={canEditPath ? () => openEditLevel(lvl) : undefined}
+                      onDelete={canDeletePath ? () => setDeleteLevel(lvl) : undefined}
                       editLabel={t('career.editLevelAction')}
                       deleteLabel={t('career.deleteLevelAction')}
                     />
@@ -696,8 +715,8 @@ export function CareerPage() {
                         <p className="truncate text-caption text-ink-muted">{posLabel}</p>
                       </div>
                       <RowActions
-                        onEdit={() => openEditLevel(lvl)}
-                        onDelete={() => setDeleteLevel(lvl)}
+                        onEdit={canEditPath ? () => openEditLevel(lvl) : undefined}
+                        onDelete={canDeletePath ? () => setDeleteLevel(lvl) : undefined}
                         editLabel={t('career.editLevelAction')}
                         deleteLabel={t('career.deleteLevelAction')}
                       />

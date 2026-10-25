@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/Button';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { Pagination } from '@/components/ui/Pagination';
 import { userFacingMessage } from '@/lib/api/errors';
+import { useHasPermission } from '@/auth/session';
 import {
   useTrainingProgramList,
   useDeleteTrainingProgram,
@@ -132,38 +133,44 @@ function RowActions({
   onEdit,
   onDelete,
 }: {
-  onEnrollments: () => void;
-  enrollmentsLabel: string;
-  onEdit: () => void;
-  onDelete: () => void;
+  onEnrollments?: (() => void) | undefined;
+  enrollmentsLabel?: string | undefined;
+  onEdit?: (() => void) | undefined;
+  onDelete?: (() => void) | undefined;
 }) {
   const { t } = useTranslation();
   return (
     <div className="flex items-center gap-1">
-      <Button
-        variant="ghost"
-        className="h-7 w-7 px-0 hover:!text-sky-600"
-        aria-label={enrollmentsLabel}
-        onClick={onEnrollments}
-      >
-        <Users className="h-3.5 w-3.5" strokeWidth={1.75} aria-hidden="true" />
-      </Button>
-      <Button
-        variant="ghost"
-        className="h-7 w-7 px-0"
-        aria-label={t('learning.editAction')}
-        onClick={onEdit}
-      >
-        <Pencil className="h-3.5 w-3.5" strokeWidth={1.75} aria-hidden="true" />
-      </Button>
-      <Button
-        variant="ghost"
-        className="h-7 w-7 px-0 hover:!text-coral"
-        aria-label={t('learning.deleteAction')}
-        onClick={onDelete}
-      >
-        <Trash2 className="h-3.5 w-3.5" strokeWidth={1.75} aria-hidden="true" />
-      </Button>
+      {onEnrollments ? (
+        <Button
+          variant="ghost"
+          className="h-7 w-7 px-0 hover:!text-sky-600"
+          aria-label={enrollmentsLabel}
+          onClick={onEnrollments}
+        >
+          <Users className="h-3.5 w-3.5" strokeWidth={1.75} aria-hidden="true" />
+        </Button>
+      ) : null}
+      {onEdit ? (
+        <Button
+          variant="ghost"
+          className="h-7 w-7 px-0"
+          aria-label={t('learning.editAction')}
+          onClick={onEdit}
+        >
+          <Pencil className="h-3.5 w-3.5" strokeWidth={1.75} aria-hidden="true" />
+        </Button>
+      ) : null}
+      {onDelete ? (
+        <Button
+          variant="ghost"
+          className="h-7 w-7 px-0 hover:!text-coral"
+          aria-label={t('learning.deleteAction')}
+          onClick={onDelete}
+        >
+          <Trash2 className="h-3.5 w-3.5" strokeWidth={1.75} aria-hidden="true" />
+        </Button>
+      ) : null}
     </div>
   );
 }
@@ -228,6 +235,10 @@ export function TrainingProgramsTab() {
   const { state: completedState } = useTrainingProgramList({ page: 1, perPage: 1, status: 'completed' });
 
   const deleteMutation = useDeleteTrainingProgram(params);
+  const canCreate = useHasPermission('learning.training_program.create');
+  const canEdit = useHasPermission('learning.training_program.edit');
+  const canDelete = useHasPermission('learning.training_program.delete');
+  const canViewEnrollments = useHasPermission('learning.enrollment.view');
 
   const programs = state.data?.data ?? [];
   const meta = state.data?.meta;
@@ -324,10 +335,12 @@ export function TrainingProgramsTab() {
           ))}
         </div>
 
-        <Button variant="primary" className="ms-auto" onClick={openAddForm}>
-          <Plus className="h-3.5 w-3.5" strokeWidth={2} aria-hidden="true" />
-          {t('learning.addProgram')}
-        </Button>
+        {canCreate ? (
+          <Button variant="primary" className="ms-auto" onClick={openAddForm}>
+            <Plus className="h-3.5 w-3.5" strokeWidth={2} aria-hidden="true" />
+            {t('learning.addProgram')}
+          </Button>
+        ) : null}
       </div>
 
       {/* Load failure */}
@@ -436,10 +449,10 @@ export function TrainingProgramsTab() {
 
                 {/* Actions */}
                 <RowActions
-                  onEnrollments={() => setEnrollmentsTarget(program)}
+                  onEnrollments={canViewEnrollments ? () => setEnrollmentsTarget(program) : undefined}
                   enrollmentsLabel={t('learning.enrollment.actionsLabel')}
-                  onEdit={() => openEditForm(program)}
-                  onDelete={() => setDeleteTarget(program)}
+                  onEdit={canEdit ? () => openEditForm(program) : undefined}
+                  onDelete={canDelete ? () => setDeleteTarget(program) : undefined}
                 />
               </div>
             ))}
@@ -455,10 +468,10 @@ export function TrainingProgramsTab() {
                   <div className="flex shrink-0 flex-col items-end gap-2">
                     <StatusBadge status={program.status} />
                     <RowActions
-                      onEnrollments={() => setEnrollmentsTarget(program)}
+                      onEnrollments={canViewEnrollments ? () => setEnrollmentsTarget(program) : undefined}
                       enrollmentsLabel={t('learning.enrollment.actionsLabel')}
-                      onEdit={() => openEditForm(program)}
-                      onDelete={() => setDeleteTarget(program)}
+                      onEdit={canEdit ? () => openEditForm(program) : undefined}
+                      onDelete={canDelete ? () => setDeleteTarget(program) : undefined}
                     />
                   </div>
                 </div>

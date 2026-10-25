@@ -9,6 +9,7 @@ import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { Pagination } from '@/components/ui/Pagination';
 import { Select } from '@/components/ui/form';
 import { userFacingMessage } from '@/lib/api/errors';
+import { useHasPermission } from '@/auth/session';
 import { useJobPositionList } from '@/features/organization/api/queries';
 import {
   useLearningPathList,
@@ -67,37 +68,43 @@ function RowActions({
   onEdit,
   onDelete,
 }: {
-  onSteps: () => void;
-  onEdit: () => void;
-  onDelete: () => void;
+  onSteps?: (() => void) | undefined;
+  onEdit?: (() => void) | undefined;
+  onDelete?: (() => void) | undefined;
 }) {
   const { t } = useTranslation();
   return (
     <div className="flex items-center gap-1">
-      <Button
-        variant="ghost"
-        className="h-7 w-7 px-0 hover:!text-sky-600"
-        aria-label={t('learning.path.stepsAction')}
-        onClick={onSteps}
-      >
-        <ListTree className="h-3.5 w-3.5" strokeWidth={1.75} aria-hidden="true" />
-      </Button>
-      <Button
-        variant="ghost"
-        className="h-7 w-7 px-0"
-        aria-label={t('learning.path.editAction')}
-        onClick={onEdit}
-      >
-        <Pencil className="h-3.5 w-3.5" strokeWidth={1.75} aria-hidden="true" />
-      </Button>
-      <Button
-        variant="ghost"
-        className="h-7 w-7 px-0 hover:!text-coral"
-        aria-label={t('learning.path.deleteAction')}
-        onClick={onDelete}
-      >
-        <Trash2 className="h-3.5 w-3.5" strokeWidth={1.75} aria-hidden="true" />
-      </Button>
+      {onSteps ? (
+        <Button
+          variant="ghost"
+          className="h-7 w-7 px-0 hover:!text-sky-600"
+          aria-label={t('learning.path.stepsAction')}
+          onClick={onSteps}
+        >
+          <ListTree className="h-3.5 w-3.5" strokeWidth={1.75} aria-hidden="true" />
+        </Button>
+      ) : null}
+      {onEdit ? (
+        <Button
+          variant="ghost"
+          className="h-7 w-7 px-0"
+          aria-label={t('learning.path.editAction')}
+          onClick={onEdit}
+        >
+          <Pencil className="h-3.5 w-3.5" strokeWidth={1.75} aria-hidden="true" />
+        </Button>
+      ) : null}
+      {onDelete ? (
+        <Button
+          variant="ghost"
+          className="h-7 w-7 px-0 hover:!text-coral"
+          aria-label={t('learning.path.deleteAction')}
+          onClick={onDelete}
+        >
+          <Trash2 className="h-3.5 w-3.5" strokeWidth={1.75} aria-hidden="true" />
+        </Button>
+      ) : null}
     </div>
   );
 }
@@ -142,6 +149,10 @@ export function LearningPathsTab() {
   );
 
   const deleteMutation = useDeleteLearningPath(params);
+  const canCreate = useHasPermission('learning.learning_path.create');
+  const canEdit = useHasPermission('learning.learning_path.edit');
+  const canDelete = useHasPermission('learning.learning_path.delete');
+  const canViewSteps = useHasPermission('learning.learning_path.view');
 
   const paths = state.data?.data ?? [];
   const meta = state.data?.meta;
@@ -193,10 +204,12 @@ export function LearningPathsTab() {
           ))}
         </Select>
 
-        <Button variant="primary" className="ms-auto" onClick={openAddForm}>
-          <Plus className="h-3.5 w-3.5" strokeWidth={2} aria-hidden="true" />
-          {t('learning.path.add')}
-        </Button>
+        {canCreate ? (
+          <Button variant="primary" className="ms-auto" onClick={openAddForm}>
+            <Plus className="h-3.5 w-3.5" strokeWidth={2} aria-hidden="true" />
+            {t('learning.path.add')}
+          </Button>
+        ) : null}
       </div>
 
       {/* Load failure */}
@@ -257,9 +270,9 @@ export function LearningPathsTab() {
                 </span>
                 <span className="truncate text-body-sm text-ink-muted">{path.description ?? '—'}</span>
                 <RowActions
-                  onSteps={() => setStepsTarget(path)}
-                  onEdit={() => openEditForm(path)}
-                  onDelete={() => setDeleteTarget(path)}
+                  onSteps={canViewSteps ? () => setStepsTarget(path) : undefined}
+                  onEdit={canEdit ? () => openEditForm(path) : undefined}
+                  onDelete={canDelete ? () => setDeleteTarget(path) : undefined}
                 />
               </div>
             ))}
@@ -273,9 +286,9 @@ export function LearningPathsTab() {
                   <p className="truncate text-body-sm font-semibold text-ink">{path.name}</p>
                   <div className="flex shrink-0 flex-col items-end gap-2">
                     <RowActions
-                      onSteps={() => setStepsTarget(path)}
-                      onEdit={() => openEditForm(path)}
-                      onDelete={() => setDeleteTarget(path)}
+                      onSteps={canViewSteps ? () => setStepsTarget(path) : undefined}
+                      onEdit={canEdit ? () => openEditForm(path) : undefined}
+                      onDelete={canDelete ? () => setDeleteTarget(path) : undefined}
                     />
                   </div>
                 </div>

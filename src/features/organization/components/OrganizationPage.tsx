@@ -54,6 +54,7 @@ import { JobLevelFormDialog } from './JobLevelFormDialog';
 import { CostCenterFormDialog } from './CostCenterFormDialog';
 import { toast } from '@/components/ui/Toast';
 import { OrgChart } from './OrgChart';
+import { useHasPermission } from '@/auth/session';
 
 /**
  * Organization module live-data page.
@@ -110,25 +111,39 @@ function HQBadge() {
 
 // ─── Row Actions ──────────────────────────────────────────────────────────────
 
-function RowActions({ onEdit, onDelete, editLabel, deleteLabel }: {
+function RowActions({
+  onEdit,
+  onDelete,
+  editLabel,
+  deleteLabel,
+  canEdit = true,
+  canDelete = true,
+}: {
   onEdit: () => void;
   onDelete: () => void;
   editLabel: string;
   deleteLabel: string;
+  canEdit?: boolean;
+  canDelete?: boolean;
 }) {
+  if (!canEdit && !canDelete) return null;
   return (
     <div className="flex items-center gap-1">
-      <Button variant="ghost" className="h-7 w-7 px-0" aria-label={editLabel} onClick={onEdit}>
-        <Pencil className="h-3.5 w-3.5" strokeWidth={1.75} aria-hidden="true" />
-      </Button>
-      <Button
-        variant="ghost"
-        className="h-7 w-7 px-0 hover:!text-coral"
-        aria-label={deleteLabel}
-        onClick={onDelete}
-      >
-        <Trash2 className="h-3.5 w-3.5" strokeWidth={1.75} aria-hidden="true" />
-      </Button>
+      {canEdit && (
+        <Button variant="ghost" className="h-7 w-7 px-0" aria-label={editLabel} onClick={onEdit}>
+          <Pencil className="h-3.5 w-3.5" strokeWidth={1.75} aria-hidden="true" />
+        </Button>
+      )}
+      {canDelete && (
+        <Button
+          variant="ghost"
+          className="h-7 w-7 px-0 hover:!text-coral"
+          aria-label={deleteLabel}
+          onClick={onDelete}
+        >
+          <Trash2 className="h-3.5 w-3.5" strokeWidth={1.75} aria-hidden="true" />
+        </Button>
+      )}
     </div>
   );
 }
@@ -166,18 +181,21 @@ function SearchInput({ value, onChange, placeholder }: {
 
 // ─── Section Header ───────────────────────────────────────────────────────────
 
-function SectionHeader({ title, addLabel, onAdd }: {
+function SectionHeader({ title, addLabel, onAdd, canAdd = true }: {
   title: string;
   addLabel: string;
   onAdd: () => void;
+  canAdd?: boolean;
 }) {
   return (
     <div className="mb-4 flex items-center justify-between gap-3">
       <h2 className="text-body font-semibold text-ink">{title}</h2>
-      <Button variant="primary" onClick={onAdd}>
-        <Plus className="h-3.5 w-3.5" strokeWidth={2} aria-hidden="true" />
-        {addLabel}
-      </Button>
+      {canAdd && (
+        <Button variant="primary" onClick={onAdd}>
+          <Plus className="h-3.5 w-3.5" strokeWidth={2} aria-hidden="true" />
+          {addLabel}
+        </Button>
+      )}
     </div>
   );
 }
@@ -519,6 +537,35 @@ export function OrganizationPage() {
     }
   }
 
+  // ── Permissions ─────────────────────────────────────────────────────────────
+  const canCreateDept    = useHasPermission('organization.department.create');
+  const canEditDept      = useHasPermission('organization.department.edit');
+  const canDeleteDept    = useHasPermission('organization.department.delete');
+
+  const canCreateCompany = useHasPermission('organization.company.create');
+  const canEditCompany   = useHasPermission('organization.company.edit');
+  const canDeleteCompany = useHasPermission('organization.company.delete');
+
+  const canCreateBranch  = useHasPermission('organization.branch.create');
+  const canEditBranch    = useHasPermission('organization.branch.edit');
+  const canDeleteBranch  = useHasPermission('organization.branch.delete');
+
+  const canCreateJp      = useHasPermission('organization.job_position.create');
+  const canEditJp        = useHasPermission('organization.job_position.edit');
+  const canDeleteJp      = useHasPermission('organization.job_position.delete');
+
+  const canCreateJg      = useHasPermission('organization.job_grade.create');
+  const canEditJg        = useHasPermission('organization.job_grade.edit');
+  const canDeleteJg      = useHasPermission('organization.job_grade.delete');
+
+  const canCreateJl      = useHasPermission('organization.job_level.create');
+  const canEditJl        = useHasPermission('organization.job_level.edit');
+  const canDeleteJl      = useHasPermission('organization.job_level.delete');
+
+  const canCreateCc      = useHasPermission('organization.cost_center.create');
+  const canEditCc        = useHasPermission('organization.cost_center.edit');
+  const canDeleteCc      = useHasPermission('organization.cost_center.delete');
+
   // ─── Render ───────────────────────────────────────────────────────────────────
 
   return (
@@ -526,10 +573,12 @@ export function OrganizationPage() {
       <PageHeader
         title={t('organization.title')}
         actions={
-          <Button variant="primary" onClick={() => { setEditDept(undefined); setDeptFormOpen(true); }}>
-            <Plus className="h-3.5 w-3.5" strokeWidth={2} aria-hidden="true" />
-            {t('organization.addDepartment')}
-          </Button>
+          canCreateDept ? (
+            <Button variant="primary" onClick={() => { setEditDept(undefined); setDeptFormOpen(true); }}>
+              <Plus className="h-3.5 w-3.5" strokeWidth={2} aria-hidden="true" />
+              {t('organization.addDepartment')}
+            </Button>
+          ) : undefined
         }
       />
 
@@ -568,6 +617,7 @@ export function OrganizationPage() {
         title={t('organization.companiesSectionTitle')}
         addLabel={t('organization.addCompany')}
         onAdd={() => { setEditCompany(undefined); setCompanyFormOpen(true); }}
+        canAdd={canCreateCompany}
       />
 
       <div className="mb-4 flex flex-wrap items-center gap-3">
@@ -636,6 +686,8 @@ export function OrganizationPage() {
                   onDelete={() => setDeleteCompany(company)}
                   editLabel={t('organization.company.editAction')}
                   deleteLabel={t('organization.company.deleteAction')}
+                  canEdit={canEditCompany}
+                  canDelete={canDeleteCompany}
                 />
               </div>
             ))}
@@ -659,6 +711,8 @@ export function OrganizationPage() {
                       onDelete={() => setDeleteCompany(company)}
                       editLabel={t('organization.company.editAction')}
                       deleteLabel={t('organization.company.deleteAction')}
+                      canEdit={canEditCompany}
+                      canDelete={canDeleteCompany}
                     />
                   </div>
                 </div>
@@ -691,6 +745,7 @@ export function OrganizationPage() {
         title={t('organization.branchesSectionTitle')}
         addLabel={t('organization.addBranch')}
         onAdd={() => { setEditBranch(undefined); setBranchFormOpen(true); }}
+        canAdd={canCreateBranch}
       />
 
       <div className="mb-4 flex flex-wrap items-center gap-3">
@@ -767,6 +822,8 @@ export function OrganizationPage() {
                   onDelete={() => setDeleteBranch(branch)}
                   editLabel={t('organization.branch.editAction')}
                   deleteLabel={t('organization.branch.deleteAction')}
+                  canEdit={canEditBranch}
+                  canDelete={canDeleteBranch}
                 />
               </div>
             ))}
@@ -791,6 +848,8 @@ export function OrganizationPage() {
                       onDelete={() => setDeleteBranch(branch)}
                       editLabel={t('organization.branch.editAction')}
                       deleteLabel={t('organization.branch.deleteAction')}
+                      canEdit={canEditBranch}
+                      canDelete={canDeleteBranch}
                     />
                   </div>
                 </div>
@@ -823,6 +882,7 @@ export function OrganizationPage() {
         title={t('organization.departmentsSectionTitle')}
         addLabel={t('organization.addDepartment')}
         onAdd={() => { setEditDept(undefined); setDeptFormOpen(true); }}
+        canAdd={canCreateDept}
       />
 
       <div className="mb-4 flex flex-wrap items-center gap-3">
@@ -912,6 +972,8 @@ export function OrganizationPage() {
                   onDelete={() => setDeleteDept(dept)}
                   editLabel={t('organization.department.editAction')}
                   deleteLabel={t('organization.department.deleteAction')}
+                  canEdit={canEditDept}
+                  canDelete={canDeleteDept}
                 />
               </div>
             ))}
@@ -933,6 +995,8 @@ export function OrganizationPage() {
                       onDelete={() => setDeleteDept(dept)}
                       editLabel={t('organization.department.editAction')}
                       deleteLabel={t('organization.department.deleteAction')}
+                      canEdit={canEditDept}
+                      canDelete={canDeleteDept}
                     />
                   </div>
                 </div>
@@ -981,6 +1045,7 @@ export function OrganizationPage() {
         title={t('organization.jobPositionsSectionTitle')}
         addLabel={t('organization.addJobPosition')}
         onAdd={() => { setEditJp(undefined); setJpFormOpen(true); }}
+        canAdd={canCreateJp}
       />
 
       <div className="mb-4 flex flex-wrap items-center gap-3">
@@ -1073,6 +1138,8 @@ export function OrganizationPage() {
                   onDelete={() => setDeleteJp(jp)}
                   editLabel={t('organization.jobPosition.editAction')}
                   deleteLabel={t('organization.jobPosition.deleteAction')}
+                  canEdit={canEditJp}
+                  canDelete={canDeleteJp}
                 />
               </div>
             ))}
@@ -1094,6 +1161,8 @@ export function OrganizationPage() {
                       onDelete={() => setDeleteJp(jp)}
                       editLabel={t('organization.jobPosition.editAction')}
                       deleteLabel={t('organization.jobPosition.deleteAction')}
+                      canEdit={canEditJp}
+                      canDelete={canDeleteJp}
                     />
                   </div>
                 </div>
@@ -1140,6 +1209,7 @@ export function OrganizationPage() {
         title={t('organization.jobGradesSectionTitle')}
         addLabel={t('organization.addJobGrade')}
         onAdd={() => { setEditJg(undefined); setJgFormOpen(true); }}
+        canAdd={canCreateJg}
       />
 
       <div className="mb-4 flex flex-wrap items-center gap-3">
@@ -1200,6 +1270,8 @@ export function OrganizationPage() {
                   onDelete={() => setDeleteJg(jg)}
                   editLabel={t('organization.jobGrade.editAction')}
                   deleteLabel={t('organization.jobGrade.deleteAction')}
+                  canEdit={canEditJg}
+                  canDelete={canDeleteJg}
                 />
               </div>
             ))}
@@ -1219,6 +1291,8 @@ export function OrganizationPage() {
                     onDelete={() => setDeleteJg(jg)}
                     editLabel={t('organization.jobGrade.editAction')}
                     deleteLabel={t('organization.jobGrade.deleteAction')}
+                    canEdit={canEditJg}
+                    canDelete={canDeleteJg}
                   />
                 </div>
                 <div className="border-t border-divider pt-3 text-body-sm text-ink-muted">
@@ -1249,6 +1323,7 @@ export function OrganizationPage() {
         title={t('organization.jobLevelsSectionTitle')}
         addLabel={t('organization.addJobLevel')}
         onAdd={() => { setEditJl(undefined); setJlFormOpen(true); }}
+        canAdd={canCreateJl}
       />
 
       <div className="mb-4 flex flex-wrap items-center gap-3">
@@ -1305,6 +1380,8 @@ export function OrganizationPage() {
                   onDelete={() => setDeleteJl(jl)}
                   editLabel={t('organization.jobLevel.editAction')}
                   deleteLabel={t('organization.jobLevel.deleteAction')}
+                  canEdit={canEditJl}
+                  canDelete={canDeleteJl}
                 />
               </div>
             ))}
@@ -1323,6 +1400,8 @@ export function OrganizationPage() {
                     onDelete={() => setDeleteJl(jl)}
                     editLabel={t('organization.jobLevel.editAction')}
                     deleteLabel={t('organization.jobLevel.deleteAction')}
+                    canEdit={canEditJl}
+                    canDelete={canDeleteJl}
                   />
                 </div>
               </Card>
@@ -1350,6 +1429,7 @@ export function OrganizationPage() {
         title={t('organization.costCentersSectionTitle')}
         addLabel={t('organization.addCostCenter')}
         onAdd={() => { setEditCc(undefined); setCcFormOpen(true); }}
+        canAdd={canCreateCc}
       />
 
       <div className="mb-4 flex flex-wrap items-center gap-3">
@@ -1407,6 +1487,8 @@ export function OrganizationPage() {
                   onDelete={() => setDeleteCc(cc)}
                   editLabel={t('organization.costCenter.editAction')}
                   deleteLabel={t('organization.costCenter.deleteAction')}
+                  canEdit={canEditCc}
+                  canDelete={canDeleteCc}
                 />
               </div>
             ))}
@@ -1428,6 +1510,8 @@ export function OrganizationPage() {
                       onDelete={() => setDeleteCc(cc)}
                       editLabel={t('organization.costCenter.editAction')}
                       deleteLabel={t('organization.costCenter.deleteAction')}
+                      canEdit={canEditCc}
+                      canDelete={canDeleteCc}
                     />
                   </div>
                 </div>

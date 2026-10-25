@@ -15,6 +15,7 @@ import { SortableHeader } from '@/components/ui/SortableHeader';
 import { useSort, sortData } from '@/hooks/useSort';
 import { userFacingMessage } from '@/lib/api/errors';
 import { useDeleteAttendance, useAttendanceList } from '../api/queries';
+import { useHasPermission } from '@/auth/session';
 import type { AttendanceListParams, AttendanceStatus } from '../api/resource';
 import type { AttendanceWire } from '../api/schema';
 import { AttendanceFormDialog } from './AttendanceFormDialog';
@@ -108,21 +109,36 @@ function StatusBadge({ status, lateMinutes }: { status: AttendanceStatus; lateMi
 
 // ─── Row Actions ──────────────────────────────────────────────────────────────
 
-function RowActions({ onEdit, onDelete }: { onEdit: () => void; onDelete: () => void }) {
+function RowActions({
+  onEdit,
+  onDelete,
+  canEdit = true,
+  canDelete = true,
+}: {
+  onEdit: () => void;
+  onDelete: () => void;
+  canEdit?: boolean;
+  canDelete?: boolean;
+}) {
   const { t } = useTranslation();
+  if (!canEdit && !canDelete) return null;
   return (
     <div className="flex items-center gap-1">
-      <Button variant="ghost" className="h-7 w-7 px-0" aria-label={t('attendance.editAction')} onClick={onEdit}>
-        <Pencil className="h-3.5 w-3.5" strokeWidth={1.75} aria-hidden="true" />
-      </Button>
-      <Button
-        variant="ghost"
-        className="h-7 w-7 px-0 hover:!text-coral"
-        aria-label={t('attendance.deleteAction')}
-        onClick={onDelete}
-      >
-        <Trash2 className="h-3.5 w-3.5" strokeWidth={1.75} aria-hidden="true" />
-      </Button>
+      {canEdit && (
+        <Button variant="ghost" className="h-7 w-7 px-0" aria-label={t('attendance.editAction')} onClick={onEdit}>
+          <Pencil className="h-3.5 w-3.5" strokeWidth={1.75} aria-hidden="true" />
+        </Button>
+      )}
+      {canDelete && (
+        <Button
+          variant="ghost"
+          className="h-7 w-7 px-0 hover:!text-coral"
+          aria-label={t('attendance.deleteAction')}
+          onClick={onDelete}
+        >
+          <Trash2 className="h-3.5 w-3.5" strokeWidth={1.75} aria-hidden="true" />
+        </Button>
+      )}
     </div>
   );
 }
@@ -185,6 +201,9 @@ export function AttendancePage() {
   const { state: absentState } = useAttendanceList({ page: 1, perPage: 1, status: 'absent' });
 
   const deleteMutation = useDeleteAttendance(params);
+  const canCreate = useHasPermission('attendance.record.create');
+  const canEdit = useHasPermission('attendance.record.edit');
+  const canDelete = useHasPermission('attendance.record.delete');
 
   // Client-side sorting
   type AttendanceSortCol = 'employee' | 'date' | 'checkIn' | 'checkOut' | 'hours' | 'late' | 'status';
@@ -246,10 +265,12 @@ export function AttendancePage() {
         actions={
           <div className="flex items-center gap-2">
             <ExportButton data={exportData} columns={exportColumns} filename="attendance" />
-            <Button variant="primary" onClick={openAddForm}>
-              <Plus className="h-3.5 w-3.5" strokeWidth={2} aria-hidden="true" />
-              {t('attendance.addRecord')}
-            </Button>
+            {canCreate && (
+              <Button variant="primary" onClick={openAddForm}>
+                <Plus className="h-3.5 w-3.5" strokeWidth={2} aria-hidden="true" />
+                {t('attendance.addRecord')}
+              </Button>
+            )}
           </div>
         }
       />
@@ -402,7 +423,12 @@ export function AttendancePage() {
                 <StatusBadge status={rec.status} lateMinutes={rec.late_minutes} />
 
                 {/* Actions */}
-                <RowActions onEdit={() => openEditForm(rec)} onDelete={() => setDeleteTarget(rec)} />
+                <RowActions
+                  onEdit={() => openEditForm(rec)}
+                  onDelete={() => setDeleteTarget(rec)}
+                  canEdit={canEdit}
+                  canDelete={canDelete}
+                />
               </div>
             ))}
           </Card>
@@ -434,7 +460,12 @@ export function AttendancePage() {
                   </div>
                   <div className="flex shrink-0 flex-col items-end gap-2">
                     <StatusBadge status={rec.status} lateMinutes={rec.late_minutes} />
-                    <RowActions onEdit={() => openEditForm(rec)} onDelete={() => setDeleteTarget(rec)} />
+                    <RowActions
+                      onEdit={() => openEditForm(rec)}
+                      onDelete={() => setDeleteTarget(rec)}
+                      canEdit={canEdit}
+                      canDelete={canDelete}
+                    />
                   </div>
                 </div>
 

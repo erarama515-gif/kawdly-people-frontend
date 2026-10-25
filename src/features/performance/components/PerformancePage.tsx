@@ -11,6 +11,7 @@ import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { Pagination } from '@/components/ui/Pagination';
 import { Select } from '@/components/ui/form';
 import { userFacingMessage } from '@/lib/api/errors';
+import { useHasPermission } from '@/auth/session';
 import {
   usePerformanceCycleList,
   useDeletePerformanceCycle,
@@ -135,24 +136,28 @@ function RowActions({
   editLabel,
   deleteLabel,
 }: {
-  onEdit: () => void;
-  onDelete: () => void;
+  onEdit?: (() => void) | undefined;
+  onDelete?: (() => void) | undefined;
   editLabel: string;
   deleteLabel: string;
 }) {
   return (
     <div className="flex items-center gap-1">
-      <Button variant="ghost" className="h-7 w-7 px-0" aria-label={editLabel} onClick={onEdit}>
-        <Pencil className="h-3.5 w-3.5" strokeWidth={1.75} aria-hidden="true" />
-      </Button>
-      <Button
-        variant="ghost"
-        className="h-7 w-7 px-0 hover:!text-coral"
-        aria-label={deleteLabel}
-        onClick={onDelete}
-      >
-        <Trash2 className="h-3.5 w-3.5" strokeWidth={1.75} aria-hidden="true" />
-      </Button>
+      {onEdit ? (
+        <Button variant="ghost" className="h-7 w-7 px-0" aria-label={editLabel} onClick={onEdit}>
+          <Pencil className="h-3.5 w-3.5" strokeWidth={1.75} aria-hidden="true" />
+        </Button>
+      ) : null}
+      {onDelete ? (
+        <Button
+          variant="ghost"
+          className="h-7 w-7 px-0 hover:!text-coral"
+          aria-label={deleteLabel}
+          onClick={onDelete}
+        >
+          <Trash2 className="h-3.5 w-3.5" strokeWidth={1.75} aria-hidden="true" />
+        </Button>
+      ) : null}
     </div>
   );
 }
@@ -163,8 +168,8 @@ interface CycleBannerProps {
   cycle: PerformanceCycleWire;
   /** Ratio of (submitted + acknowledged) reviews to total reviews for this cycle. */
   completionPercent: number | undefined;
-  onEdit: () => void;
-  onDelete: () => void;
+  onEdit?: (() => void) | undefined;
+  onDelete?: (() => void) | undefined;
 }
 
 function CycleBanner({ cycle, completionPercent, onEdit, onDelete }: CycleBannerProps) {
@@ -235,8 +240,8 @@ function CycleRow({
   cycle: PerformanceCycleWire;
   isSelected: boolean;
   onSelect: () => void;
-  onEdit: () => void;
-  onDelete: () => void;
+  onEdit?: (() => void) | undefined;
+  onDelete?: (() => void) | undefined;
 }) {
   const { t } = useTranslation();
   return (
@@ -293,6 +298,12 @@ export function PerformancePage() {
   const { state: totalCyclesState } = usePerformanceCycleList({ page: 1, perPage: 1 });
   const { state: activeCyclesState } = usePerformanceCycleList({ page: 1, perPage: 1, status: 'active' });
   const deleteCycleMutation = useDeletePerformanceCycle(cycleParams);
+  const canCreateCycle = useHasPermission('performance.performance_cycle.create');
+  const canEditCycle = useHasPermission('performance.performance_cycle.edit');
+  const canDeleteCycle = useHasPermission('performance.performance_cycle.delete');
+  const canCreateReview = useHasPermission('performance.review.create');
+  const canEditReview = useHasPermission('performance.review.edit');
+  const canDeleteReview = useHasPermission('performance.review.delete');
 
   const cycles = cycleState.data?.data ?? [];
   const cycleMeta = cycleState.data?.meta;
@@ -420,10 +431,12 @@ export function PerformancePage() {
       <PageHeader
         title={t('performance.title')}
         actions={
-          <Button variant="primary" onClick={openAddCycle}>
-            <Plus className="h-3.5 w-3.5" strokeWidth={2} aria-hidden="true" />
-            {t('performance.addCycle')}
-          </Button>
+          canCreateCycle ? (
+            <Button variant="primary" onClick={openAddCycle}>
+              <Plus className="h-3.5 w-3.5" strokeWidth={2} aria-hidden="true" />
+              {t('performance.addCycle')}
+            </Button>
+          ) : undefined
         }
       />
 
@@ -452,8 +465,8 @@ export function PerformancePage() {
         <CycleBanner
           cycle={selectedCycle}
           completionPercent={completionPercent}
-          onEdit={() => openEditCycle(selectedCycle)}
-          onDelete={() => setDeleteCycle(selectedCycle)}
+          onEdit={canEditCycle ? () => openEditCycle(selectedCycle) : undefined}
+          onDelete={canDeleteCycle ? () => setDeleteCycle(selectedCycle) : undefined}
         />
       ) : cycleState.status === 'success' && cycles.length === 0 ? (
         <Card className="mb-6 flex items-center justify-center px-5 py-10">
@@ -489,8 +502,8 @@ export function PerformancePage() {
                     setSelectedCycleId(cycle.id);
                     setReviewPage(1);
                   }}
-                  onEdit={() => openEditCycle(cycle)}
-                  onDelete={() => setDeleteCycle(cycle)}
+                  onEdit={canEditCycle ? () => openEditCycle(cycle) : undefined}
+                  onDelete={canDeleteCycle ? () => setDeleteCycle(cycle) : undefined}
                 />
               ))}
               {cycleMeta && cycleMeta.last_page > 1 && (
@@ -548,10 +561,12 @@ export function PerformancePage() {
             ))}
           </Select>
 
-          <Button variant="primary" onClick={openAddReview} disabled={!effectiveSelectedCycleId}>
-            <Plus className="h-3.5 w-3.5" strokeWidth={2} aria-hidden="true" />
-            {t('performance.addReview')}
-          </Button>
+          {canCreateReview ? (
+            <Button variant="primary" onClick={openAddReview} disabled={!effectiveSelectedCycleId}>
+              <Plus className="h-3.5 w-3.5" strokeWidth={2} aria-hidden="true" />
+              {t('performance.addReview')}
+            </Button>
+          ) : null}
         </div>
       </div>
 
@@ -662,8 +677,8 @@ export function PerformancePage() {
 
                     {/* Actions */}
                     <RowActions
-                      onEdit={() => openEditReview(review)}
-                      onDelete={() => setDeleteReview(review)}
+                      onEdit={canEditReview ? () => openEditReview(review) : undefined}
+                      onDelete={canDeleteReview ? () => setDeleteReview(review) : undefined}
                       editLabel={t('performance.editReviewAction')}
                       deleteLabel={t('performance.deleteReviewAction')}
                     />
@@ -750,8 +765,8 @@ export function PerformancePage() {
 
                     <div className="flex justify-end border-t border-divider pt-2">
                       <RowActions
-                        onEdit={() => openEditReview(review)}
-                        onDelete={() => setDeleteReview(review)}
+                        onEdit={canEditReview ? () => openEditReview(review) : undefined}
+                        onDelete={canDeleteReview ? () => setDeleteReview(review) : undefined}
                         editLabel={t('performance.editReviewAction')}
                         deleteLabel={t('performance.deleteReviewAction')}
                       />

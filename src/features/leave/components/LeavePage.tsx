@@ -14,12 +14,14 @@ import { Pagination } from '@/components/ui/Pagination';
 import { SortableHeader } from '@/components/ui/SortableHeader';
 import { useSort, sortData } from '@/hooks/useSort';
 import { userFacingMessage } from '@/lib/api/errors';
+import { useLocalizeEntity } from '@/lib/localizeEntity';
 import {
   useLeaveRequestList,
   useDeleteLeaveRequest,
   useApproveLeaveRequest,
   useRejectLeaveRequest,
 } from '../api/queries';
+import { useHasPermission } from '@/auth/session';
 import type { LeaveRequestListParams, LeaveRequestStatus } from '../api/resource';
 import type { LeaveRequestWire } from '../api/schema';
 import { LeaveRequestFormDialog } from './LeaveRequestFormDialog';
@@ -82,15 +84,29 @@ interface RowActionsProps {
   onReject: () => void;
   approveLoading: boolean;
   rejectLoading: boolean;
+  canEdit?: boolean;
+  canDelete?: boolean;
+  canApprove?: boolean;
 }
 
-function RowActions({ request, onEdit, onDelete, onApprove, onReject, approveLoading, rejectLoading }: RowActionsProps) {
+function RowActions({
+  request,
+  onEdit,
+  onDelete,
+  onApprove,
+  onReject,
+  approveLoading,
+  rejectLoading,
+  canEdit = true,
+  canDelete = true,
+  canApprove = true,
+}: RowActionsProps) {
   const { t } = useTranslation();
   const isPending = request.status === 'pending';
 
   return (
     <div className="flex items-center gap-1">
-      {isPending && (
+      {isPending && canApprove && (
         <>
           <Button
             variant="ghost"
@@ -112,22 +128,26 @@ function RowActions({ request, onEdit, onDelete, onApprove, onReject, approveLoa
           </Button>
         </>
       )}
-      <Button
-        variant="ghost"
-        className="h-7 w-7 px-0"
-        aria-label={t('leave.editAction')}
-        onClick={onEdit}
-      >
-        <Pencil className="h-3.5 w-3.5" strokeWidth={1.75} aria-hidden="true" />
-      </Button>
-      <Button
-        variant="ghost"
-        className="h-7 w-7 px-0 hover:!text-coral"
-        aria-label={t('leave.deleteAction')}
-        onClick={onDelete}
-      >
-        <Trash2 className="h-3.5 w-3.5" strokeWidth={1.75} aria-hidden="true" />
-      </Button>
+      {canEdit && (
+        <Button
+          variant="ghost"
+          className="h-7 w-7 px-0"
+          aria-label={t('leave.editAction')}
+          onClick={onEdit}
+        >
+          <Pencil className="h-3.5 w-3.5" strokeWidth={1.75} aria-hidden="true" />
+        </Button>
+      )}
+      {canDelete && (
+        <Button
+          variant="ghost"
+          className="h-7 w-7 px-0 hover:!text-coral"
+          aria-label={t('leave.deleteAction')}
+          onClick={onDelete}
+        >
+          <Trash2 className="h-3.5 w-3.5" strokeWidth={1.75} aria-hidden="true" />
+        </Button>
+      )}
     </div>
   );
 }
@@ -145,6 +165,7 @@ const FILTER_OPTIONS: Array<{ key: string; value: LeaveRequestStatus | 'all' }> 
 
 export function LeavePage() {
   const { t } = useTranslation();
+  const localize = useLocalizeEntity();
 
   const [searchInput, setSearchInput] = useState('');
   const [search, setSearch] = useState('');
@@ -190,6 +211,11 @@ export function LeavePage() {
   const approveMutation = useApproveLeaveRequest(params);
   const rejectMutation  = useRejectLeaveRequest(params);
 
+  const canCreate = useHasPermission('leave.request.create');
+  const canEdit = useHasPermission('leave.request.edit');
+  const canDelete = useHasPermission('leave.request.delete');
+  const canApprove = useHasPermission('leave.request.approve');
+
   // Client-side sorting
   type LeaveSortCol = 'employee' | 'leaveType' | 'from' | 'to' | 'days' | 'status';
   const { sort, toggle: toggleSort } = useSort<LeaveSortCol>();
@@ -217,7 +243,7 @@ export function LeavePage() {
 
   const exportData = requests.map((r) => ({
     employee: `${r.employee?.first_name ?? ''} ${r.employee?.last_name ?? ''}`.trim(),
-    leaveType: r.leave_type?.name ?? String(r.leave_type_id),
+    leaveType: localize(r.leave_type?.name) || String(r.leave_type_id),
     from: formatDate(r.start_date),
     to: formatDate(r.end_date),
     days: parseFloat(r.days).toFixed(1),
@@ -255,10 +281,12 @@ export function LeavePage() {
         actions={
           <div className="flex items-center gap-2">
             <ExportButton data={exportData} columns={exportColumns} filename="leave-requests" />
-            <Button variant="primary" onClick={openAddForm}>
-              <Plus className="h-3.5 w-3.5" strokeWidth={2} aria-hidden="true" />
-              {t('leave.addLeaveRequest')}
-            </Button>
+            {canCreate && (
+              <Button variant="primary" onClick={openAddForm}>
+                <Plus className="h-3.5 w-3.5" strokeWidth={2} aria-hidden="true" />
+                {t('leave.addLeaveRequest')}
+              </Button>
+            )}
           </div>
         }
       />
@@ -355,7 +383,7 @@ export function LeavePage() {
               const lastName  = emp?.last_name ?? '';
               const photo     = emp?.photo;
               const initials  = initialsOf(firstName, lastName);
-              const leaveTypeName = req.leave_type?.name ?? String(req.leave_type_id);
+              const leaveTypeName = localize(req.leave_type?.name) || String(req.leave_type_id);
 
               return (
                 <div
@@ -403,6 +431,9 @@ export function LeavePage() {
                     onReject={() => void handleReject(req.id)}
                     approveLoading={approveMutation.isPending}
                     rejectLoading={rejectMutation.isPending}
+                    canEdit={canEdit}
+                    canDelete={canDelete}
+                    canApprove={canApprove}
                   />
                 </div>
               );
@@ -417,7 +448,7 @@ export function LeavePage() {
               const lastName  = emp?.last_name ?? '';
               const photo     = emp?.photo;
               const initials  = initialsOf(firstName, lastName);
-              const leaveTypeName = req.leave_type?.name ?? String(req.leave_type_id);
+              const leaveTypeName = localize(req.leave_type?.name) || String(req.leave_type_id);
 
               return (
                 <Card key={req.id} className="flex flex-col gap-3 p-4">
@@ -442,6 +473,9 @@ export function LeavePage() {
                         onReject={() => void handleReject(req.id)}
                         approveLoading={approveMutation.isPending}
                         rejectLoading={rejectMutation.isPending}
+                        canEdit={canEdit}
+                        canDelete={canDelete}
+                        canApprove={canApprove}
                       />
                     </div>
                   </div>

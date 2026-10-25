@@ -142,10 +142,10 @@ function RowActions({
   onBreakdown,
   breakdownLabel,
 }: {
-  onEdit: () => void;
-  onDelete: () => void;
-  editLabel: string;
-  deleteLabel: string;
+  onEdit?: (() => void) | undefined;
+  onDelete?: (() => void) | undefined;
+  editLabel?: string | undefined;
+  deleteLabel?: string | undefined;
   onCalculate?: (() => void) | undefined;
   calculateLabel?: string | undefined;
   onApprove?: (() => void) | undefined;
@@ -185,17 +185,21 @@ function RowActions({
           <Receipt className="h-3.5 w-3.5" strokeWidth={1.75} aria-hidden="true" />
         </Button>
       ) : null}
-      <Button variant="ghost" className="h-7 w-7 px-0" aria-label={editLabel} onClick={onEdit}>
-        <Pencil className="h-3.5 w-3.5" strokeWidth={1.75} aria-hidden="true" />
-      </Button>
-      <Button
-        variant="ghost"
-        className="h-7 w-7 px-0 hover:!text-coral"
-        aria-label={deleteLabel}
-        onClick={onDelete}
-      >
-        <Trash2 className="h-3.5 w-3.5" strokeWidth={1.75} aria-hidden="true" />
-      </Button>
+      {onEdit ? (
+        <Button variant="ghost" className="h-7 w-7 px-0" aria-label={editLabel} onClick={onEdit}>
+          <Pencil className="h-3.5 w-3.5" strokeWidth={1.75} aria-hidden="true" />
+        </Button>
+      ) : null}
+      {onDelete ? (
+        <Button
+          variant="ghost"
+          className="h-7 w-7 px-0 hover:!text-coral"
+          aria-label={deleteLabel}
+          onClick={onDelete}
+        >
+          <Trash2 className="h-3.5 w-3.5" strokeWidth={1.75} aria-hidden="true" />
+        </Button>
+      ) : null}
     </div>
   );
 }
@@ -291,8 +295,14 @@ export function PayrollPage() {
   const deleteRunMutation = useDeletePayrollRun(runParams);
   const calculateRunMutation = useCalculatePayrollRun();
   const approveRunMutation = useApprovePayrollRun();
+  const canCreateRun = useHasPermission('payroll.run.create');
+  const canEditRun = useHasPermission('payroll.run.edit');
+  const canDeleteRun = useHasPermission('payroll.run.delete');
   const canCalculateRun = useHasPermission('payroll.run.edit');
   const canApproveRun = useHasPermission('payroll.run.approve');
+  const canCreatePayslip = useHasPermission('payroll.payslip.create');
+  const canEditPayslip = useHasPermission('payroll.payslip.edit');
+  const canDeletePayslip = useHasPermission('payroll.payslip.delete');
 
   // Date range is now applied server-side via `runParams.periodFrom`/`periodTo` (see above).
   const runs    = runState.data?.data ?? [];
@@ -443,10 +453,12 @@ export function PayrollPage() {
         actions={
           <div className="flex items-center gap-2">
             <ExportButton data={runExportData} columns={runExportColumns} filename="payroll-runs" />
-            <Button variant="primary" onClick={openAddRun}>
-              <Plus className="h-3.5 w-3.5" strokeWidth={2} aria-hidden="true" />
-              {t('payroll.run.add')}
-            </Button>
+            {canCreateRun ? (
+              <Button variant="primary" onClick={openAddRun}>
+                <Plus className="h-3.5 w-3.5" strokeWidth={2} aria-hidden="true" />
+                {t('payroll.run.add')}
+              </Button>
+            ) : null}
           </div>
         }
       />
@@ -536,8 +548,8 @@ export function PayrollPage() {
               </span>
               <div onClick={(e) => e.stopPropagation()}>
                 <RowActions
-                  onEdit={() => openEditRun(run)}
-                  onDelete={() => setDeleteRun(run)}
+                  onEdit={canEditRun && !run.is_locked ? () => openEditRun(run) : undefined}
+                  onDelete={canDeleteRun && !run.is_locked ? () => setDeleteRun(run) : undefined}
                   editLabel={t('payroll.run.editAction')}
                   deleteLabel={t('payroll.run.deleteAction')}
                   onCalculate={canCalculateRun && !run.is_locked ? () => setCalculateRun(run) : undefined}
@@ -604,8 +616,8 @@ export function PayrollPage() {
                 onClick={(e) => e.stopPropagation()}
               >
                 <RowActions
-                  onEdit={() => openEditRun(run)}
-                  onDelete={() => setDeleteRun(run)}
+                  onEdit={canEditRun && !run.is_locked ? () => openEditRun(run) : undefined}
+                  onDelete={canDeleteRun && !run.is_locked ? () => setDeleteRun(run) : undefined}
                   editLabel={t('payroll.run.editAction')}
                   deleteLabel={t('payroll.run.deleteAction')}
                   onCalculate={canCalculateRun && !run.is_locked ? () => setCalculateRun(run) : undefined}
@@ -665,10 +677,12 @@ export function PayrollPage() {
           {selectedRunId ? (
             <>
               <ExportButton data={payslipExportData} columns={payslipExportColumns} filename="payslips" />
-              <Button variant="primary" onClick={openAddPayslip}>
-                <Plus className="h-3.5 w-3.5" strokeWidth={2} aria-hidden="true" />
-                {t('payroll.payslip.add')}
-              </Button>
+              {canCreatePayslip ? (
+                <Button variant="primary" onClick={openAddPayslip}>
+                  <Plus className="h-3.5 w-3.5" strokeWidth={2} aria-hidden="true" />
+                  {t('payroll.payslip.add')}
+                </Button>
+              ) : null}
             </>
           ) : null}
         </div>
@@ -717,8 +731,8 @@ export function PayrollPage() {
               <span className="nums font-mono text-body-sm font-bold text-navy">{ps.net_salary.toLocaleString()}</span>
               <PayslipStatusBadge status={ps.status} />
               <RowActions
-                onEdit={() => openEditPayslip(ps)}
-                onDelete={() => setDeletePayslip(ps)}
+                onEdit={canEditPayslip ? () => openEditPayslip(ps) : undefined}
+                onDelete={canDeletePayslip ? () => setDeletePayslip(ps) : undefined}
                 editLabel={t('payroll.payslip.editAction')}
                 deleteLabel={t('payroll.payslip.deleteAction')}
                 onBreakdown={() => openBreakdown(ps)}
@@ -777,8 +791,8 @@ export function PayrollPage() {
 
               <div className="flex justify-end border-t border-divider pt-2">
                 <RowActions
-                  onEdit={() => openEditPayslip(ps)}
-                  onDelete={() => setDeletePayslip(ps)}
+                  onEdit={canEditPayslip ? () => openEditPayslip(ps) : undefined}
+                  onDelete={canDeletePayslip ? () => setDeletePayslip(ps) : undefined}
                   editLabel={t('payroll.payslip.editAction')}
                   deleteLabel={t('payroll.payslip.deleteAction')}
                 />
