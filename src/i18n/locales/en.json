@@ -971,6 +971,15 @@
     },
     "approve": "Approve",
     "reject": "Reject",
+    "approved": "Leave request approved.",
+    "rejected": "Leave request rejected.",
+    "rejectDialog": {
+      "title": "Reject leave request",
+      "description": "The employee will see this reason with the request.",
+      "reason": "Reason for rejection",
+      "reasonRequired": "Enter a reason (at least 3 characters).",
+      "confirm": "Reject request"
+    },
     "balance": {
       "title": "Leave Balance",
       "allocated": "Allocated",

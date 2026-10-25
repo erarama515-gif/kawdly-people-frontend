@@ -23,7 +23,15 @@ export interface UseMutationOptions<TInput, TData> {
 }
 
 export interface UseMutationResult<TInput, TData> {
+  /** Resolves to `undefined` on failure (the error is exposed in `error`). */
   mutate: (input: TInput) => Promise<TData | undefined>;
+  /**
+   * Same work as `mutate`, but rejects with the `ApiError` so a caller can
+   * branch on the failure. Handlers that need to show a toast or keep a form
+   * open must use this: `mutate` resolves `undefined`, which is
+   * indistinguishable from a legitimately empty payload.
+   */
+  mutateAsync: (input: TInput) => Promise<TData>;
   isPending: boolean;
   error: ApiError | undefined;
   reset: () => void;
@@ -49,7 +57,7 @@ export function useMutation<TInput, TData>(
     };
   }, []);
 
-  const mutate = useCallback(async (input: TInput): Promise<TData | undefined> => {
+  const mutateAsync = useCallback(async (input: TInput): Promise<TData> => {
     const current = latest.current;
     const rollback = current.onMutate?.(input);
     const controller = new AbortController();
@@ -65,13 +73,24 @@ export function useMutation<TInput, TData>(
       rollback?.();
       if (mounted.current) setError(apiError);
       current.onError?.(apiError, input);
-      return undefined;
+      throw apiError;
     } finally {
       if (mounted.current) setIsPending(false);
     }
   }, []);
 
+  const mutate = useCallback(
+    async (input: TInput): Promise<TData | undefined> => {
+      try {
+        return await mutateAsync(input);
+      } catch {
+        return undefined;
+      }
+    },
+    [mutateAsync],
+  );
+
   const reset = useCallback(() => setError(undefined), []);
 
-  return { mutate, isPending, error, reset };
+  return { mutate, mutateAsync, isPending, error, reset };
 }

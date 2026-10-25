@@ -132,14 +132,20 @@ export function useApproveLeaveRequest(params: LeaveRequestListParams) {
  * Rejects one leave request. Optimistic: the row's status flips to `rejected`
  * immediately; a failure rolls back and refetches.
  */
+export interface RejectLeaveInput {
+  id: number;
+  /** Shown to the employee with the rejection; optional at the API level. */
+  reason?: string;
+}
+
 export function useRejectLeaveRequest(params: LeaveRequestListParams) {
   const client = useQueryClient();
   const key = leaveRequestKeys.list(params);
 
-  return useMutation<number, LeaveRequestWire>({
-    mutationFn: (id, { signal }) => leaveRequestApi.reject({ signal }, id),
+  return useMutation<RejectLeaveInput, LeaveRequestWire>({
+    mutationFn: ({ id, reason }, { signal }) => leaveRequestApi.reject({ signal }, id, reason),
 
-    onMutate: (id) => {
+    onMutate: ({ id }) => {
       const previous = client.setData<LeaveRequestListWire>(key, (current) =>
         current
           ? {

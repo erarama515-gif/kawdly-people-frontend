@@ -10,6 +10,10 @@ import { PageHeader } from '@/components/ui/PageHeader';
 import { Avatar } from '@/components/ui/Avatar';
 import { Button } from '@/components/ui/Button';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
+import { Dialog, DialogClose, DialogContent } from '@/components/ui/Dialog';
+import { Field } from '@/components/ui/form/Field';
+import { Textarea } from '@/components/ui/form/Textarea';
+import { toast } from '@/components/ui/Toast';
 import { Pagination } from '@/components/ui/Pagination';
 import { SortableHeader } from '@/components/ui/SortableHeader';
 import { useSort, sortData } from '@/hooks/useSort';
@@ -176,6 +180,9 @@ export function LeavePage() {
   const [formOpen, setFormOpen] = useState(false);
   const [editTarget, setEditTarget] = useState<LeaveRequestWire | undefined>(undefined);
   const [deleteTarget, setDeleteTarget] = useState<LeaveRequestWire | undefined>(undefined);
+  const [rejectTarget, setRejectTarget] = useState<LeaveRequestWire | undefined>(undefined);
+  const [rejectionReason, setRejectionReason] = useState('');
+  const [reasonError, setReasonError] = useState<string | undefined>(undefined);
 
   // Debounce the free-text search so every keystroke doesn't fire a request.
   useEffect(() => {
@@ -267,11 +274,42 @@ export function LeavePage() {
   }
 
   async function handleApprove(id: number) {
-    await approveMutation.mutate(id);
+    try {
+      await approveMutation.mutateAsync(id);
+      toast.success(t('leave.approved'));
+    } catch (error) {
+      toast.error(userFacingMessage(error));
+    }
   }
 
-  async function handleReject(id: number) {
-    await rejectMutation.mutate(id);
+  /**
+   * Rejection opens a dialog instead of firing straight away (A2.2): the reason
+   * is the only thing the employee sees when they open a refused request, and
+   * the old one-click path both lost it and swallowed the failure.
+   */
+  function openReject(request: LeaveRequestWire) {
+    setRejectTarget(request);
+    setRejectionReason('');
+    setReasonError(undefined);
+  }
+
+  async function confirmReject() {
+    if (!rejectTarget) return;
+
+    const reason = rejectionReason.trim();
+    if (reason.length < 3) {
+      setReasonError(t('leave.rejectDialog.reasonRequired'));
+      return;
+    }
+
+    try {
+      await rejectMutation.mutateAsync({ id: rejectTarget.id, reason });
+      toast.success(t('leave.rejected'));
+      setRejectTarget(undefined);
+      setRejectionReason('');
+    } catch (error) {
+      toast.error(userFacingMessage(error));
+    }
   }
 
   return (
@@ -428,7 +466,7 @@ export function LeavePage() {
                     onEdit={() => openEditForm(req)}
                     onDelete={() => setDeleteTarget(req)}
                     onApprove={() => void handleApprove(req.id)}
-                    onReject={() => void handleReject(req.id)}
+                    onReject={() => openReject(req)}
                     approveLoading={approveMutation.isPending}
                     rejectLoading={rejectMutation.isPending}
                     canEdit={canEdit}
@@ -470,7 +508,7 @@ export function LeavePage() {
                         onEdit={() => openEditForm(req)}
                         onDelete={() => setDeleteTarget(req)}
                         onApprove={() => void handleApprove(req.id)}
-                        onReject={() => void handleReject(req.id)}
+                        onReject={() => openReject(req)}
                         approveLoading={approveMutation.isPending}
                         rejectLoading={rejectMutation.isPending}
                         canEdit={canEdit}
@@ -534,6 +572,53 @@ export function LeavePage() {
         isLoading={deleteMutation.isPending}
         onConfirm={() => void confirmDelete()}
       />
+
+      <Dialog
+        open={rejectTarget !== undefined}
+        onOpenChange={(open) => {
+          if (!open) setRejectTarget(undefined);
+        }}
+      >
+        <DialogContent
+          title={t('leave.rejectDialog.title')}
+          description={t('leave.rejectDialog.description')}
+          footer={
+            <>
+              <DialogClose asChild>
+                <Button variant="secondary" disabled={rejectMutation.isPending}>
+                  {t('common.cancel')}
+                </Button>
+              </DialogClose>
+              <Button
+                variant="danger"
+                isLoading={rejectMutation.isPending}
+                onClick={() => void confirmReject()}
+              >
+                {t('leave.rejectDialog.confirm')}
+              </Button>
+            </>
+          }
+        >
+          <Field
+            label={t('leave.rejectDialog.reason')}
+            htmlFor="leave-rejection-reason"
+            error={reasonError}
+            required
+          >
+            <Textarea
+              id="leave-rejection-reason"
+              value={rejectionReason}
+              invalid={reasonError !== undefined}
+              onChange={(event) => {
+                setRejectionReason(event.target.value);
+                if (reasonError) setReasonError(undefined);
+              }}
+              rows={4}
+              autoFocus
+            />
+          </Field>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
