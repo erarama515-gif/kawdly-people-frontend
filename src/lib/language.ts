@@ -1,6 +1,6 @@
 export type Language = 'ar' | 'en';
 
-export const DEFAULT_LANGUAGE: Language = 'en';
+export const DEFAULT_LANGUAGE: Language = 'ar';
 
 export const LANGUAGE_STORAGE_KEY = 'kawdly-people-language';
 

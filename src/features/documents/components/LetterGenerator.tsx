@@ -1,18 +1,15 @@
 import { useState, useMemo, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
-import { FileText } from 'lucide-react';
-// Arabic PDF notes:
-// html2canvas is NOT currently a dependency. To add full Arabic PDF support,
-// run: npm install html2canvas
-// Then replace buildPdf() with the html2canvas path (see commented block below).
-// Alternatively, embed the Amiri font via jsPDF.addFileToVFS + addFont with a
-// base64-encoded .ttf blob — see https://artskydj.github.io/jsPDF/docs/jsPDF.html
+import { FileText, Loader2 } from 'lucide-react';
 import jsPDF from 'jspdf';
+import html2canvas from 'html2canvas';
 import { Dialog, DialogContent } from '@/components/ui/Dialog';
 import { Button } from '@/components/ui/Button';
 import { useEmployeeList } from '@/features/employees/api/queries';
 import type { EmployeeWire } from '@/features/employees/api/schema';
 import { useSettingList } from '@/features/settings/api/queries';
+import { toast } from '@/components/ui/Toast';
+import { cn } from '@/lib/cn';
 import {
   employmentCertificate,
   salaryCertificate,
@@ -23,20 +20,12 @@ import type { LetterContent } from './letterTemplates';
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 type TemplateKey = 'employmentCert' | 'salaryCert' | 'experienceLetter';
+type LetterLang = 'ar' | 'en';
 
 // ─── Company info ─────────────────────────────────────────────────────────────
 
 interface CompanyInfo {
-  /** Letterhead text. Falls back to a department label, never to a company. */
   name: string;
-  /**
-   * The `general.companyName` setting exactly as stored, empty string if unset.
-   *
-   * Kept separate from `name` because the two have different right answers when
-   * the setting is missing: a letterhead reading "HR Department" is fine, but
-   * a body sentence reading "employed with HR Department" is not. The letter
-   * templates apply their own fallback to this value.
-   */
   rawName: string;
   email: string;
 }
@@ -61,107 +50,6 @@ function useCompanyInfo(): CompanyInfo {
   };
 }
 
-// ─── PDF generation ───────────────────────────────────────────────────────────
-
-const PAGE_MARGIN = 20; // mm
-const LINE_HEIGHT = 7;  // mm per text line
-
-function buildPdf(
-  _employee: EmployeeWire,
-  content: LetterContent,
-  company: CompanyInfo,
-): jsPDF {
-  const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
-  const pageWidth = doc.internal.pageSize.getWidth();
-  const textWidth = pageWidth - PAGE_MARGIN * 2;
-
-  let y = PAGE_MARGIN;
-
-  // ── Company header ──────────────────────────────────────────────────────────
-  doc.setFont('helvetica', 'bold');
-  doc.setFontSize(18);
-  doc.setTextColor(7, 45, 74); // --color-navy
-  doc.text(company.name, PAGE_MARGIN, y);
-  y += 8;
-
-  doc.setFont('helvetica', 'normal');
-  doc.setFontSize(10);
-  doc.setTextColor(100, 116, 139); // slate-500 ≈ ink-muted
-  doc.text('Human Resources Department', PAGE_MARGIN, y);
-  y += 5;
-  if (company.email) {
-    doc.text(company.email, PAGE_MARGIN, y);
-    y += 2;
-  }
-
-  // Divider
-  doc.setDrawColor(226, 232, 240); // slate-200 ≈ hairline
-  doc.setLineWidth(0.4);
-  doc.line(PAGE_MARGIN, y + 2, pageWidth - PAGE_MARGIN, y + 2);
-  y += 8;
-
-  // ── Letter title ────────────────────────────────────────────────────────────
-  doc.setFont('helvetica', 'bold');
-  doc.setFontSize(13);
-  doc.setTextColor(7, 45, 74);
-  doc.text(content.title, pageWidth / 2, y, { align: 'center' });
-  y += 10;
-
-  // ── Body ────────────────────────────────────────────────────────────────────
-  doc.setFont('helvetica', 'normal');
-  doc.setFontSize(11);
-  doc.setTextColor(15, 23, 42); // --color-ink
-
-  const bodyLines = content.body.split('\n');
-  for (const line of bodyLines) {
-    if (line === '') {
-      y += LINE_HEIGHT * 0.6;
-      continue;
-    }
-    // Wrap long lines to fit within text width
-    const wrapped = doc.splitTextToSize(line, textWidth) as string[];
-    for (const wl of wrapped) {
-      if (y > doc.internal.pageSize.getHeight() - PAGE_MARGIN - 20) {
-        doc.addPage();
-        y = PAGE_MARGIN;
-      }
-      doc.text(wl, PAGE_MARGIN, y);
-      y += LINE_HEIGHT;
-    }
-  }
-
-  y += 6;
-
-  // ── Closing / signature block ───────────────────────────────────────────────
-  doc.setFont('helvetica', 'italic');
-  doc.setFontSize(10);
-  doc.setTextColor(100, 116, 139);
-
-  const closingLines = content.closing.split('\n');
-  for (const line of closingLines) {
-    doc.text(line, PAGE_MARGIN, y);
-    y += LINE_HEIGHT * 0.85;
-  }
-
-  y += 12;
-
-  // Signature line
-  doc.setDrawColor(100, 116, 139);
-  doc.setLineWidth(0.3);
-  doc.line(PAGE_MARGIN, y, PAGE_MARGIN + 60, y);
-  y += 5;
-
-  doc.setFont('helvetica', 'normal');
-  doc.setFontSize(10);
-  doc.setTextColor(15, 23, 42);
-  doc.text('Authorised Signature', PAGE_MARGIN, y);
-  y += 5;
-  doc.setTextColor(100, 116, 139);
-  doc.text(`HR Department — ${company.name}`, PAGE_MARGIN, y);
-
-  return doc;
-}
-
 // ─── Preview renderer ─────────────────────────────────────────────────────────
 
 interface LetterPreviewProps {
@@ -172,33 +60,53 @@ interface LetterPreviewProps {
 }
 
 function LetterPreview({ content, company, previewRef }: LetterPreviewProps) {
+  const isRtl = content.isRtl ?? false;
+
   return (
     <div
       ref={previewRef}
-      className="rounded-[3px] border border-hairline bg-white p-6 font-mono text-[11px] leading-relaxed text-ink shadow-sm"
+      dir={isRtl ? 'rtl' : 'ltr'}
+      className={cn(
+        'rounded-[4px] border border-hairline bg-white p-8 text-[12px] leading-relaxed text-ink shadow-sm',
+        isRtl ? 'font-sans text-right' : 'font-sans text-left',
+      )}
     >
       {/* Header */}
-      <div className="mb-4 border-b border-hairline pb-3">
-        <p className="text-[14px] font-bold text-navy">{company.name}</p>
-        <p className="text-ink-muted">Human Resources Department</p>
-        {company.email ? <p className="text-ink-muted">{company.email}</p> : null}
+      <div className="mb-6 border-b border-hairline pb-4">
+        <p className="text-[16px] font-bold text-navy">{company.name}</p>
+        <p className="text-[12px] text-ink-muted">
+          {isRtl ? 'إدارة الموارد البشرية' : 'Human Resources Department'}
+        </p>
+        {company.email ? <p className="text-[11px] text-ink-muted">{company.email}</p> : null}
       </div>
 
-      {/* Title */}
-      <p className="mb-3 text-center text-[12px] font-bold uppercase tracking-wide text-navy">
-        {content.title}
-      </p>
+      {/* Title banner */}
+      <div className="my-5 rounded border border-navy/20 bg-navy/5 py-2.5 text-center">
+        <h2 className="text-[14px] font-bold tracking-wide text-navy">
+          {content.title}
+        </h2>
+      </div>
 
-      {/* Body */}
-      <pre className="whitespace-pre-wrap font-mono text-[11px] text-ink">{content.body}</pre>
+      {/* Body text */}
+      <div className="my-6 whitespace-pre-wrap text-[12px] font-medium leading-[2] text-ink">
+        {content.body}
+      </div>
 
-      {/* Closing */}
-      <div className="mt-4 border-t border-hairline pt-3">
-        <pre className="whitespace-pre-wrap font-mono text-[10px] italic text-ink-muted">{content.closing}</pre>
-        <div className="mt-6">
-          <div className="mb-1 w-36 border-b border-ink-muted" />
-          <p className="text-[10px] text-ink">Authorised Signature</p>
-          <p className="text-[10px] text-ink-muted">HR Department — {company.name}</p>
+      {/* Closing & Signatures */}
+      <div className="mt-8 border-t border-hairline pt-4">
+        <div className="whitespace-pre-wrap text-[11px] text-ink-muted">
+          {content.closing}
+        </div>
+        <div className="mt-8 flex justify-between items-end">
+          <div>
+            <div className="mb-2 w-48 border-b border-ink-muted" />
+            <p className="text-[11px] font-semibold text-ink">
+              {isRtl ? 'التوقيع والختم المعتمد' : 'Authorised Signature'}
+            </p>
+            <p className="text-[11px] text-ink-muted">
+              {isRtl ? `إدارة الموارد البشرية — ${company.name}` : `HR Department — ${company.name}`}
+            </p>
+          </div>
         </div>
       </div>
     </div>
@@ -213,19 +121,23 @@ export interface LetterGeneratorProps {
 }
 
 export function LetterGenerator({ open, onOpenChange }: LetterGeneratorProps) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
 
   const [templateKey, setTemplateKey] = useState<TemplateKey>('employmentCert');
+  const [letterLang, setLetterLang] = useState<LetterLang>(
+    i18n.language.startsWith('en') ? 'en' : 'ar',
+  );
   const [selectedEmployeeId, setSelectedEmployeeId] = useState<number | ''>('');
+  const [isGenerating, setIsGenerating] = useState(false);
 
-  // Fetch all employees for the dropdown (perPage:200 to cover most tenants)
+  // Fetch all employees for the dropdown
   const { state: empState } = useEmployeeList({ perPage: 200 });
   const employees: EmployeeWire[] = empState.data?.data ?? [];
 
-  // Fetch dynamic company info from the settings API
+  // Fetch dynamic company info from settings API
   const company = useCompanyInfo();
 
-  // Ref for the preview div (reserved for future html2canvas path)
+  // Ref for the letter DOM element to capture via html2canvas
   const previewRef = useRef<HTMLDivElement>(null);
 
   const selectedEmployee = useMemo(
@@ -233,24 +145,65 @@ export function LetterGenerator({ open, onOpenChange }: LetterGeneratorProps) {
     [employees, selectedEmployeeId],
   );
 
-  // company.name also feeds the letter BODY, not just the letterhead drawn by
-  // buildPdf — see the FALLBACK_EMPLOYER note in letterTemplates.ts. Keep it in
-  // the dependency list: the settings query resolves after first paint, so a
-  // memo that ignored it would cache a letter built from the fallback name.
   const letterContent: LetterContent | null = useMemo(() => {
     if (!selectedEmployee) return null;
-    if (templateKey === 'employmentCert') return employmentCertificate(selectedEmployee, company.rawName);
-    if (templateKey === 'salaryCert') return salaryCertificate(selectedEmployee, company.rawName);
-    return experienceLetter(selectedEmployee, company.rawName);
-  }, [templateKey, selectedEmployee, company.rawName]);
+    if (templateKey === 'employmentCert') {
+      return employmentCertificate(selectedEmployee, company.rawName, letterLang);
+    }
+    if (templateKey === 'salaryCert') {
+      return salaryCertificate(selectedEmployee, company.rawName, letterLang);
+    }
+    return experienceLetter(selectedEmployee, company.rawName, letterLang);
+  }, [templateKey, selectedEmployee, company.rawName, letterLang]);
 
-  function handleDownload() {
-    if (!selectedEmployee || !letterContent) return;
-    const doc = buildPdf(selectedEmployee, letterContent, company);
-    const safeName = `${selectedEmployee.first_name}_${selectedEmployee.last_name}`
-      .toLowerCase()
-      .replace(/\s+/g, '_');
-    doc.save(`${templateKey}_${safeName}.pdf`);
+  async function handleDownload() {
+    if (!selectedEmployee || !letterContent || !previewRef.current) return;
+
+    try {
+      setIsGenerating(true);
+
+      const element = previewRef.current;
+      const canvas = await html2canvas(element, {
+        scale: 2, // 2x DPI for crisp print quality
+        useCORS: true,
+        logging: false,
+        backgroundColor: '#ffffff',
+      });
+
+      const imgData = canvas.toDataURL('image/png');
+      const doc = new jsPDF({
+        orientation: 'portrait',
+        unit: 'mm',
+        format: 'a4',
+      });
+
+      const pageWidth = doc.internal.pageSize.getWidth();
+      const pageHeight = doc.internal.pageSize.getHeight();
+      const margin = 15;
+      const targetWidth = pageWidth - margin * 2;
+      const targetHeight = (canvas.height * targetWidth) / canvas.width;
+
+      doc.addImage(
+        imgData,
+        'PNG',
+        margin,
+        margin,
+        targetWidth,
+        Math.min(targetHeight, pageHeight - margin * 2),
+      );
+
+      const safeName = `${selectedEmployee.first_name}_${selectedEmployee.last_name}`
+        .toLowerCase()
+        .replace(/\s+/g, '_');
+
+      doc.save(`${templateKey}_${safeName}_${letterLang}.pdf`);
+      toast.success(letterLang === 'ar' ? 'تم إنشاء وتحميل الخطاب بنجاح' : 'Letter PDF downloaded successfully');
+    } catch (err) {
+      console.error('Failed to export letter PDF:', err);
+      toast.error(letterLang === 'ar' ? 'حدث خطأ أثناء إنشاء المستند' : 'Failed to generate PDF document');
+    } finally {
+      setIsGenerating(false);
+    }
   }
 
   const TEMPLATE_OPTIONS: Array<{ key: TemplateKey; label: string }> = [
@@ -268,44 +221,87 @@ export function LetterGenerator({ open, onOpenChange }: LetterGeneratorProps) {
             {t('documents.letterGenerator.title')}
           </span>
         }
-        className="w-[min(680px,calc(100vw-32px))]"
+        className="w-[min(720px,calc(100vw-32px))]"
         footer={
           <>
-            <Button variant="secondary" onClick={() => onOpenChange(false)}>
+            <Button variant="secondary" onClick={() => onOpenChange(false)} disabled={isGenerating}>
               {t('common.cancel')}
             </Button>
             <Button
               variant="primary"
-              disabled={!selectedEmployee || !letterContent}
-              onClick={handleDownload}
+              disabled={!selectedEmployee || !letterContent || isGenerating}
+              onClick={() => void handleDownload()}
             >
-              {t('documents.letterGenerator.download')}
+              {isGenerating ? (
+                <>
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  {t('documents.letterGenerator.generating')}
+                </>
+              ) : (
+                t('documents.letterGenerator.download')
+              )}
             </Button>
           </>
         }
       >
         <div className="flex flex-col gap-5">
-          {/* Template selector */}
-          <div className="flex flex-col gap-1.5">
-            <label className="text-[13px] font-semibold text-ink">
-              {t('documents.letterGenerator.selectTemplate')}
-            </label>
-            <div className="flex flex-wrap gap-2">
-              {TEMPLATE_OPTIONS.map((opt) => (
+          {/* Controls: Template + Language */}
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            {/* Template selector */}
+            <div className="flex flex-col gap-1.5">
+              <label className="text-[13px] font-semibold text-ink">
+                {t('documents.letterGenerator.selectTemplate')}
+              </label>
+              <div className="flex flex-wrap gap-1.5">
+                {TEMPLATE_OPTIONS.map((opt) => (
+                  <button
+                    key={opt.key}
+                    type="button"
+                    onClick={() => setTemplateKey(opt.key)}
+                    className={cn(
+                      'rounded-[3px] border px-2.5 py-1 text-[12px] font-semibold transition-colors',
+                      templateKey === opt.key
+                        ? 'border-navy bg-navy text-on-navy'
+                        : 'border-hairline bg-surface text-ink-muted hover:border-navy/40 hover:text-ink',
+                    )}
+                  >
+                    {opt.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Language selector */}
+            <div className="flex flex-col gap-1.5">
+              <label className="text-[13px] font-semibold text-ink">
+                {t('documents.letterGenerator.selectLanguage')}
+              </label>
+              <div className="flex gap-2">
                 <button
-                  key={opt.key}
                   type="button"
-                  onClick={() => setTemplateKey(opt.key)}
-                  className={[
-                    'rounded-[3px] border px-3 py-1.5 text-[12px] font-semibold transition-colors',
-                    templateKey === opt.key
+                  onClick={() => setLetterLang('ar')}
+                  className={cn(
+                    'flex-1 rounded-[3px] border px-3 py-1 text-[12px] font-semibold transition-colors text-center',
+                    letterLang === 'ar'
                       ? 'border-navy bg-navy text-on-navy'
                       : 'border-hairline bg-surface text-ink-muted hover:border-navy/40 hover:text-ink',
-                  ].join(' ')}
+                  )}
                 >
-                  {opt.label}
+                  {t('documents.letterGenerator.langArabic')}
                 </button>
-              ))}
+                <button
+                  type="button"
+                  onClick={() => setLetterLang('en')}
+                  className={cn(
+                    'flex-1 rounded-[3px] border px-3 py-1 text-[12px] font-semibold transition-colors text-center',
+                    letterLang === 'en'
+                      ? 'border-navy bg-navy text-on-navy'
+                      : 'border-hairline bg-surface text-ink-muted hover:border-navy/40 hover:text-ink',
+                  )}
+                >
+                  {t('documents.letterGenerator.langEnglish')}
+                </button>
+              </div>
             </div>
           </div>
 

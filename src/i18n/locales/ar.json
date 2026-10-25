@@ -714,9 +714,13 @@
     "letterGenerator": {
       "title": "إنشاء خطاب رسمي",
       "selectTemplate": "اختر القالب",
+      "selectLanguage": "لغة الخطاب",
+      "langArabic": "العربية",
+      "langEnglish": "الإنجليزية",
       "selectEmployee": "اختر الموظف",
       "preview": "معاينة",
       "download": "تحميل PDF",
+      "generating": "جاري إنشاء المستند...",
       "employmentCert": "شهادة عمل",
       "salaryCert": "شهادة راتب",
       "experienceLetter": "خطاب خبرة"
@@ -1301,7 +1305,60 @@
         "intern": "تدريب"
       }
     },
-    "view": "عرض"
+    "view": "عرض",
+    "tabs": {
+      "postings": "الوظائف الشاغرة",
+      "candidates": "سجل المتقدمين والمرشحين"
+    },
+    "candidate": {
+      "title": "إدارة المرشحين والمتقدمين",
+      "subtitle": "متابعة المتقدمين عبر مراحل التوظيف وتحويلهم إلى موظفين",
+      "searchPlaceholder": "بحث باسم المرشح أو البريد الإلكتروني...",
+      "filterAllJobs": "جميع الوظائف الشاغرة",
+      "filterAllStages": "جميع المراحل",
+      "table": {
+        "candidate": "المرشح",
+        "job": "الوظيفة المتقدم لها",
+        "stage": "المرحلة الحالية",
+        "score": "نسبة التطابق",
+        "applied": "تاريخ التقديم",
+        "actions": "الإجراءات"
+      },
+      "stages": {
+        "all": "الكل",
+        "applied": "تم التقديم",
+        "screening": "فرز أولي",
+        "interview": "مقابلة شخصية",
+        "technical": "تقييم فني",
+        "hr": "مقابلة HR",
+        "offer": "عرض عمل",
+        "hired": "تم التعيين",
+        "rejected": "مرفوض",
+        "withdrawn": "منسحب"
+      },
+      "actions": {
+        "changeStage": "نقل لمرحلة أخرى",
+        "details": "التفاصيل والملاحظات",
+        "convert": "تحويل لموظف",
+        "converted": "تم التحويل",
+        "delete": "حذف المرشح"
+      },
+      "details": {
+        "title": "بيانات المرشح والملاحظات",
+        "phone": "رقم الهاتف",
+        "source": "مصدر التقديم",
+        "matchScore": "درجة التطابق",
+        "appliedDate": "تاريخ ووقت التقديم",
+        "notes": "ملاحظات الفرز والمقابلة",
+        "noNotes": "لا توجد ملاحظات مسجلة لهذا المرشح.",
+        "close": "إغلاق"
+      },
+      "deleteConfirm": {
+        "title": "حذف المرشح",
+        "description": "هل أنت متأكد من حذف المرشح \"{{name}}\" من قاعدة بيانات التوظيف؟"
+      },
+      "empty": "لا يوجد مرشحون يطابقون خيارات البحث أو التصفية الحالية."
+    }
   },
   "onboarding": {
     "title": "التهيئة",
@@ -2078,64 +2135,23 @@
     },
     "users": {
       "title": "المستخدمون",
-      "subtitle": "إدارة حسابات المستخدمين وصلاحياتهم في مؤسستك.",
       "addUser": "إضافة مستخدم",
-      "columns": {
-        "name": "الاسم",
-        "email": "البريد الإلكتروني",
-        "role": "الدور",
-        "status": "الحالة",
-        "lastLogin": "آخر تسجيل دخول",
-        "actions": "الإجراءات"
-      },
-      "empty": "لا يوجد مستخدمون. اضغط «إضافة مستخدم» للبدء.",
-      "showing": "عرض {{count}} من {{total}} مستخدم.",
+      "editUser": "تعديل مستخدم",
+      "resetPassword": "إعادة تعيين كلمة المرور",
+      "deactivateUser": "تعطيل المستخدم",
+      "name": "الاسم",
+      "email": "البريد الإلكتروني",
+      "role": "الدور",
+      "status": "الحالة",
+      "lastLogin": "آخر تسجيل دخول",
+      "actions": "الإجراءات",
       "active": "نشط",
       "inactive": "غير نشط",
-      "selectRole": "اختر دورًا…",
-      "fields": {
-        "name": "الاسم",
-        "email": "البريد الإلكتروني",
-        "password": "كلمة المرور",
-        "role": "الدور",
-        "status": "الحالة",
-        "newPassword": "كلمة المرور الجديدة",
-        "confirmPassword": "تأكيد كلمة المرور"
-      },
-      "validation": {
-        "nameRequired": "الاسم مطلوب",
-        "emailRequired": "البريد الإلكتروني مطلوب",
-        "emailInvalid": "بريد إلكتروني غير صالح",
-        "passwordMin": "كلمة المرور يجب ألا تقل عن 8 أحرف",
-        "roleRequired": "الدور مطلوب",
-        "confirmRequired": "يرجى تأكيد كلمة المرور",
-        "passwordsMismatch": "كلمتا المرور غير متطابقتين"
-      },
-      "addDialog": {
-        "title": "إضافة مستخدم",
-        "description": "إنشاء حساب مستخدم جديد وتعيين دور له.",
-        "submit": "إنشاء مستخدم"
-      },
-      "editDialog": {
-        "title": "تعديل مستخدم",
-        "description": "تحديث بيانات المستخدم ودوره.",
-        "submit": "حفظ التغييرات"
-      },
-      "resetDialog": {
-        "title": "إعادة تعيين كلمة المرور",
-        "description": "تعيين كلمة مرور جديدة لـ {{name}}.",
-        "submit": "إعادة تعيين كلمة المرور"
-      },
-      "deactivateDialog": {
-        "title": "تعطيل مستخدم",
-        "description": "هل أنت متأكد من تعطيل {{name}}؟ سيتم تعطيل الحساب فورًا.",
-        "submit": "تعطيل"
-      },
-      "actions": {
-        "edit": "تعديل المستخدم",
-        "resetPassword": "إعادة تعيين كلمة المرور",
-        "deactivate": "تعطيل المستخدم"
-      }
+      "confirmDeactivate": "هل أنت متأكد من تعطيل هذا المستخدم؟",
+      "newPassword": "كلمة المرور الجديدة",
+      "confirmPassword": "تأكيد كلمة المرور",
+      "passwordResetSuccess": "تم إعادة تعيين كلمة المرور بنجاح.",
+      "noUsers": "لم يتم العثور على مستخدمين."
     },
     "roles": {
       "title": "الأدوار والصلاحيات",
@@ -2219,26 +2235,6 @@
       "notifications_inAppNotifs": "الإشعارات داخل التطبيق",
       "notifications_inAppNotifs_desc": "تنبيهات الجرس الفوري",
       "notifications_digestFrequency": "تكرار الملخص"
-    },
-    "users": {
-      "title": "المستخدمون",
-      "addUser": "إضافة مستخدم",
-      "editUser": "تعديل مستخدم",
-      "resetPassword": "إعادة تعيين كلمة المرور",
-      "deactivateUser": "تعطيل المستخدم",
-      "name": "الاسم",
-      "email": "البريد الإلكتروني",
-      "role": "الدور",
-      "status": "الحالة",
-      "lastLogin": "آخر تسجيل دخول",
-      "actions": "الإجراءات",
-      "active": "نشط",
-      "inactive": "غير نشط",
-      "confirmDeactivate": "هل أنت متأكد من تعطيل هذا المستخدم؟",
-      "newPassword": "كلمة المرور الجديدة",
-      "confirmPassword": "تأكيد كلمة المرور",
-      "passwordResetSuccess": "تم إعادة تعيين كلمة المرور بنجاح.",
-      "noUsers": "لم يتم العثور على مستخدمين."
     }
   },
   "fileUpload": {
@@ -2280,7 +2276,8 @@
       "contracts": "العقود",
       "documents": "المستندات",
       "leave": "الإجازات",
-      "attendance": "الحضور"
+      "attendance": "الحضور",
+      "salary": "الراتب والتعويضات"
     },
     "empty": {
       "contracts": "لا توجد عقود لهذا الموظف.",

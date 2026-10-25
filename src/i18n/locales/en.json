@@ -719,7 +719,11 @@
       "download": "Download PDF",
       "employmentCert": "Employment Certificate",
       "salaryCert": "Salary Certificate",
-      "experienceLetter": "Experience Letter"
+      "experienceLetter": "Experience Letter",
+      "selectLanguage": "Letter Language",
+      "langArabic": "Arabic",
+      "langEnglish": "English",
+      "generating": "Generating PDF..."
     },
     "documentTypes": {
       "title": "Document Types",
@@ -1301,7 +1305,60 @@
         "intern": "Internship"
       }
     },
-    "view": "View"
+    "view": "View",
+    "tabs": {
+      "postings": "Job Postings",
+      "candidates": "Candidates & Pipeline"
+    },
+    "candidate": {
+      "title": "Candidates Management",
+      "subtitle": "Track applicants across pipeline stages and convert them to employees",
+      "searchPlaceholder": "Search by candidate name or email...",
+      "filterAllJobs": "All Job Postings",
+      "filterAllStages": "All Stages",
+      "table": {
+        "candidate": "Candidate",
+        "job": "Applied Position",
+        "stage": "Current Stage",
+        "score": "Match Score",
+        "applied": "Applied Date",
+        "actions": "Actions"
+      },
+      "stages": {
+        "all": "All",
+        "applied": "Applied",
+        "screening": "Screening",
+        "interview": "Interview",
+        "technical": "Technical Assessment",
+        "hr": "HR Interview",
+        "offer": "Job Offer",
+        "hired": "Hired",
+        "rejected": "Rejected",
+        "withdrawn": "Withdrawn"
+      },
+      "actions": {
+        "changeStage": "Move Stage",
+        "details": "Details & Notes",
+        "convert": "Convert to Employee",
+        "converted": "Converted",
+        "delete": "Delete Candidate"
+      },
+      "details": {
+        "title": "Candidate Details & Notes",
+        "phone": "Phone Number",
+        "source": "Application Source",
+        "matchScore": "Match Score",
+        "appliedDate": "Application Date",
+        "notes": "Screening & Interview Notes",
+        "noNotes": "No notes recorded for this candidate.",
+        "close": "Close"
+      },
+      "deleteConfirm": {
+        "title": "Delete Candidate",
+        "description": "Are you sure you want to delete candidate \"{{name}}\" from the pipeline?"
+      },
+      "empty": "No candidates match your search or filter criteria."
+    }
   },
   "onboarding": {
     "title": "Onboarding",
@@ -2078,64 +2135,23 @@
     },
     "users": {
       "title": "Users",
-      "subtitle": "Manage user accounts and permissions for your organization.",
       "addUser": "Add User",
-      "columns": {
-        "name": "Name",
-        "email": "Email",
-        "role": "Role",
-        "status": "Status",
-        "lastLogin": "Last Login",
-        "actions": "Actions"
-      },
-      "empty": "No users found. Click \"Add User\" to get started.",
-      "showing": "Showing {{count}} of {{total}} users.",
+      "editUser": "Edit User",
+      "resetPassword": "Reset Password",
+      "deactivateUser": "Deactivate User",
+      "name": "Name",
+      "email": "Email",
+      "role": "Role",
+      "status": "Status",
+      "lastLogin": "Last Login",
+      "actions": "Actions",
       "active": "Active",
       "inactive": "Inactive",
-      "selectRole": "Select a role…",
-      "fields": {
-        "name": "Name",
-        "email": "Email",
-        "password": "Password",
-        "role": "Role",
-        "status": "Status",
-        "newPassword": "New Password",
-        "confirmPassword": "Confirm Password"
-      },
-      "validation": {
-        "nameRequired": "Name is required",
-        "emailRequired": "Email is required",
-        "emailInvalid": "Invalid email address",
-        "passwordMin": "Password must be at least 8 characters",
-        "roleRequired": "Role is required",
-        "confirmRequired": "Please confirm the password",
-        "passwordsMismatch": "Passwords do not match"
-      },
-      "addDialog": {
-        "title": "Add User",
-        "description": "Create a new user account and assign a role.",
-        "submit": "Create User"
-      },
-      "editDialog": {
-        "title": "Edit User",
-        "description": "Update user details and role.",
-        "submit": "Save Changes"
-      },
-      "resetDialog": {
-        "title": "Reset Password",
-        "description": "Set a new password for {{name}}.",
-        "submit": "Reset Password"
-      },
-      "deactivateDialog": {
-        "title": "Deactivate User",
-        "description": "Are you sure you want to deactivate {{name}}? Their account will be disabled immediately.",
-        "submit": "Deactivate"
-      },
-      "actions": {
-        "edit": "Edit user",
-        "resetPassword": "Reset password",
-        "deactivate": "Deactivate user"
-      }
+      "confirmDeactivate": "Are you sure you want to deactivate this user?",
+      "newPassword": "New Password",
+      "confirmPassword": "Confirm Password",
+      "passwordResetSuccess": "Password has been reset successfully.",
+      "noUsers": "No users found."
     },
     "roles": {
       "title": "Roles & Permissions",
@@ -2219,26 +2235,6 @@
       "notifications_inAppNotifs": "In-App Notifications",
       "notifications_inAppNotifs_desc": "Real-time bell icon alerts",
       "notifications_digestFrequency": "Digest Frequency"
-    },
-    "users": {
-      "title": "Users",
-      "addUser": "Add User",
-      "editUser": "Edit User",
-      "resetPassword": "Reset Password",
-      "deactivateUser": "Deactivate User",
-      "name": "Name",
-      "email": "Email",
-      "role": "Role",
-      "status": "Status",
-      "lastLogin": "Last Login",
-      "actions": "Actions",
-      "active": "Active",
-      "inactive": "Inactive",
-      "confirmDeactivate": "Are you sure you want to deactivate this user?",
-      "newPassword": "New Password",
-      "confirmPassword": "Confirm Password",
-      "passwordResetSuccess": "Password has been reset successfully.",
-      "noUsers": "No users found."
     }
   },
   "fileUpload": {
@@ -2280,7 +2276,8 @@
       "contracts": "Contracts",
       "documents": "Documents",
       "leave": "Leave",
-      "attendance": "Attendance"
+      "attendance": "Attendance",
+      "salary": "Compensation & Payroll"
     },
     "empty": {
       "contracts": "No contracts found for this employee.",

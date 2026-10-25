@@ -2,24 +2,28 @@ import type { EmployeeWire } from '@/features/employees/api/schema';
 
 /**
  * Letter content sections returned by each template function.
- * All content is English-only.
- *
- * NOTE (Phase 2): Arabic PDF generation requires embedding a custom Arabic
- * font (e.g. Amiri or Cairo) into jsPDF via `jsPDF.addFileToVFS` +
- * `jsPDF.addFont`. The built-in jsPDF font set does not support Arabic
- * script, so Arabic characters render as garbled boxes until that font
- * embedding step is done.
+ * Supports both Arabic and English text formatting.
  */
 export interface LetterContent {
   title: string;
   body: string;
   closing: string;
+  isRtl?: boolean;
 }
 
-function formatDate(iso: string | undefined): string {
+function formatDateEn(iso: string | undefined): string {
   if (!iso) return '—';
   return new Date(iso).toLocaleDateString('en-GB', {
     day: '2-digit',
+    month: 'long',
+    year: 'numeric',
+  });
+}
+
+function formatDateAr(iso: string | undefined): string {
+  if (!iso) return '—';
+  return new Date(iso).toLocaleDateString('ar-EG', {
+    day: 'numeric',
     month: 'long',
     year: 'numeric',
   });
@@ -29,26 +33,13 @@ function fullName(employee: EmployeeWire): string {
   return `${employee.first_name} ${employee.last_name}`;
 }
 
-/**
- * The employer named in the letter body.
- *
- * Every template takes this as an argument rather than hardcoding it. Until
- * T6.5 these three functions said "Kawdly Tech" — the developer's own company —
- * which was invisible in-house and wrong for everybody else: the PDF rendered
- * the real company in the letterhead (buildPdf already drew `company.name`) and
- * then certified, two lines below, that the employee works somewhere else. An
- * external user cannot fix that from Settings, and an employment or experience
- * letter is the kind of document that gets handed to a bank or an embassy.
- *
- * The caller passes the resolved `general.companyName` setting. The fallback
- * below is only reached if that setting is missing or still loading; it is
- * deliberately generic rather than any real company's name.
- */
-const FALLBACK_EMPLOYER = 'the Company';
+const FALLBACK_EMPLOYER_EN = 'the Company';
+const FALLBACK_EMPLOYER_AR = 'الشركة';
 
-function employer(companyName: string): string {
+function employer(companyName: string, lang: 'ar' | 'en'): string {
   const trimmed = companyName.trim();
-  return trimmed === '' ? FALLBACK_EMPLOYER : trimmed;
+  if (trimmed !== '') return trimmed;
+  return lang === 'ar' ? FALLBACK_EMPLOYER_AR : FALLBACK_EMPLOYER_EN;
 }
 
 /**
@@ -58,12 +49,42 @@ function employer(companyName: string): string {
 export function employmentCertificate(
   employee: EmployeeWire,
   companyName: string,
+  lang: 'ar' | 'en' = 'ar',
 ): LetterContent {
   const name = fullName(employee);
-  const company = employer(companyName);
-  const position = employee.job_position?.title ?? 'N/A';
-  const department = employee.department?.name ?? 'N/A';
-  const joinDate = formatDate(employee.joining_date);
+  const company = employer(companyName, lang);
+  const position = employee.job_position?.title ?? (lang === 'ar' ? 'غير محدد' : 'N/A');
+  const department = employee.department?.name ?? (lang === 'ar' ? 'غير محدد' : 'N/A');
+
+  if (lang === 'ar') {
+    const joinDate = formatDateAr(employee.joining_date);
+    const today = formatDateAr(new Date().toISOString());
+
+    return {
+      title: 'شهادة إثبات عمل (لمن يهمه الأمر)',
+      body: [
+        'تحية طيبة وبعد،،',
+        '',
+        `تشهد إدارة الموارد البشرية بشركة "${company}" بأن السيد / السيدة: ${name}`,
+        employee.employee_number ? `الرقم الوظيفي: ${employee.employee_number}` : '',
+        `يعمل لدينا بوظيفة: ${position}، في قسم: ${department}`,
+        `وذلك اعتباراً من تاريخ التحاقه بالعمل في: ${joinDate} وحتى تاريخه.`,
+        '',
+        'وهو على رأس عمله ومقيد بسجلات الشركة حتى تاريخ إصدار هذه الشهادة، ويؤدي مهام عمله بكل أمانة وإخلاص وحسن سيرة وسلوك.',
+        '',
+        'وقد أُعطيت له هذه الشهادة بناءً على طلبه لتقديمها إلى الجهات المعنية دون أدنى مسؤولية مالية أو قانونية على الشركة تجاه حقوق الغير.',
+      ].filter(Boolean).join('\n'),
+      closing: [
+        'شاكرين لكم حسن تعاونكم الدائم،،',
+        `إدارة الموارد البشرية — ${company}`,
+        `تاريخ الإصدار: ${today}`,
+      ].join('\n'),
+      isRtl: true,
+    };
+  }
+
+  const joinDate = formatDateEn(employee.joining_date);
+  const today = formatDateEn(new Date().toISOString());
 
   return {
     title: 'EMPLOYMENT CERTIFICATE',
@@ -81,25 +102,54 @@ export function employmentCertificate(
     ].join('\n'),
     closing: [
       'Issued in good faith by the Human Resources Department.',
-      `Date of Issue: ${formatDate(new Date().toISOString())}`,
+      `Date of Issue: ${today}`,
     ].join('\n'),
+    isRtl: false,
   };
 }
 
 /**
- * Salary Certificate — confirms employment and states that the employee
- * receives a monthly salary (amount intentionally omitted until payroll
- * integration is available in a later sprint).
+ * Salary Certificate — confirms employment and regular monthly compensation.
  */
 export function salaryCertificate(
   employee: EmployeeWire,
   companyName: string,
+  lang: 'ar' | 'en' = 'ar',
 ): LetterContent {
   const name = fullName(employee);
-  const company = employer(companyName);
-  const position = employee.job_position?.title ?? 'N/A';
-  const department = employee.department?.name ?? 'N/A';
-  const joinDate = formatDate(employee.joining_date);
+  const company = employer(companyName, lang);
+  const position = employee.job_position?.title ?? (lang === 'ar' ? 'غير محدد' : 'N/A');
+  const department = employee.department?.name ?? (lang === 'ar' ? 'غير محدد' : 'N/A');
+
+  if (lang === 'ar') {
+    const joinDate = formatDateAr(employee.joining_date);
+    const today = formatDateAr(new Date().toISOString());
+
+    return {
+      title: 'شهادة مفردات وإثبات دخل شهري',
+      body: [
+        'إلى من يهمه الأمر،،',
+        '',
+        `تشهد شركة "${company}" بأن السيد / السيدة: ${name}`,
+        employee.employee_number ? `الرقم الوظيفي: ${employee.employee_number}` : '',
+        `يعمل لدينا بوظيفة: ${position}، في قسم: ${department}`,
+        `اعتباراً من تاريخ: ${joinDate} وحتى تاريخه.`,
+        '',
+        'ونفيدكم بأنه يتقاضى راتباً شهرياً منتظماً ومحولاً لحسابه البنكي وفقاً لبنود عقد العمل المبرم معه واللوائح المعتمدة بالشركة.',
+        '',
+        'وقد صدرت هذه الشهادة بناءً على رغبة الموظف لتقديمها للجهات الرسمية والمصرفية دون تحمل الشركة أي كفالة أو مسؤولية مالية تجاه الغير.',
+      ].filter(Boolean).join('\n'),
+      closing: [
+        'وتفضلوا بقبول فائق الاحترام والتقدير،،',
+        `إدارة الموارد البشرية — ${company}`,
+        `تاريخ الإصدار: ${today}`,
+      ].join('\n'),
+      isRtl: true,
+    };
+  }
+
+  const joinDate = formatDateEn(employee.joining_date);
+  const today = formatDateEn(new Date().toISOString());
 
   return {
     title: 'SALARY CERTIFICATE',
@@ -117,8 +167,9 @@ export function salaryCertificate(
     ].join('\n'),
     closing: [
       'Issued in good faith by the Human Resources Department.',
-      `Date of Issue: ${formatDate(new Date().toISOString())}`,
+      `Date of Issue: ${today}`,
     ].join('\n'),
+    isRtl: false,
   };
 }
 
@@ -129,12 +180,41 @@ export function salaryCertificate(
 export function experienceLetter(
   employee: EmployeeWire,
   companyName: string,
+  lang: 'ar' | 'en' = 'ar',
 ): LetterContent {
   const name = fullName(employee);
-  const company = employer(companyName);
-  const position = employee.job_position?.title ?? 'N/A';
-  const department = employee.department?.name ?? 'N/A';
-  const joinDate = formatDate(employee.joining_date);
+  const company = employer(companyName, lang);
+  const position = employee.job_position?.title ?? (lang === 'ar' ? 'غير محدد' : 'N/A');
+  const department = employee.department?.name ?? (lang === 'ar' ? 'غير محدد' : 'N/A');
+
+  if (lang === 'ar') {
+    const joinDate = formatDateAr(employee.joining_date);
+    const today = formatDateAr(new Date().toISOString());
+
+    return {
+      title: 'شهادة خبرة وخدمة عمل',
+      body: [
+        'تشهد إدارة شركة "${company}" بأن:',
+        `السيد / السيدة: ${name}`,
+        employee.employee_number ? `الرقم الوظيفي: ${employee.employee_number}` : '',
+        `قد عمل لدينا في وظيفة: ${position}، بقسم: ${department}`,
+        `وذلك في الفترة من: ${joinDate} وحتى تاريخه.`,
+        '',
+        'وخلال فترة عمله بالشركة كان مثالاً للأمانة والجدية وحسن السير والسلوك، وأظهر كفاءة ومهارة متميزة وتفانياً في إنجاز المهام الموكلة إليه.',
+        '',
+        'وقد أُعطيت له هذه الشهادة بناءً على طلبه مع خالص تمنياتنا له بدوام التوفيق والنجاح في مسيرته المهنية المستقبلية.',
+      ].filter(Boolean).join('\n'),
+      closing: [
+        'مع أطيب التحيات والتقدير،،',
+        `إدارة الموارد البشرية — ${company}`,
+        `تاريخ الإصدار: ${today}`,
+      ].join('\n'),
+      isRtl: true,
+    };
+  }
+
+  const joinDate = formatDateEn(employee.joining_date);
+  const today = formatDateEn(new Date().toISOString());
 
   return {
     title: 'EXPERIENCE LETTER',
@@ -153,7 +233,8 @@ export function experienceLetter(
     ].join('\n'),
     closing: [
       'Issued in good faith by the Human Resources Department.',
-      `Date of Issue: ${formatDate(new Date().toISOString())}`,
+      `Date of Issue: ${today}`,
     ].join('\n'),
+    isRtl: false,
   };
 }
