@@ -15,6 +15,59 @@
     "rateLimited": "Too many attempts. Please wait a moment and try again.",
     "server": "The server could not complete the request. Please try again."
   },
+  "setup": {
+    "title": "Set up your workspace",
+    "subtitle": "Three quick steps to get the company ready for work.",
+    "skip": "Skip for now",
+    "next": "Next",
+    "back": "Back",
+    "finish": "Finish setup",
+    "notAllowed": "Setting up the workspace requires permission to edit the company.",
+    "backToDashboard": "Back to dashboard",
+    "steps": {
+      "company": "Company",
+      "structure": "Structure",
+      "team": "Team"
+    },
+    "company": {
+      "name": "Company name (English)",
+      "nameAr": "Company name (Arabic)",
+      "email": "Official email",
+      "phone": "Phone",
+      "currency": "Currency"
+    },
+    "structure": {
+      "hint": "Add the core departments now - you can add more later from the Organization page.",
+      "name": "Department name",
+      "code": "Code",
+      "add": "Add department",
+      "empty": "No departments yet."
+    },
+    "team": {
+      "hint": "Create the first HR account and share the temporary password with them securely.",
+      "name": "Name",
+      "email": "Email",
+      "role": "Role",
+      "password": "Temporary password",
+      "passwordHint": "At least 8 characters.",
+      "add": "Create account",
+      "count": "{{count}} account(s) created"
+    },
+    "roles": {
+      "hr_manager": "HR Manager",
+      "hr_officer": "HR Officer",
+      "payroll_manager": "Payroll Manager",
+      "recruiter": "Recruiter",
+      "department_manager": "Department Manager",
+      "employee": "Employee"
+    },
+    "validation": {
+      "companyName": "Enter the company name.",
+      "departmentName": "Enter the department name.",
+      "teamRequired": "Enter a name and an email address.",
+      "password": "The password must be at least 8 characters."
+    }
+  },
   "auth": {
     "login": {
       "title": "Sign in",
