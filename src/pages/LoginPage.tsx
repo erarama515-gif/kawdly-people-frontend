@@ -35,9 +35,10 @@ interface LocationState {
 }
 
 export function LoginPage() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const navigate = useNavigate();
   const location = useLocation();
+  const isRtl = i18n.language === 'ar';
   const status = useSessionStore((state) => state.status);
   const login = useSessionStore((state) => state.login);
   const [banner, setBanner] = useState<string | undefined>(undefined);
@@ -84,8 +85,8 @@ export function LoginPage() {
 
   return (
     <div
-      dir="rtl"
-      lang="ar"
+      dir={isRtl ? 'rtl' : 'ltr'}
+      lang={isRtl ? 'ar' : 'en'}
       className="relative flex min-h-screen items-center justify-center overflow-hidden px-4 py-14"
       style={{ background: '#f4f5f7', fontFamily: 'var(--font-sans)' }}
     >
@@ -94,10 +95,20 @@ export function LoginPage() {
 
       {/* Sign-in card */}
       <div className="relative z-10 w-full max-w-[400px]">
-        {/* "You are here" label */}
-        <div className="mb-3 flex items-center justify-end gap-2 text-xs font-medium leading-none" style={{ color: '#0f4a73' }}>
-          <span className="block h-[7px] w-[7px]" style={{ background: '#0f4a73' }} />
-          {t('auth.login.youAreHere')}
+        {/* Language switcher + "You are here" label */}
+        <div className="mb-3 flex items-center justify-between gap-2 text-xs font-medium leading-none" style={{ color: '#0f4a73' }}>
+          <button
+            type="button"
+            onClick={() => void i18n.changeLanguage(isRtl ? 'en' : 'ar')}
+            className="rounded-[2px] px-1.5 py-1 hover:underline"
+            style={{ color: '#0f4a73', background: 'transparent', border: 0, cursor: 'pointer' }}
+          >
+            {t(isRtl ? 'common.switchToEnglish' : 'common.switchToArabic')}
+          </button>
+          <span className="flex items-center gap-2">
+            <span className="block h-[7px] w-[7px]" style={{ background: '#0f4a73' }} />
+            {t('auth.login.youAreHere')}
+          </span>
         </div>
 
         <form
@@ -165,7 +176,7 @@ export function LoginPage() {
               fontFamily: 'var(--font-sans)',
               color: '#0f1f35',
               background: '#fff',
-              textAlign: 'right',
+              textAlign: isRtl ? 'right' : 'left',
               transition: 'border-color .15s, box-shadow .15s',
             }}
             onFocus={(e) => {
@@ -216,7 +227,7 @@ export function LoginPage() {
                 fontFamily: 'var(--font-sans)',
                 color: '#0f1f35',
                 background: '#fff',
-                textAlign: 'right',
+                textAlign: isRtl ? 'right' : 'left',
                 transition: 'border-color .15s, box-shadow .15s',
               }}
               onFocus={(e) => {
