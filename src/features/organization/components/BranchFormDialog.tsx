@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/Button';
 import { Field, Input, Select } from '@/components/ui/form';
 import { userFacingMessage } from '@/lib/api/errors';
 import type { ApiError } from '@/lib/api/errors';
+import { toast } from '@/components/ui/Toast';
 import { useCreateBranch, useUpdateBranch } from '../api/queries';
 import type { BranchInput } from '../api/resource';
 import type { BranchWire } from '../api/schema';
@@ -146,19 +147,23 @@ export function BranchFormDialog({ open, onOpenChange, branch }: BranchFormDialo
 
   async function onSubmit(values: BranchFormValues) {
     const input = toBranchInput(values);
-    const result = isEdit
-      ? await updateMutation.mutate({ id: branch.id, ...input })
-      : await createMutation.mutate(input);
-
-    if (result) {
-      handleOpenChange(false);
+    try {
+      if (isEdit) {
+        await updateMutation.mutateAsync({ id: branch.id, ...input });
+      } else {
+        await createMutation.mutateAsync(input);
+      }
+    } catch (error) {
+      const failure = error as ApiError;
+      toast.error(userFacingMessage(failure));
+      const fieldErrors = fieldErrorsFrom(failure);
+      for (const [field, message] of Object.entries(fieldErrors)) {
+        setError(field as keyof BranchFormValues, { type: 'server', message });
+      }
       return;
     }
 
-    const fieldErrors = fieldErrorsFrom(isEdit ? updateMutation.error : createMutation.error);
-    for (const [field, message] of Object.entries(fieldErrors)) {
-      setError(field as keyof BranchFormValues, { type: 'server', message });
-    }
+    handleOpenChange(false);
   }
 
   return (

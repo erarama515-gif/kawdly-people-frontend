@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/Button';
 import { Field, Input } from '@/components/ui/form';
 import { userFacingMessage } from '@/lib/api/errors';
 import type { ApiError } from '@/lib/api/errors';
+import { toast } from '@/components/ui/Toast';
 import { useCreateJobGrade, useUpdateJobGrade } from '../api/queries';
 import type { JobGradeInput } from '../api/resource';
 import type { JobGradeWire } from '../api/schema';
@@ -126,19 +127,23 @@ export function JobGradeFormDialog({ open, onOpenChange, jobGrade }: JobGradeFor
 
   async function onSubmit(values: JobGradeFormValues) {
     const input = toJobGradeInput(values);
-    const result = isEdit
-      ? await updateMutation.mutate({ id: jobGrade.id, ...input })
-      : await createMutation.mutate(input);
-
-    if (result) {
-      handleOpenChange(false);
+    try {
+      if (isEdit) {
+        await updateMutation.mutateAsync({ id: jobGrade.id, ...input });
+      } else {
+        await createMutation.mutateAsync(input);
+      }
+    } catch (error) {
+      const failure = error as ApiError;
+      toast.error(userFacingMessage(failure));
+      const fieldErrors = fieldErrorsFrom(failure);
+      for (const [field, message] of Object.entries(fieldErrors)) {
+        setError(field as keyof JobGradeFormValues, { type: 'server', message });
+      }
       return;
     }
 
-    const fieldErrors = fieldErrorsFrom(isEdit ? updateMutation.error : createMutation.error);
-    for (const [field, message] of Object.entries(fieldErrors)) {
-      setError(field as keyof JobGradeFormValues, { type: 'server', message });
-    }
+    handleOpenChange(false);
   }
 
   return (

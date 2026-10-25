@@ -160,21 +160,24 @@ export function DepartmentFormDialog({ open, onOpenChange, dept }: DepartmentFor
 
   async function onSubmit(values: DepartmentFormValues) {
     const input = toDepartmentInput(values);
-    const result = isEdit
-      ? await updateMutation.mutate({ id: dept.id, ...input })
-      : await createMutation.mutate(input);
-
-    if (result) {
-      toast.success('common.saved');
-      handleOpenChange(false);
+    try {
+      if (isEdit) {
+        await updateMutation.mutateAsync({ id: dept.id, ...input });
+      } else {
+        await createMutation.mutateAsync(input);
+      }
+    } catch (error) {
+      const failure = error as ApiError;
+      toast.error(userFacingMessage(failure));
+      const fieldErrors = fieldErrorsFrom(failure);
+      for (const [field, message] of Object.entries(fieldErrors)) {
+        setError(field as keyof DepartmentFormValues, { type: 'server', message });
+      }
       return;
     }
 
-    toast.error('common.operationFailed');
-    const fieldErrors = fieldErrorsFrom(isEdit ? updateMutation.error : createMutation.error);
-    for (const [field, message] of Object.entries(fieldErrors)) {
-      setError(field as keyof DepartmentFormValues, { type: 'server', message });
-    }
+    toast.success('common.saved');
+    handleOpenChange(false);
   }
 
   return (

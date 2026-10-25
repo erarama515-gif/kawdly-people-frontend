@@ -462,78 +462,85 @@ export function OrganizationPage() {
 
   async function confirmDeleteDept() {
     if (!deleteDept) return;
-    const result = await deleteDeptMutation.mutate(deleteDept.id);
-    if (result !== undefined || deleteDeptMutation.error === undefined) {
+
+    try {
+      await deleteDeptMutation.mutateAsync(deleteDept.id);
       toast.success('common.deleted');
       setDeleteDept(undefined);
-    } else {
-      toast.error('common.operationFailed');
+    } catch (error) {
+      toast.error(userFacingMessage(error));
     }
   }
 
   async function confirmDeleteCompany() {
     if (!deleteCompany) return;
-    const result = await deleteCompanyMutation.mutate(deleteCompany.id);
-    if (result !== undefined || deleteCompanyMutation.error === undefined) {
+
+    try {
+      await deleteCompanyMutation.mutateAsync(deleteCompany.id);
       toast.success('common.deleted');
       setDeleteCompany(undefined);
-    } else {
-      toast.error('common.operationFailed');
+    } catch (error) {
+      toast.error(userFacingMessage(error));
     }
   }
 
   async function confirmDeleteBranch() {
     if (!deleteBranch) return;
-    const result = await deleteBranchMutation.mutate(deleteBranch.id);
-    if (result !== undefined || deleteBranchMutation.error === undefined) {
+
+    try {
+      await deleteBranchMutation.mutateAsync(deleteBranch.id);
       toast.success('common.deleted');
       setDeleteBranch(undefined);
-    } else {
-      toast.error('common.operationFailed');
+    } catch (error) {
+      toast.error(userFacingMessage(error));
     }
   }
 
   async function confirmDeleteJp() {
     if (!deleteJp) return;
-    const result = await deleteJpMutation.mutate(deleteJp.id);
-    if (result !== undefined || deleteJpMutation.error === undefined) {
+
+    try {
+      await deleteJpMutation.mutateAsync(deleteJp.id);
       toast.success('common.deleted');
       setDeleteJp(undefined);
-    } else {
-      toast.error('common.operationFailed');
+    } catch (error) {
+      toast.error(userFacingMessage(error));
     }
   }
 
   async function confirmDeleteJg() {
     if (!deleteJg) return;
-    const result = await deleteJgMutation.mutate(deleteJg.id);
-    if (result !== undefined || deleteJgMutation.error === undefined) {
+
+    try {
+      await deleteJgMutation.mutateAsync(deleteJg.id);
       toast.success('common.deleted');
       setDeleteJg(undefined);
-    } else {
-      toast.error('common.operationFailed');
+    } catch (error) {
+      toast.error(userFacingMessage(error));
     }
   }
 
   async function confirmDeleteJl() {
     if (!deleteJl) return;
-    const result = await deleteJlMutation.mutate(deleteJl.id);
-    if (result !== undefined || deleteJlMutation.error === undefined) {
+
+    try {
+      await deleteJlMutation.mutateAsync(deleteJl.id);
       toast.success('common.deleted');
       setDeleteJl(undefined);
-    } else {
-      toast.error('common.operationFailed');
+    } catch (error) {
+      toast.error(userFacingMessage(error));
     }
   }
 
   async function confirmDeleteCc() {
     if (!deleteCc) return;
-    const result = await deleteCcMutation.mutate(deleteCc.id);
-    if (result !== undefined || deleteCcMutation.error === undefined) {
+
+    try {
+      await deleteCcMutation.mutateAsync(deleteCc.id);
       toast.success('common.deleted');
       setDeleteCc(undefined);
-    } else {
-      toast.error('common.operationFailed');
+    } catch (error) {
+      toast.error(userFacingMessage(error));
     }
   }
 

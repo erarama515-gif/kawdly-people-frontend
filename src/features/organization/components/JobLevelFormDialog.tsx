@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/Button';
 import { Field, Input } from '@/components/ui/form';
 import { userFacingMessage } from '@/lib/api/errors';
 import type { ApiError } from '@/lib/api/errors';
+import { toast } from '@/components/ui/Toast';
 import { useCreateJobLevel, useUpdateJobLevel } from '../api/queries';
 import type { JobLevelInput } from '../api/resource';
 import type { JobLevelWire } from '../api/schema';
@@ -110,19 +111,23 @@ export function JobLevelFormDialog({ open, onOpenChange, jobLevel }: JobLevelFor
 
   async function onSubmit(values: JobLevelFormValues) {
     const input = toJobLevelInput(values);
-    const result = isEdit
-      ? await updateMutation.mutate({ id: jobLevel.id, ...input })
-      : await createMutation.mutate(input);
-
-    if (result) {
-      handleOpenChange(false);
+    try {
+      if (isEdit) {
+        await updateMutation.mutateAsync({ id: jobLevel.id, ...input });
+      } else {
+        await createMutation.mutateAsync(input);
+      }
+    } catch (error) {
+      const failure = error as ApiError;
+      toast.error(userFacingMessage(failure));
+      const fieldErrors = fieldErrorsFrom(failure);
+      for (const [field, message] of Object.entries(fieldErrors)) {
+        setError(field as keyof JobLevelFormValues, { type: 'server', message });
+      }
       return;
     }
 
-    const fieldErrors = fieldErrorsFrom(isEdit ? updateMutation.error : createMutation.error);
-    for (const [field, message] of Object.entries(fieldErrors)) {
-      setError(field as keyof JobLevelFormValues, { type: 'server', message });
-    }
+    handleOpenChange(false);
   }
 
   return (

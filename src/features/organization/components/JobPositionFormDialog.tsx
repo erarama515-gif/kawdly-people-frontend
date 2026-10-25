@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/Button';
 import { Field, Input, Select } from '@/components/ui/form';
 import { userFacingMessage } from '@/lib/api/errors';
 import type { ApiError } from '@/lib/api/errors';
+import { toast } from '@/components/ui/Toast';
 import {
   useDepartmentList,
   useJobGradeList,
@@ -160,19 +161,23 @@ export function JobPositionFormDialog({ open, onOpenChange, jobPosition }: JobPo
 
   async function onSubmit(values: JobPositionFormValues) {
     const input = toJobPositionInput(values);
-    const result = isEdit
-      ? await updateMutation.mutate({ id: jobPosition.id, ...input })
-      : await createMutation.mutate(input);
-
-    if (result) {
-      handleOpenChange(false);
+    try {
+      if (isEdit) {
+        await updateMutation.mutateAsync({ id: jobPosition.id, ...input });
+      } else {
+        await createMutation.mutateAsync(input);
+      }
+    } catch (error) {
+      const failure = error as ApiError;
+      toast.error(userFacingMessage(failure));
+      const fieldErrors = fieldErrorsFrom(failure);
+      for (const [field, message] of Object.entries(fieldErrors)) {
+        setError(field as keyof JobPositionFormValues, { type: 'server', message });
+      }
       return;
     }
 
-    const fieldErrors = fieldErrorsFrom(isEdit ? updateMutation.error : createMutation.error);
-    for (const [field, message] of Object.entries(fieldErrors)) {
-      setError(field as keyof JobPositionFormValues, { type: 'server', message });
-    }
+    handleOpenChange(false);
   }
 
   return (

@@ -11,6 +11,7 @@ import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { Pagination } from '@/components/ui/Pagination';
 import { Select } from '@/components/ui/form';
 import { userFacingMessage } from '@/lib/api/errors';
+import { toast } from '@/components/ui/Toast';
 import { useHasPermission } from '@/auth/session';
 import {
   usePerformanceCycleList,
@@ -390,8 +391,13 @@ export function PerformancePage() {
 
   async function confirmDeleteCycle() {
     if (!deleteCycle) return;
-    const result = await deleteCycleMutation.mutate(deleteCycle.id);
-    if (result !== undefined || deleteCycleMutation.error === undefined) setDeleteCycle(undefined);
+
+    try {
+      await deleteCycleMutation.mutateAsync(deleteCycle.id);
+      setDeleteCycle(undefined);
+    } catch (error) {
+      toast.error(userFacingMessage(error));
+    }
   }
 
   // ── Review actions ────
@@ -408,8 +414,13 @@ export function PerformancePage() {
 
   async function confirmDeleteReview() {
     if (!deleteReview) return;
-    const result = await deleteReviewMutation.mutate(deleteReview.id);
-    if (result !== undefined || deleteReviewMutation.error === undefined) setDeleteReview(undefined);
+
+    try {
+      await deleteReviewMutation.mutateAsync(deleteReview.id);
+      setDeleteReview(undefined);
+    } catch (error) {
+      toast.error(userFacingMessage(error));
+    }
   }
 
   function handleReviewTypeFilterChange(e: React.ChangeEvent<HTMLSelectElement>) {

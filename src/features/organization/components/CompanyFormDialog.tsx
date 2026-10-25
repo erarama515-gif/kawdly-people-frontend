@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/Button';
 import { Field, Input, Select } from '@/components/ui/form';
 import { userFacingMessage } from '@/lib/api/errors';
 import type { ApiError } from '@/lib/api/errors';
+import { toast } from '@/components/ui/Toast';
 import { useCreateCompany, useUpdateCompany } from '../api/queries';
 import type { CompanyInput } from '../api/resource';
 import type { CompanyWire } from '../api/schema';
@@ -168,19 +169,23 @@ export function CompanyFormDialog({ open, onOpenChange, company }: CompanyFormDi
 
   async function onSubmit(values: CompanyFormValues) {
     const input = toCompanyInput(values);
-    const result = isEdit
-      ? await updateMutation.mutate({ id: company.id, ...input })
-      : await createMutation.mutate(input);
-
-    if (result) {
-      handleOpenChange(false);
+    try {
+      if (isEdit) {
+        await updateMutation.mutateAsync({ id: company.id, ...input });
+      } else {
+        await createMutation.mutateAsync(input);
+      }
+    } catch (error) {
+      const failure = error as ApiError;
+      toast.error(userFacingMessage(failure));
+      const fieldErrors = fieldErrorsFrom(failure);
+      for (const [field, message] of Object.entries(fieldErrors)) {
+        setError(field as keyof CompanyFormValues, { type: 'server', message });
+      }
       return;
     }
 
-    const fieldErrors = fieldErrorsFrom(isEdit ? updateMutation.error : createMutation.error);
-    for (const [field, message] of Object.entries(fieldErrors)) {
-      setError(field as keyof CompanyFormValues, { type: 'server', message });
-    }
+    handleOpenChange(false);
   }
 
   return (
