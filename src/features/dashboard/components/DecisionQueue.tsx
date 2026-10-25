@@ -93,7 +93,7 @@ export function DecisionQueue({
             count={counts[row.id] ?? 0}
             exiting={exiting}
             language={language}
-            wired={role === 'hr_admin' && !exiting}
+            wired={(role === 'hr_admin' || role === 'super_admin') && !exiting}
             isResolving={isResolving}
             onResolve={onResolve}
           />
