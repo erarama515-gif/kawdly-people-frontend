@@ -31,7 +31,7 @@ export interface JobPostingListParams {
 
 /** Shape of `StoreJobPostingRequest`'s validated fields. */
 export interface JobPostingInput {
-  job_requisition_id: number;
+  job_requisition_id?: number | null;
   title: string;
   description: string;
   requirements?: string | null;

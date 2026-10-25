@@ -27,7 +27,7 @@ import type {
 interface StoredJobPosting {
   id: number;
   uuid: string;
-  job_requisition_id: number;
+  job_requisition_id?: number | null | undefined;
   title: string;
   description: string;
   requirements?: string | undefined;
@@ -250,7 +250,7 @@ export const mockJobPostingApi: JobPostingApi = {
     const row: StoredJobPosting = {
       id,
       uuid: `11000000-0000-4000-8000-${String(id).padStart(12, '0')}`,
-      job_requisition_id: input.job_requisition_id,
+      job_requisition_id: input.job_requisition_id ?? undefined,
       title: input.title,
       description: input.description,
       requirements: input.requirements ?? undefined,
@@ -286,6 +286,7 @@ export const mockJobPostingApi: JobPostingApi = {
     const updated: StoredJobPosting = {
       ...row,
       ...stripUndefined(input),
+      job_requisition_id: input.job_requisition_id === null ? undefined : (input.job_requisition_id ?? row.job_requisition_id),
       requirements: input.requirements === null ? undefined : (input.requirements ?? row.requirements),
       experience_min: input.experience_min === null ? undefined : (input.experience_min ?? row.experience_min),
       experience_max: input.experience_max === null ? undefined : (input.experience_max ?? row.experience_max),

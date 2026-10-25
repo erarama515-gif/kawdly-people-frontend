@@ -35,7 +35,7 @@ export const jobPostingStatusDecoder = literalUnion(['open', 'closed', 'draft'] 
 export const jobPostingDecoder = object({
   id: num(),
   uuid: str(),
-  job_requisition_id: num(),
+  job_requisition_id: optional(num()),
   title: str(),
   description: str(),
   requirements: optional(str()),

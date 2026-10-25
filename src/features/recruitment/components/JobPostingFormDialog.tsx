@@ -35,7 +35,7 @@ const EMPLOYMENT_TYPES: readonly JobPostingEmploymentType[] = [
 ];
 
 const jobPostingFormSchema = z.object({
-  job_requisition_id: z.string().min(1, REQUIRED),
+  job_requisition_id: z.string().optional(),
   title: z.string().trim().min(1, REQUIRED).max(255),
   description: z.string().trim().min(1, REQUIRED),
   requirements: z.string().trim().max(5000),
@@ -78,7 +78,7 @@ function buildDefaultValues(posting: JobPostingWire | undefined): JobPostingForm
   }
 
   return {
-    job_requisition_id: String(posting.job_requisition_id),
+    job_requisition_id: posting.job_requisition_id ? String(posting.job_requisition_id) : '',
     title: posting.title,
     description: posting.description,
     requirements: posting.requirements ?? '',
@@ -99,7 +99,10 @@ function buildDefaultValues(posting: JobPostingWire | undefined): JobPostingForm
 
 function toJobPostingInput(values: JobPostingFormValues): JobPostingInput {
   return {
-    job_requisition_id: Number(values.job_requisition_id),
+    job_requisition_id:
+      values.job_requisition_id && values.job_requisition_id !== '0'
+        ? Number(values.job_requisition_id)
+        : null,
     title: values.title.trim(),
     description: values.description.trim(),
     requirements: values.requirements.trim() || null,
