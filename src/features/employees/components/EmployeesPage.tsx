@@ -20,7 +20,7 @@ import { userFacingMessage } from '@/lib/api/errors';
 import { exportToExcel } from '@/lib/export';
 import { useLocalizeEntity } from '@/lib/localizeEntity';
 import { useDeleteEmployee, useEmployeeList } from '../api/queries';
-import { useHasPermission } from '@/auth/session';
+import { useCan } from '@/hooks/useCan';
 import type { EmployeeListParams } from '../api/resource';
 import type { EmployeeStatus } from '../api/resource';
 import type { EmployeeWire } from '../api/schema';
@@ -172,9 +172,9 @@ export function EmployeesPage() {
   const { state: onLeaveState } = useEmployeeList({ page: 1, perPage: 1, status: 'on_leave' });
 
   const deleteMutation = useDeleteEmployee(params);
-  const canCreate = useHasPermission('employee.list.create');
-  const canEdit = useHasPermission('employee.list.edit');
-  const canDelete = useHasPermission('employee.list.delete');
+  const canCreate = useCan('employee', 'create');
+  const canEdit = useCan('employee', 'edit');
+  const canDelete = useCan('employee', 'delete');
 
   // Client-side sorting
   type EmpSortCol = 'employee' | 'id' | 'department' | 'position' | 'status' | 'joined';

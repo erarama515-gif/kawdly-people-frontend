@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/Button';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { Pagination } from '@/components/ui/Pagination';
 import { userFacingMessage } from '@/lib/api/errors';
-import { useHasPermission } from '@/auth/session';
+import { useCan } from '@/hooks/useCan';
 import { useDeleteJobPosting, useJobPostingList } from '../api/queries';
 import type { JobPostingListParams, JobPostingStatus } from '../api/resource';
 import type { JobPostingWire } from '../api/schema';
@@ -170,8 +170,8 @@ function Pipeline({ stages, isLoading }: PipelineProps) {
 
 function OfferCandidatesPanel() {
   const { t } = useTranslation();
-  const canViewCandidates = useHasPermission('recruitment.candidate.view');
-  const canConvert = useHasPermission('recruitment.convert_to_employee.create');
+  const canViewCandidates = useCan('candidate', 'view');
+  const canConvert = useCan('recruitment.convert_to_employee', 'create');
   const { state } = useOfferCandidates();
   const [convertTarget, setConvertTarget] = useState<CandidateWire | undefined>(undefined);
 
@@ -286,9 +286,9 @@ export function RecruitmentPage() {
   const { state: pipelineState } = usePipelineStats();
 
   const deleteMutation = useDeleteJobPosting(params);
-  const canCreate = useHasPermission('recruitment.job_posting.create');
-  const canEdit = useHasPermission('recruitment.job_posting.edit');
-  const canDelete = useHasPermission('recruitment.job_posting.delete');
+  const canCreate = useCan('job_posting', 'create');
+  const canEdit = useCan('job_posting', 'edit');
+  const canDelete = useCan('job_posting', 'delete');
 
   const postings = state.data?.data ?? [];
   const meta = state.data?.meta;

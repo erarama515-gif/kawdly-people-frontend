@@ -18,7 +18,7 @@ import { useBulkSelect } from '@/hooks/useBulkSelect';
 import { userFacingMessage } from '@/lib/api/errors';
 import { exportToExcel } from '@/lib/export';
 import { formatAmount } from '@/lib/salary';
-import { useHasPermission } from '@/auth/session';
+import { useCan } from '@/hooks/useCan';
 import { toast } from '@/components/ui/Toast';
 import { useContractList, useDeleteContract, useTerminateContract } from '../api/queries';
 import type { ContractListParams, ContractStatus } from '../api/resource';
@@ -191,10 +191,10 @@ export function ContractsPage() {
 
   const deleteMutation = useDeleteContract(params);
   const terminateMutation = useTerminateContract();
-  const canTerminate = useHasPermission('contract.contract.edit');
-  const canCreate = useHasPermission('contract.contract.create');
-  const canEdit = useHasPermission('contract.contract.edit');
-  const canDelete = useHasPermission('contract.contract.delete');
+  const canTerminate = useCan('contract', 'edit');
+  const canCreate = useCan('contract', 'create');
+  const canEdit = useCan('contract', 'edit');
+  const canDelete = useCan('contract', 'delete');
 
   // Client-side sorting
   type ContractSortCol = 'employee' | 'type' | 'startDate' | 'endDate' | 'salary' | 'status';

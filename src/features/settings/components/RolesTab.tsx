@@ -11,7 +11,7 @@ import { Dialog, DialogContent, DialogClose } from '@/components/ui/Dialog';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { Field, Input } from '@/components/ui/form';
 import { userFacingMessage } from '@/lib/api/errors';
-import { useHasPermission } from '@/auth/session';
+import { useCan } from '@/hooks/useCan';
 import {
   useRoles,
   useRole,
@@ -328,7 +328,7 @@ function RolesSkeleton() {
 
 export function RolesTab() {
   const { t } = useTranslation();
-  const canManage = useHasPermission('platform.roles_permissions.manage');
+  const canManage = useCan('roles', 'manage');
   const { state, refetch } = useRoles();
   const { state: catalogState } = usePermissionsCatalog();
   const [addOpen, setAddOpen] = useState(false);

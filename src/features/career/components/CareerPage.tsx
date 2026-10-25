@@ -11,7 +11,7 @@ import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { Pagination } from '@/components/ui/Pagination';
 import { Select } from '@/components/ui/form';
 import { userFacingMessage } from '@/lib/api/errors';
-import { useHasPermission } from '@/auth/session';
+import { useCan } from '@/hooks/useCan';
 import {
   useCareerPathList,
   useDeleteCareerPath,
@@ -247,12 +247,12 @@ export function CareerPage() {
   const { state: totalPlanState } = useSuccessionPlanList({ page: 1, perPage: 1 });
   const { state: readyNowState } = useSuccessionPlanList({ page: 1, perPage: 1, readiness: 'ready_now' });
   const deletePlanMutation = useDeleteSuccessionPlan(planParams);
-  const canCreatePath = useHasPermission('career.career_path.create');
-  const canEditPath = useHasPermission('career.career_path.edit');
-  const canDeletePath = useHasPermission('career.career_path.delete');
-  const canCreatePlan = useHasPermission('career.succession_plan.create');
-  const canEditPlan = useHasPermission('career.succession_plan.edit');
-  const canDeletePlan = useHasPermission('career.succession_plan.delete');
+  const canCreatePath = useCan('career.career_path', 'create');
+  const canEditPath = useCan('career.career_path', 'edit');
+  const canDeletePath = useCan('career.career_path', 'delete');
+  const canCreatePlan = useCan('career.succession_plan', 'create');
+  const canEditPlan = useCan('career.succession_plan', 'edit');
+  const canDeletePlan = useCan('career.succession_plan', 'delete');
 
   const plans = planState.data?.data ?? [];
   const planMeta = planState.data?.meta;

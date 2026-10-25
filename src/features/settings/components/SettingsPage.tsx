@@ -6,7 +6,7 @@ import { Card } from '@/components/ui/Card';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { Button } from '@/components/ui/Button';
 import { userFacingMessage } from '@/lib/api/errors';
-import { useHasPermission } from '@/auth/session';
+import { useCan } from '@/hooks/useCan';
 import { useSettingList, useUpdateSetting } from '../api/queries';
 import type { SettingListParams } from '../api/resource';
 import type { SettingWire } from '../api/schema';
@@ -367,9 +367,9 @@ export function SettingsPage() {
   // Role reads require `platform.roles_permissions.view`; mutations need
   // `.manage` (see routes/api/roles.php). Show the tab to any reader and gate
   // the create/edit/delete controls inside RolesTab on `.manage`.
-  const canViewRoles = useHasPermission('platform.roles_permissions.view');
-  const canManageUsers = useHasPermission('users.manage');
-  const canViewDocumentTypes = useHasPermission('document.document_type.view');
+  const canViewRoles = useCan('roles', 'view');
+  const canManageUsers = useCan('users', 'manage');
+  const canViewDocumentTypes = useCan('document_type', 'view');
   const visibleTabs = SETTINGS_TABS.filter(
     (tab) =>
       (tab.id !== 'users' || canManageUsers) &&

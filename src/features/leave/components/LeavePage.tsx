@@ -25,7 +25,7 @@ import {
   useApproveLeaveRequest,
   useRejectLeaveRequest,
 } from '../api/queries';
-import { useHasPermission } from '@/auth/session';
+import { useCan } from '@/hooks/useCan';
 import type { LeaveRequestListParams, LeaveRequestStatus } from '../api/resource';
 import type { LeaveRequestWire } from '../api/schema';
 import { LeaveRequestFormDialog } from './LeaveRequestFormDialog';
@@ -218,10 +218,10 @@ export function LeavePage() {
   const approveMutation = useApproveLeaveRequest(params);
   const rejectMutation  = useRejectLeaveRequest(params);
 
-  const canCreate = useHasPermission('leave.request.create');
-  const canEdit = useHasPermission('leave.request.edit');
-  const canDelete = useHasPermission('leave.request.delete');
-  const canApprove = useHasPermission('leave.request.approve');
+  const canCreate = useCan('leave', 'create');
+  const canEdit = useCan('leave', 'edit');
+  const canDelete = useCan('leave', 'delete');
+  const canApprove = useCan('leave', 'approve');
 
   // Client-side sorting
   type LeaveSortCol = 'employee' | 'leaveType' | 'from' | 'to' | 'days' | 'status';

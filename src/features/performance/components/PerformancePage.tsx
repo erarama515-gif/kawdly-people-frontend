@@ -12,7 +12,7 @@ import { Pagination } from '@/components/ui/Pagination';
 import { Select } from '@/components/ui/form';
 import { userFacingMessage } from '@/lib/api/errors';
 import { toast } from '@/components/ui/Toast';
-import { useHasPermission } from '@/auth/session';
+import { useCan } from '@/hooks/useCan';
 import {
   usePerformanceCycleList,
   useDeletePerformanceCycle,
@@ -299,12 +299,12 @@ export function PerformancePage() {
   const { state: totalCyclesState } = usePerformanceCycleList({ page: 1, perPage: 1 });
   const { state: activeCyclesState } = usePerformanceCycleList({ page: 1, perPage: 1, status: 'active' });
   const deleteCycleMutation = useDeletePerformanceCycle(cycleParams);
-  const canCreateCycle = useHasPermission('performance.performance_cycle.create');
-  const canEditCycle = useHasPermission('performance.performance_cycle.edit');
-  const canDeleteCycle = useHasPermission('performance.performance_cycle.delete');
-  const canCreateReview = useHasPermission('performance.review.create');
-  const canEditReview = useHasPermission('performance.review.edit');
-  const canDeleteReview = useHasPermission('performance.review.delete');
+  const canCreateCycle = useCan('performance.performance_cycle', 'create');
+  const canEditCycle = useCan('performance.performance_cycle', 'edit');
+  const canDeleteCycle = useCan('performance.performance_cycle', 'delete');
+  const canCreateReview = useCan('performance', 'create');
+  const canEditReview = useCan('performance', 'edit');
+  const canDeleteReview = useCan('performance', 'delete');
 
   const cycles = cycleState.data?.data ?? [];
   const cycleMeta = cycleState.data?.meta;

@@ -20,7 +20,7 @@ import {
   useDocumentTypeList,
   useDocumentTemplateCount,
 } from '../api/queries';
-import { useHasPermission } from '@/auth/session';
+import { useCan } from '@/hooks/useCan';
 import type { EmployeeDocumentListParams, EmployeeDocumentStatus } from '../api/resource';
 import type { EmployeeDocumentWire } from '../api/schema';
 import { EmployeeDocumentFormDialog } from './EmployeeDocumentFormDialog';
@@ -236,10 +236,10 @@ export function DocumentsPage() {
   }, [docTypeState.data]);
 
   const deleteMutation = useDeleteEmployeeDocument(params);
-  const canCreate = useHasPermission('document.employee_document.create');
-  const canEdit = useHasPermission('document.employee_document.edit');
-  const canDelete = useHasPermission('document.employee_document.delete');
-  const canGenerate = useHasPermission(['document.document_template.view', 'document.generated_document.view']);
+  const canCreate = useCan('document', 'create');
+  const canEdit = useCan('document', 'edit');
+  const canDelete = useCan('document', 'delete');
+  const canGenerate = useCan('document_template', 'view');
 
   // Client-side sorting
   type DocSortCol = 'employee' | 'documentType' | 'documentNumber' | 'issueDate' | 'expiryDate' | 'status';

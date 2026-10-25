@@ -54,7 +54,7 @@ import { JobLevelFormDialog } from './JobLevelFormDialog';
 import { CostCenterFormDialog } from './CostCenterFormDialog';
 import { toast } from '@/components/ui/Toast';
 import { OrgChart } from './OrgChart';
-import { useHasPermission } from '@/auth/session';
+import { useCan } from '@/hooks/useCan';
 
 /**
  * Organization module live-data page.
@@ -544,34 +544,34 @@ export function OrganizationPage() {
     }
   }
 
-  // ── Permissions ─────────────────────────────────────────────────────────────
-  const canCreateDept    = useHasPermission('organization.department.create');
-  const canEditDept      = useHasPermission('organization.department.edit');
-  const canDeleteDept    = useHasPermission('organization.department.delete');
+  // ── Permissions (A4.2 useCan) ─────────────────────────────────────────────
+  const canCreateDept    = useCan('department', 'create');
+  const canEditDept      = useCan('department', 'edit');
+  const canDeleteDept    = useCan('department', 'delete');
 
-  const canCreateCompany = useHasPermission('organization.company.create');
-  const canEditCompany   = useHasPermission('organization.company.edit');
-  const canDeleteCompany = useHasPermission('organization.company.delete');
+  const canCreateCompany = useCan('company', 'create');
+  const canEditCompany   = useCan('company', 'edit');
+  const canDeleteCompany = useCan('company', 'delete');
 
-  const canCreateBranch  = useHasPermission('organization.branch.create');
-  const canEditBranch    = useHasPermission('organization.branch.edit');
-  const canDeleteBranch  = useHasPermission('organization.branch.delete');
+  const canCreateBranch  = useCan('branch', 'create');
+  const canEditBranch    = useCan('branch', 'edit');
+  const canDeleteBranch  = useCan('branch', 'delete');
 
-  const canCreateJp      = useHasPermission('organization.job_position.create');
-  const canEditJp        = useHasPermission('organization.job_position.edit');
-  const canDeleteJp      = useHasPermission('organization.job_position.delete');
+  const canCreateJp      = useCan('job_position', 'create');
+  const canEditJp        = useCan('job_position', 'edit');
+  const canDeleteJp      = useCan('job_position', 'delete');
 
-  const canCreateJg      = useHasPermission('organization.job_grade.create');
-  const canEditJg        = useHasPermission('organization.job_grade.edit');
-  const canDeleteJg      = useHasPermission('organization.job_grade.delete');
+  const canCreateJg      = useCan('job_grade', 'create');
+  const canEditJg        = useCan('job_grade', 'edit');
+  const canDeleteJg      = useCan('job_grade', 'delete');
 
-  const canCreateJl      = useHasPermission('organization.job_level.create');
-  const canEditJl        = useHasPermission('organization.job_level.edit');
-  const canDeleteJl      = useHasPermission('organization.job_level.delete');
+  const canCreateJl      = useCan('job_level', 'create');
+  const canEditJl        = useCan('job_level', 'edit');
+  const canDeleteJl      = useCan('job_level', 'delete');
 
-  const canCreateCc      = useHasPermission('organization.cost_center.create');
-  const canEditCc        = useHasPermission('organization.cost_center.edit');
-  const canDeleteCc      = useHasPermission('organization.cost_center.delete');
+  const canCreateCc      = useCan('cost_center', 'create');
+  const canEditCc        = useCan('cost_center', 'edit');
+  const canDeleteCc      = useCan('cost_center', 'delete');
 
   // ─── Render ───────────────────────────────────────────────────────────────────
 

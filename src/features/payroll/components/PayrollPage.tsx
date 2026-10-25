@@ -13,7 +13,7 @@ import { Pagination } from '@/components/ui/Pagination';
 import { Select } from '@/components/ui/form';
 import { userFacingMessage } from '@/lib/api/errors';
 import { formatAmount } from '@/lib/salary';
-import { useHasPermission } from '@/auth/session';
+import { useCan } from '@/hooks/useCan';
 import { toast } from '@/components/ui/Toast';
 import {
   usePayrollRunList,
@@ -296,14 +296,14 @@ export function PayrollPage() {
   const deleteRunMutation = useDeletePayrollRun(runParams);
   const calculateRunMutation = useCalculatePayrollRun();
   const approveRunMutation = useApprovePayrollRun();
-  const canCreateRun = useHasPermission('payroll.run.create');
-  const canEditRun = useHasPermission('payroll.run.edit');
-  const canDeleteRun = useHasPermission('payroll.run.delete');
-  const canCalculateRun = useHasPermission('payroll.run.edit');
-  const canApproveRun = useHasPermission('payroll.run.approve');
-  const canCreatePayslip = useHasPermission('payroll.payslip.create');
-  const canEditPayslip = useHasPermission('payroll.payslip.edit');
-  const canDeletePayslip = useHasPermission('payroll.payslip.delete');
+  const canCreateRun = useCan('payroll_run', 'create');
+  const canEditRun = useCan('payroll_run', 'edit');
+  const canDeleteRun = useCan('payroll_run', 'delete');
+  const canCalculateRun = useCan('payroll_run', 'edit');
+  const canApproveRun = useCan('payroll_run', 'approve');
+  const canCreatePayslip = useCan('payslip', 'create');
+  const canEditPayslip = useCan('payslip', 'edit');
+  const canDeletePayslip = useCan('payslip', 'delete');
 
   // Date range is now applied server-side via `runParams.periodFrom`/`periodTo` (see above).
   const runs    = runState.data?.data ?? [];

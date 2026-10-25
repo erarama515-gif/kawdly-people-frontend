@@ -11,7 +11,7 @@ import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { Pagination } from '@/components/ui/Pagination';
 import { Select } from '@/components/ui/form';
 import { userFacingMessage } from '@/lib/api/errors';
-import { useHasPermission } from '@/auth/session';
+import { useCan } from '@/hooks/useCan';
 import {
   useOnboardingInstanceList,
   useDeleteOnboardingInstance,
@@ -507,13 +507,13 @@ export function OnboardingPage() {
   }, [completedBatchState.data, currentMonth]);
 
   const deleteMutation = useDeleteOnboardingInstance(params);
-  const canCreateInstance = useHasPermission('onboarding.instance.create');
-  const canEditInstance = useHasPermission('onboarding.instance.edit');
-  const canDeleteInstance = useHasPermission('onboarding.instance.delete');
-  const canEditTask = useHasPermission('onboarding.task.edit');
-  const canCreateTemplateTask = useHasPermission('onboarding.template_task.create');
-  const canEditTemplateTask = useHasPermission('onboarding.template_task.edit');
-  const canDeleteTemplateTask = useHasPermission('onboarding.template_task.delete');
+  const canCreateInstance = useCan('onboarding.instance', 'create');
+  const canEditInstance = useCan('onboarding.instance', 'edit');
+  const canDeleteInstance = useCan('onboarding.instance', 'delete');
+  const canEditTask = useCan('onboarding.task', 'edit');
+  const canCreateTemplateTask = useCan('onboarding.template_task', 'create');
+  const canEditTemplateTask = useCan('onboarding.template_task', 'edit');
+  const canDeleteTemplateTask = useCan('onboarding.template_task', 'delete');
 
   const instances = state.data?.data ?? [];
   const meta = state.data?.meta;

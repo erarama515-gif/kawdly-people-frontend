@@ -15,7 +15,7 @@ import { SortableHeader } from '@/components/ui/SortableHeader';
 import { useSort, sortData } from '@/hooks/useSort';
 import { userFacingMessage } from '@/lib/api/errors';
 import { useDeleteAttendance, useAttendanceList } from '../api/queries';
-import { useHasPermission } from '@/auth/session';
+import { useCan } from '@/hooks/useCan';
 import type { AttendanceListParams, AttendanceStatus } from '../api/resource';
 import { isKnownAttendanceStatus } from '../api/schema';
 import type { AttendanceWire } from '../api/schema';
@@ -225,9 +225,9 @@ export function AttendancePage() {
   const { state: absentState } = useAttendanceList({ page: 1, perPage: 1, status: 'absent' });
 
   const deleteMutation = useDeleteAttendance(params);
-  const canCreate = useHasPermission('attendance.record.create');
-  const canEdit = useHasPermission('attendance.record.edit');
-  const canDelete = useHasPermission('attendance.record.delete');
+  const canCreate = useCan('attendance', 'create');
+  const canEdit = useCan('attendance', 'edit');
+  const canDelete = useCan('attendance', 'delete');
 
   // Client-side sorting
   type AttendanceSortCol = 'employee' | 'date' | 'checkIn' | 'checkOut' | 'hours' | 'late' | 'status';

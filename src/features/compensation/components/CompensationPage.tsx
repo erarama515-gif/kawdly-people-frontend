@@ -11,7 +11,7 @@ import { Pagination } from '@/components/ui/Pagination';
 import { userFacingMessage } from '@/lib/api/errors';
 import { useLocalizeEntity } from '@/lib/localizeEntity';
 import { formatAmount } from '@/lib/salary';
-import { useHasPermission } from '@/auth/session';
+import { useCan } from '@/hooks/useCan';
 import {
   useSalaryStructureList,
   useDeleteSalaryStructure,
@@ -207,9 +207,9 @@ function SalaryStructuresSection() {
 
   const { state, refetch } = useSalaryStructureList(params);
   const deleteMutation = useDeleteSalaryStructure(params);
-  const canCreate = useHasPermission('payroll.salary_structure.create');
-  const canEdit = useHasPermission('payroll.salary_structure.edit');
-  const canDelete = useHasPermission('payroll.salary_structure.delete');
+  const canCreate = useCan('salary_structure', 'create');
+  const canEdit = useCan('salary_structure', 'edit');
+  const canDelete = useCan('salary_structure', 'delete');
 
   const records = state.data?.data ?? [];
   const meta = state.data?.meta;
@@ -408,9 +408,9 @@ function SalaryComponentsSection() {
 
   const { state, refetch } = useSalaryComponentList(params);
   const deleteMutation = useDeleteSalaryComponent(params);
-  const canCreate = useHasPermission('payroll.salary_component.create');
-  const canEdit = useHasPermission('payroll.salary_component.edit');
-  const canDelete = useHasPermission('payroll.salary_component.delete');
+  const canCreate = useCan('salary_component', 'create');
+  const canEdit = useCan('salary_component', 'edit');
+  const canDelete = useCan('salary_component', 'delete');
 
   // Structures for filter dropdown
   const { state: structureState } = useSalaryStructureList({ page: 1, perPage: 100 });
@@ -678,9 +678,9 @@ function EmployeeSalaryAssignmentsSection() {
 
   const { state, refetch } = useEmployeeSalaryList(params);
   const deleteMutation = useDeleteEmployeeSalary(params);
-  const canCreate = useHasPermission('payroll.employee_salary.create');
-  const canEdit = useHasPermission('payroll.employee_salary.edit');
-  const canDelete = useHasPermission('payroll.employee_salary.delete');
+  const canCreate = useCan('employee_salary', 'create');
+  const canEdit = useCan('employee_salary', 'edit');
+  const canDelete = useCan('employee_salary', 'delete');
 
   // Employees + structures for filter dropdowns and name resolution.
   const { state: employeeState } = useEmployeeList({ page: 1, perPage: 100 });

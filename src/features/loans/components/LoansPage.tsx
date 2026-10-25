@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { CheckCircle2, Pencil, Plus, Search, Trash2 } from 'lucide-react';
 import { cn } from '@/lib/cn';
-import { useHasPermission } from '@/auth/session';
+import { useCan } from '@/hooks/useCan';
 import { Avatar } from '@/components/ui/Avatar';
 import { Card } from '@/components/ui/Card';
 import { SkeletonTable } from '@/components/ui/SkeletonTable';
@@ -180,7 +180,7 @@ export function LoansPage() {
   const [deleteTarget, setDeleteTarget] = useState<LoanWire | undefined>(undefined);
   const [approveTarget, setApproveTarget] = useState<LoanWire | undefined>(undefined);
 
-  const canApprove = useHasPermission('payroll.loan_approval.approve');
+  const canApprove = useCan('loan', 'approve');
 
   // Debounce the free-text search so every keystroke doesn't fire a request.
   useEffect(() => {
