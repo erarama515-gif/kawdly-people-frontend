@@ -3,6 +3,18 @@
     "name": "Kawdly",
     "suffix": "People"
   },
+  "errors": {
+    "unknown": "Something went wrong.",
+    "network": "You appear to be offline.",
+    "timeout": "The request took too long to respond.",
+    "decode": "The server sent data in an unexpected format.",
+    "sessionExpired": "Your session has expired. Please sign in again.",
+    "forbidden": "You do not have access to this data.",
+    "notFound": "This data is no longer available.",
+    "validation": "Please check the data you entered and try again.",
+    "rateLimited": "Too many attempts. Please wait a moment and try again.",
+    "server": "The server could not complete the request. Please try again."
+  },
   "auth": {
     "login": {
       "title": "Sign in",
