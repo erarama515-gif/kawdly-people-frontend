@@ -1,9 +1,11 @@
+import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { NavLink } from 'react-router-dom';
 import * as Dialog from '@radix-ui/react-dialog';
 import { Menu } from 'lucide-react';
 import { cn } from '@/lib/cn';
 import { getNavEntries, navigation } from '@/config/navigation';
+import { useSessionStore } from '@/auth/session';
 import { useUiStore } from '@/stores/ui-store';
 import { Brand } from './Brand';
 import { LanguageSwitcher } from './LanguageSwitcher';
@@ -16,7 +18,19 @@ import { UserMenu } from './UserMenu';
 /** Flat navigation list for the mobile drawer (all routable pages). */
 function MobileDrawerBody({ onNavigate }: { onNavigate: () => void }) {
   const { t } = useTranslation();
-  const entries = getNavEntries(navigation);
+  const role = useSessionStore((state) => state.role);
+  const permissions = useSessionStore((state) => state.permissions);
+  const entries = useMemo(
+    () =>
+      getNavEntries(navigation).filter((entry) => {
+        if (!entry.permission || role === 'super_admin') return true;
+        if (Array.isArray(entry.permission)) {
+          return entry.permission.some((p) => permissions.includes(p));
+        }
+        return permissions.includes(entry.permission);
+      }),
+    [role, permissions],
+  );
 
   return (
     <nav aria-label={t('sidebar.primaryNav')} className="scrollbar-slim flex-1 overflow-y-auto p-2">

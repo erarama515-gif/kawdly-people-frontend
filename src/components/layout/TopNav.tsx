@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useLocation, useNavigate } from 'react-router-dom';
 import * as Popover from '@radix-ui/react-popover';
@@ -6,16 +6,18 @@ import { ChevronDown } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { cn } from '@/lib/cn';
 import { navigation, type NavGroup } from '@/config/navigation';
+import { useSessionStore } from '@/auth/session';
 
 type TopNavItem =
   | { kind: 'leaf'; id: string; path: string; icon: LucideIcon }
   | { kind: 'group'; group: NavGroup };
 
-function buildItems(): TopNavItem[] {
-  return [
-    ...navigation.primary.map((leaf) => ({ kind: 'leaf' as const, id: leaf.id, path: leaf.path, icon: leaf.icon })),
-    ...navigation.groups.map((group) => ({ kind: 'group' as const, group })),
-  ];
+function hasLeafAccess(leaf: { permission?: string | string[] | undefined }, role: string | null, permissions: string[]): boolean {
+  if (!leaf.permission || role === 'super_admin') return true;
+  if (Array.isArray(leaf.permission)) {
+    return leaf.permission.some((p) => permissions.includes(p));
+  }
+  return permissions.includes(leaf.permission);
 }
 
 function isLeafActive(item: Extract<TopNavItem, { kind: 'leaf' }>, pathname: string) {
@@ -42,7 +44,24 @@ export function TopNav({ className }: { className?: string }) {
   const { pathname } = useLocation();
   const navigate = useNavigate();
 
-  const items = buildItems();
+  const role = useSessionStore((state) => state.role);
+  const permissions = useSessionStore((state) => state.permissions);
+
+  const items = useMemo(() => {
+    const list: TopNavItem[] = [];
+    for (const leaf of navigation.primary) {
+      if (hasLeafAccess(leaf, role, permissions)) {
+        list.push({ kind: 'leaf', id: leaf.id, path: leaf.path, icon: leaf.icon });
+      }
+    }
+    for (const group of navigation.groups) {
+      const allowedChildren = group.children.filter((child) => hasLeafAccess(child, role, permissions));
+      if (allowedChildren.length > 0) {
+        list.push({ kind: 'group', group: { ...group, children: allowedChildren } });
+      }
+    }
+    return list;
+  }, [role, permissions]);
   const activeIndex = items.findIndex((item) =>
     item.kind === 'leaf' ? isLeafActive(item, pathname) : isGroupActive(item.group, pathname),
   );

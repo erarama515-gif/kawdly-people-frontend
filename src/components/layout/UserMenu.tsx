@@ -5,8 +5,8 @@ import { Check, ChevronLeft, Languages, LogOut, Settings, UserRound } from 'luci
 import { cn } from '@/lib/cn';
 import { useIsRtl } from '@/hooks/useDirection';
 import { useUiStore } from '@/stores/ui-store';
-import { pathById } from '@/config/navigation';
-import { useSession, useSessionStore } from '@/auth/session';
+import { navigation, pathById } from '@/config/navigation';
+import { useHasPermission, useSession, useSessionStore } from '@/auth/session';
 import { Avatar } from '@/components/ui/Avatar';
 import type { Language } from '@/lib/language';
 
@@ -24,6 +24,8 @@ export function UserMenu() {
   const logout = useSessionStore((state) => state.logout);
   const { user } = useSession();
   const isArabic = language === 'ar';
+  const settingsLeaf = navigation.pinned.find((p) => p.id === 'settings');
+  const canAccessSettings = useHasPermission(settingsLeaf?.permission ?? []);
   const identity = {
     name: isArabic ? user.name.ar : user.name.en,
     initials: isArabic ? user.initials.ar : user.initials.en,
@@ -79,13 +81,15 @@ export function UserMenu() {
             {t('userMenu.profile')}
           </DropdownMenu.Item>
 
-          <DropdownMenu.Item
-            className={cn(menuItemClass)}
-            onSelect={() => navigate(pathById('settings'))}
-          >
-            <Settings className="h-4 w-4 shrink-0 text-ink-faint" strokeWidth={1.75} aria-hidden="true" />
-            {t('nav.settings')}
-          </DropdownMenu.Item>
+          {canAccessSettings && (
+            <DropdownMenu.Item
+              className={cn(menuItemClass)}
+              onSelect={() => navigate(pathById('settings'))}
+            >
+              <Settings className="h-4 w-4 shrink-0 text-ink-faint" strokeWidth={1.75} aria-hidden="true" />
+              {t('nav.settings')}
+            </DropdownMenu.Item>
+          )}
 
           <DropdownMenu.Sub>
             <DropdownMenu.SubTrigger className={cn(menuItemClass, 'data-[state=open]:bg-surface-hover')}>

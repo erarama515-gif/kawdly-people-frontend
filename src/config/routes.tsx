@@ -2,6 +2,8 @@ import { lazy, Suspense } from 'react';
 import { Route } from 'react-router-dom';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { NotFoundPage } from '@/pages/NotFoundPage';
+import { UnauthorizedPage } from '@/pages/UnauthorizedPage';
+import { useHasPermission } from '@/auth/session';
 import { getNavEntries, navigation } from './navigation';
 
 /* ------------------------------------------------------------------ */
@@ -75,6 +77,20 @@ function PageWithBoundary({ children }: { children: React.ReactNode }) {
   );
 }
 
+function PermissionGatedPage({
+  permission,
+  children,
+}: {
+  permission?: string | string[] | undefined;
+  children: React.ReactNode;
+}) {
+  const canAccess = useHasPermission(permission ?? []);
+  if (permission && !canAccess) {
+    return <UnauthorizedPage />;
+  }
+  return <>{children}</>;
+}
+
 /** Route elements generated from the navigation config — one route per nav leaf. */
 export function buildNavRoutes() {
   const navRoutes = getNavEntries(navigation).map((entry) => {
@@ -87,7 +103,13 @@ export function buildNavRoutes() {
       <Route
         key={entry.path}
         path={entry.path}
-        element={<PageWithBoundary>{page}</PageWithBoundary>}
+        element={
+          <PageWithBoundary>
+            <PermissionGatedPage permission={entry.permission}>
+              {page}
+            </PermissionGatedPage>
+          </PageWithBoundary>
+        }
       />
     );
   });
@@ -97,7 +119,13 @@ export function buildNavRoutes() {
     <Route
       key="/people/employees/:id"
       path="/people/employees/:id"
-      element={<PageWithBoundary><EmployeeProfilePage /></PageWithBoundary>}
+      element={
+        <PageWithBoundary>
+          <PermissionGatedPage permission="employee.list.view">
+            <EmployeeProfilePage />
+          </PermissionGatedPage>
+        </PageWithBoundary>
+      }
     />,
   );
 

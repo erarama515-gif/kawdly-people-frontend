@@ -26,6 +26,8 @@ export interface NavLeaf {
   id: string;
   path: string;
   icon: LucideIcon;
+  /** Permission(s) required to view this nav item (A4.4). */
+  permission?: string | string[] | undefined;
 }
 
 /** A collapsible group of leaves. Groups have no route of their own. */
@@ -53,50 +55,62 @@ export const navigation: NavigationConfig = {
       id: 'people',
       icon: Users,
       children: [
-        { id: 'organization', path: '/people/organization', icon: Network },
-        { id: 'employees', path: '/people/employees', icon: Users },
-        { id: 'contracts', path: '/people/contracts', icon: FileText },
-        { id: 'documents', path: '/people/documents', icon: FolderOpen },
+        { id: 'organization', path: '/people/organization', icon: Network, permission: 'organization.department.view' },
+        { id: 'employees', path: '/people/employees', icon: Users, permission: 'employee.list.view' },
+        { id: 'contracts', path: '/people/contracts', icon: FileText, permission: 'contract.contract.view' },
+        { id: 'documents', path: '/people/documents', icon: FolderOpen, permission: 'document.employee_document.view' },
       ],
     },
     {
       id: 'workforce',
       icon: Clock,
       children: [
-        { id: 'attendance', path: '/workforce/attendance', icon: Clock },
-        { id: 'leave', path: '/workforce/leave', icon: CalendarCheck },
+        { id: 'attendance', path: '/workforce/attendance', icon: Clock, permission: 'attendance.daily_attendance.view' },
+        { id: 'leave', path: '/workforce/leave', icon: CalendarCheck, permission: 'leave.request.view' },
       ],
     },
     {
       id: 'finance',
       icon: Wallet,
       children: [
-        { id: 'payroll', path: '/finance/payroll', icon: Wallet },
-        { id: 'compensation', path: '/finance/compensation', icon: TrendingUp },
-        { id: 'loans', path: '/finance/loans', icon: CreditCard },
+        { id: 'payroll', path: '/finance/payroll', icon: Wallet, permission: 'payroll.run.view' },
+        { id: 'compensation', path: '/finance/compensation', icon: TrendingUp, permission: 'payroll.salary_structure.view' },
+        { id: 'loans', path: '/finance/loans', icon: CreditCard, permission: 'payroll.loan.view' },
       ],
     },
     {
       id: 'talent',
       icon: Target,
       children: [
-        { id: 'recruitment', path: '/talent/recruitment', icon: Handshake },
-        { id: 'onboarding', path: '/talent/onboarding', icon: UserPlus },
-        { id: 'performance', path: '/talent/performance', icon: Target },
-        { id: 'learning', path: '/talent/learning', icon: GraduationCap },
-        { id: 'career', path: '/talent/career', icon: BriefcaseBusiness },
+        { id: 'recruitment', path: '/talent/recruitment', icon: Handshake, permission: 'recruitment.job_posting.view' },
+        { id: 'onboarding', path: '/talent/onboarding', icon: UserPlus, permission: 'onboarding.instance.view' },
+        { id: 'performance', path: '/talent/performance', icon: Target, permission: 'performance.review.view' },
+        { id: 'learning', path: '/talent/learning', icon: GraduationCap, permission: 'learning.training_program.view' },
+        { id: 'career', path: '/talent/career', icon: BriefcaseBusiness, permission: 'career.career_path.view' },
       ],
     },
     {
       id: 'intelligence',
       icon: ChartColumn,
       children: [
-        { id: 'analytics', path: '/intelligence/analytics', icon: ChartColumn },
+        { id: 'analytics', path: '/intelligence/analytics', icon: ChartColumn, permission: 'analytics.dashboard.view' },
         { id: 'copilot', path: '/intelligence/copilot', icon: Sparkles },
       ],
     },
   ],
-  pinned: [{ id: 'settings', path: '/settings', icon: Settings }],
+  pinned: [
+    {
+      id: 'settings',
+      path: '/settings',
+      icon: Settings,
+      permission: [
+        'platform.roles_permissions.view',
+        'platform.roles_permissions.manage',
+        'users.manage',
+        'organization.company.edit',
+      ],
+    },
+  ],
 };
 
 /** A leaf together with the group it belongs to (null for top level/pinned items). */
@@ -105,6 +119,7 @@ export interface NavEntry {
   path: string;
   icon: LucideIcon;
   groupId: string | null;
+  permission?: string | string[] | undefined;
 }
 
 export interface NavBreadcrumb {
@@ -113,7 +128,7 @@ export interface NavBreadcrumb {
 }
 
 function toEntry(leaf: NavLeaf, groupId: string | null): NavEntry {
-  return { id: leaf.id, path: leaf.path, icon: leaf.icon, groupId };
+  return { id: leaf.id, path: leaf.path, icon: leaf.icon, groupId, permission: leaf.permission };
 }
 
 /** Every routable page, in navigation order. Used by routes, breadcrumbs and the command palette. */
