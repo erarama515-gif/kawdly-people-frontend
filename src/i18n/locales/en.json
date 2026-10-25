@@ -468,6 +468,11 @@
     "description": "The link you requested is not available or has moved.",
     "backToDashboard": "Back to dashboard"
   },
+  "unauthorized": {
+    "title": "Access Denied",
+    "description": "You do not have permission to access this page or perform this action.",
+    "backToDashboard": "Back to Dashboard"
+  },
   "breadcrumb": {
     "label": "Breadcrumb"
   },

@@ -1,5 +1,6 @@
 import { Component, type ErrorInfo, type ReactNode } from 'react';
 import { userFacingMessage } from '@/lib/api/errors';
+import { UnauthorizedPage } from '@/pages/UnauthorizedPage';
 
 interface ErrorBoundaryProps {
   children: ReactNode;
@@ -34,6 +35,10 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
     const { error } = this.state;
     if (!error) return this.props.children;
     if (this.props.fallback) return this.props.fallback(error, this.reset);
+
+    if ((error as { status?: number })?.status === 403 || error.message?.includes('403')) {
+      return <UnauthorizedPage />;
+    }
 
     return (
       <div role="alert" className="flex min-h-[50vh] items-center justify-center px-4">
