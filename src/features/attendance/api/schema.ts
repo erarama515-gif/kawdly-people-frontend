@@ -1,4 +1,5 @@
-import { array, bool, num, object, optional, str, isoDate, literalUnion } from '@/lib/api/decode';
+import { array, bool, num, object, optional, str, isoDate, literalUnion, union } from '@/lib/api/decode';
+import type { AttendanceStatus } from './resource';
 
 /**
  * Wire schemas for the Attendance module, matching the real Laravel contract
@@ -10,7 +11,7 @@ import { array, bool, num, object, optional, str, isoDate, literalUnion } from '
  * no times.
  */
 
-export const attendanceStatusDecoder = literalUnion([
+export const KNOWN_ATTENDANCE_STATUSES = [
   'present',
   'absent',
   'leave',
@@ -18,7 +19,25 @@ export const attendanceStatusDecoder = literalUnion([
   'weekend',
   'half_day',
   'late',
-] as const);
+] as const;
+
+/** Statuses the UI knows how to label and colour. */
+export const attendanceStatusDecoder = literalUnion(KNOWN_ATTENDANCE_STATUSES);
+
+export function isKnownAttendanceStatus(value: string): value is AttendanceStatus {
+  return (KNOWN_ATTENDANCE_STATUSES as readonly string[]).includes(value);
+}
+
+/**
+ * Lenient decoder used when *reading* records (A2.4).
+ *
+ * A status is a plain varchar on the server, so a future value (say
+ * `remote_work`) used to make the whole attendance page fail to decode - an
+ * unknown value in one row blanked the list for everyone. Reads now accept any
+ * string and the UI renders it verbatim with a neutral badge; the form still
+ * writes only the known set.
+ */
+export const attendanceStatusWireDecoder = union(attendanceStatusDecoder, str());
 
 export const checkInMethodDecoder = literalUnion(['web', 'mobile', 'biometric', 'qr', 'manual'] as const);
 
@@ -45,7 +64,7 @@ export const attendanceDecoder = object({
   early_leave_minutes: optional(num()),
   break_minutes: optional(num()),
   night_hours: optional(str()),
-  status: attendanceStatusDecoder,
+  status: attendanceStatusWireDecoder,
   notes: optional(str()),
   is_corrected: optional(bool()),
   corrected_by: optional(num()),

@@ -17,6 +17,7 @@ import { userFacingMessage } from '@/lib/api/errors';
 import { useDeleteAttendance, useAttendanceList } from '../api/queries';
 import { useHasPermission } from '@/auth/session';
 import type { AttendanceListParams, AttendanceStatus } from '../api/resource';
+import { isKnownAttendanceStatus } from '../api/schema';
 import type { AttendanceWire } from '../api/schema';
 import { AttendanceFormDialog } from './AttendanceFormDialog';
 import { DateRangeFilter } from '@/components/ui/DateRangeFilter';
@@ -51,6 +52,19 @@ const STATUS_CLASSES: Record<AttendanceStatus, string> = {
   half_day: 'bg-teal-50 text-teal-700',
   late: 'bg-amber-50 text-amber-700',
 };
+
+/**
+ * `status` is a varchar on the server, so a value the UI has never heard of is
+ * expected rather than exceptional. Warn once per value (visible in QA) and
+ * render it verbatim - an unknown status must never hide a row (A2.4).
+ */
+const warnedUnknownStatuses = new Set<string>();
+
+function warnUnknownStatus(status: string): void {
+  if (isKnownAttendanceStatus(status) || warnedUnknownStatuses.has(status)) return;
+  warnedUnknownStatuses.add(status);
+  console.warn(`[attendance] unknown status "${status}" - rendering it verbatim.`);
+}
 
 function formatTime(wireDateTime: string | undefined): string {
   if (!wireDateTime) return '—';
@@ -89,19 +103,29 @@ function StatCard({ label, value, accent }: { label: string; value: number | und
 
 // ─── Status Badge ─────────────────────────────────────────────────────────────
 
-function StatusBadge({ status, lateMinutes }: { status: AttendanceStatus; lateMinutes?: number | undefined }) {
+function StatusBadge({ status, lateMinutes }: { status: string; lateMinutes?: number | undefined }) {
   const { t } = useTranslation();
+  const known = isKnownAttendanceStatus(status);
+
+  warnUnknownStatus(status);
+
   // "Late" is its own status; a 'present' record can still carry late
   // minutes, and both read better with the minutes next to the label.
-  const label =
-    status === 'late'
+  const label = !known
+    ? status
+    : status === 'late'
       ? `${t('attendance.status.late')}${lateMinutes && lateMinutes > 0 ? ` (+${lateMinutes}m)` : ''}`
       : status === 'present' && lateMinutes && lateMinutes > 0
         ? `${t('attendance.status.present')} (+${lateMinutes}m)`
         : t(`attendance.status.${status}`);
 
   return (
-    <span className={cn('rounded-full px-2.5 py-0.5 text-[11px] font-semibold', STATUS_CLASSES[status])}>
+    <span
+      className={cn(
+        'rounded-full px-2.5 py-0.5 text-[11px] font-semibold',
+        known ? STATUS_CLASSES[status] : 'bg-surface-hover text-ink-muted',
+      )}
+    >
       {label}
     </span>
   );
@@ -239,7 +263,7 @@ export function AttendancePage() {
     checkOut: formatTime(r.check_out),
     hours: r.regular_hours ? parseFloat(r.regular_hours).toFixed(1) : '',
     late: r.late_minutes && r.late_minutes > 0 ? `${r.late_minutes}m` : '',
-    status: t(`attendance.status.${r.status}`),
+    status: t(`attendance.status.${r.status}`, { defaultValue: r.status }),
   }));
 
   function openAddForm() {
