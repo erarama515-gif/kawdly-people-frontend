@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { FileText, Pencil, Settings2, Shield, Users } from 'lucide-react';
+import { FileText, KeyRound, Pencil, Settings2, Shield, Users } from 'lucide-react';
 import { cn } from '@/lib/cn';
 import { Card } from '@/components/ui/Card';
 import { PageHeader } from '@/components/ui/PageHeader';
@@ -13,6 +13,7 @@ import type { SettingWire } from '../api/schema';
 import { UsersTab } from './UsersTab';
 import { RolesTab } from './RolesTab';
 import { DocumentTypesTab } from '@/features/documents/components/DocumentTypesTab';
+import { AccountTab } from './AccountTab';
 
 /**
  * SettingsPage — live-data, inline-edit version.
@@ -341,7 +342,7 @@ function GeneralSettingsContent() {
 
 // ─── Tab definitions ─────────────────────────────────────────────────────────
 
-type SettingsTabId = 'general' | 'users' | 'roles' | 'document-types';
+type SettingsTabId = 'general' | 'users' | 'roles' | 'document-types' | 'account';
 
 interface SettingsTabDef {
   id: SettingsTabId;
@@ -354,6 +355,7 @@ const SETTINGS_TABS: SettingsTabDef[] = [
   { id: 'users',   labelKey: 'settings.tabs.users',   icon: <Users className="h-4 w-4" strokeWidth={1.75} /> },
   { id: 'roles',   labelKey: 'settings.tabs.roles',   icon: <Shield className="h-4 w-4" strokeWidth={1.75} /> },
   { id: 'document-types', labelKey: 'settings.tabs.documentTypes', icon: <FileText className="h-4 w-4" strokeWidth={1.75} /> },
+  { id: 'account', labelKey: 'settings.tabs.account', icon: <KeyRound className="h-4 w-4" strokeWidth={1.75} /> },
 ];
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
@@ -404,6 +406,7 @@ export function SettingsPage() {
       {activeTab === 'users' && canManageUsers && <UsersTab />}
       {activeTab === 'roles' && canViewRoles && <RolesTab />}
       {activeTab === 'document-types' && canViewDocumentTypes && <DocumentTypesTab />}
+      {activeTab === 'account' && <AccountTab />}
 
       <div className="h-10" aria-hidden="true" />
     </div>

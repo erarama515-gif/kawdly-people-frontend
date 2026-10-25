@@ -2131,7 +2131,25 @@
       "general": "General Settings",
       "users": "User Management",
       "roles": "Roles & Permissions",
-      "documentTypes": "Document Types"
+      "documentTypes": "Document Types",
+      "account": "My Account"
+    },
+    "account": {
+      "title": "Password",
+      "subtitle": "Change the password used to sign in on this device.",
+      "currentPassword": "Current password",
+      "newPassword": "New password",
+      "confirmPassword": "Confirm new password",
+      "hint": "At least 12 characters. Every other session will be signed out.",
+      "submit": "Change password",
+      "success": "Password changed.",
+      "revoked": "{{count}} other session(s) were signed out.",
+      "error": "Could not change the password. Please try again.",
+      "validation": {
+        "min": "The new password must be at least 12 characters.",
+        "mismatch": "The confirmation does not match the new password.",
+        "sameAsCurrent": "The new password is the same as the current one. Choose a different one."
+      }
     },
     "users": {
       "title": "Users",
