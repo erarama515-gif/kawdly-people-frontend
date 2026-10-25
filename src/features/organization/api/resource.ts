@@ -204,6 +204,7 @@ export const jobPositionKeys = {
 export interface JobGradeListParams {
   page?: number;
   perPage?: number;
+  search?: string | undefined;
   companyId?: number | undefined;
 }
 
@@ -238,6 +239,7 @@ export const jobGradeKeys = {
 export interface JobLevelListParams {
   page?: number;
   perPage?: number;
+  search?: string | undefined;
   companyId?: number | undefined;
 }
 
@@ -268,6 +270,7 @@ export const jobLevelKeys = {
 export interface CostCenterListParams {
   page?: number;
   perPage?: number;
+  search?: string | undefined;
   companyId?: number | undefined;
   isActive?: boolean | undefined;
 }

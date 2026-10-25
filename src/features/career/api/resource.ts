@@ -36,6 +36,7 @@ import type {
 export interface CareerPathListParams {
   page?: number;
   perPage?: number;
+  search?: string | undefined;
 }
 
 /** Shape of `StoreCareerPathRequest`'s validated fields. */
@@ -74,6 +75,7 @@ export type SuccessionReadiness = 'ready_now' | 'ready_1_year' | 'ready_2_years'
 export interface SuccessionPlanListParams {
   page?: number;
   perPage?: number;
+  search?: string | undefined;
   readiness?: SuccessionReadiness | undefined;
 }
 
@@ -120,6 +122,7 @@ export const successionPlanKeys = {
 export interface CareerPathLevelListParams {
   page?: number;
   perPage?: number;
+  search?: string | undefined;
   career_path_id?: number | undefined;
 }
 

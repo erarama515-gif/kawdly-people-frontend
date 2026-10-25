@@ -36,6 +36,7 @@ export const httpLeaveRequestApi: LeaveRequestApi = {
       query: {
         page: params.page,
         per_page: params.perPage,
+        search: params.search || undefined,
         status: params.status,
         employee_id: params.employeeId,
         leave_type_id: params.leaveTypeId,

@@ -94,6 +94,7 @@ export const httpPerformanceReviewApi: PerformanceReviewApi = {
       query: {
         page: params.page,
         per_page: params.perPage,
+        search: params.search || undefined,
         cycle_id: params.cycle_id,
         review_type: params.review_type,
         status: params.status,

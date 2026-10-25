@@ -95,6 +95,7 @@ export type PerformanceReviewStatus = 'pending' | 'in_progress' | 'submitted' | 
 export interface PerformanceReviewListParams {
   page?: number;
   perPage?: number;
+  search?: string | undefined;
   cycle_id?: number | undefined;
   review_type?: PerformanceReviewType | undefined;
   status?: PerformanceReviewStatus | undefined;

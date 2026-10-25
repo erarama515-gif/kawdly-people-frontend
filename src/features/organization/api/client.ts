@@ -270,6 +270,7 @@ export const httpJobGradeApi: JobGradeApi = {
       query: {
         page: params.page,
         per_page: params.perPage,
+        search: params.search || undefined,
         company_id: params.companyId,
       },
       signal,
@@ -313,6 +314,7 @@ export const httpJobLevelApi: JobLevelApi = {
       query: {
         page: params.page,
         per_page: params.perPage,
+        search: params.search || undefined,
         company_id: params.companyId,
       },
       signal,
@@ -356,6 +358,7 @@ export const httpCostCenterApi: CostCenterApi = {
       query: {
         page: params.page,
         per_page: params.perPage,
+        search: params.search || undefined,
         company_id: params.companyId,
         is_active: params.isActive,
       },

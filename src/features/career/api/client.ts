@@ -58,6 +58,7 @@ export const httpCareerPathApi: CareerPathApi = {
       query: {
         page: params.page,
         per_page: params.perPage,
+        search: params.search || undefined,
       },
       signal,
       schema: careerPathListDecoder,
@@ -100,6 +101,7 @@ export const httpCareerPathLevelApi: CareerPathLevelApi = {
       query: {
         page: params.page,
         per_page: params.perPage,
+        search: params.search || undefined,
         career_path_id: params.career_path_id,
         include: 'careerPath,jobPosition',
       },
@@ -144,6 +146,7 @@ export const httpSuccessionPlanApi: SuccessionPlanApi = {
       query: {
         page: params.page,
         per_page: params.perPage,
+        search: params.search || undefined,
         readiness: params.readiness,
         include: 'jobPosition,currentHolder,successor',
       },
