@@ -29,7 +29,12 @@ export const contractDecoder = object({
   start_date: isoDate(),
   end_date: optional(isoDate()),
   probation_months: optional(num()),
-  basic_salary: num(),
+  /**
+   * Stripped by `filter.sensitive` for anyone without `employee.salary.view`
+   * (hr_officer, recruiter, department_manager...). Optional here so the list
+   * still decodes for them - the UI renders a dash instead of crashing (A2.3).
+   */
+  basic_salary: optional(num()),
   terms: optional(str()),
   status: contractStatusDecoder,
   signed_at: optional(str()),

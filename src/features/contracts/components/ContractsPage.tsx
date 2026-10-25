@@ -17,6 +17,7 @@ import { useSort, sortData } from '@/hooks/useSort';
 import { useBulkSelect } from '@/hooks/useBulkSelect';
 import { userFacingMessage } from '@/lib/api/errors';
 import { exportToExcel } from '@/lib/export';
+import { formatAmount } from '@/lib/salary';
 import { useHasPermission } from '@/auth/session';
 import { toast } from '@/components/ui/Toast';
 import { useContractList, useDeleteContract, useTerminateContract } from '../api/queries';
@@ -227,7 +228,7 @@ export function ContractsPage() {
     type: t(`contracts.type.${c.type}`),
     startDate: formatDate(c.start_date),
     endDate: c.end_date ? formatDate(c.end_date) : '',
-    salary: c.basic_salary.toLocaleString(),
+    salary: formatAmount(c.basic_salary),
     status: t(`contracts.status.${c.status}`),
   }));
 
@@ -453,7 +454,7 @@ export function ContractsPage() {
 
                   {/* Basic salary */}
                   <span className="nums font-mono text-[12px] text-ink-muted">
-                    {contract.basic_salary.toLocaleString()}
+                    {formatAmount(contract.basic_salary)}
                   </span>
 
                   {/* Status */}
@@ -547,7 +548,7 @@ export function ContractsPage() {
                     <div className="flex flex-col gap-0.5">
                       <span className="text-caption text-ink-faint">{t('contracts.table.salary')}</span>
                       <span className="nums font-mono text-[12px] text-ink">
-                        {contract.basic_salary.toLocaleString()}
+                        {formatAmount(contract.basic_salary)}
                       </span>
                     </div>
                     <div className="flex flex-col gap-0.5">

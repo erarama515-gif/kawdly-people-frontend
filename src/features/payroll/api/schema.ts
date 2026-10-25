@@ -86,11 +86,17 @@ export const payslipDecoder = object({
   id: num(),
   payroll_run_id: num(),
   employee_id: num(),
-  basic_salary: num(),
-  gross_salary: num(),
+  /**
+   * Salary amounts are stripped by `filter.sensitive` for roles without
+   * `employee.salary.view`; the others are payroll-owned totals that always
+   * travel with the row. Optional keeps the payslip list decodable for
+   * hr_officer (A2.3).
+   */
+  basic_salary: optional(num()),
+  gross_salary: optional(num()),
   total_earnings: num(),
   total_deductions: num(),
-  net_salary: num(),
+  net_salary: optional(num()),
   working_days: optional(str()),
   present_days: optional(str()),
   absent_days: optional(str()),
@@ -131,8 +137,9 @@ export const employeeSalaryDecoder = object({
   effective_date: str(),
   /** Free-form JSON array; not rendered as a line-item editor yet. */
   components: optional(passthrough<unknown[]>('array')),
-  gross_salary: num(),
-  net_salary: num(),
+  /** Stripped without `employee.salary.view` - see payslipDecoder above (A2.3). */
+  gross_salary: optional(num()),
+  net_salary: optional(num()),
   is_current: optional(bool()),
   created_at: optional(str()),
   updated_at: optional(str()),

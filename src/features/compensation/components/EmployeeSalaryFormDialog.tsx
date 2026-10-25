@@ -59,8 +59,8 @@ function buildDefaultValues(record: EmployeeSalaryWire | undefined): EmployeeSal
     employee_id: String(record.employee_id),
     salary_structure_id: String(record.salary_structure_id),
     effective_date: record.effective_date.slice(0, 10),
-    gross_salary: String(record.gross_salary),
-    net_salary: String(record.net_salary),
+    gross_salary: record.gross_salary != null ? String(record.gross_salary) : '',
+    net_salary: record.net_salary != null ? String(record.net_salary) : '',
     is_current: record.is_current === false ? 'false' : 'true',
   };
 }

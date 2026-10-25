@@ -12,6 +12,7 @@ import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { Pagination } from '@/components/ui/Pagination';
 import { Select } from '@/components/ui/form';
 import { userFacingMessage } from '@/lib/api/errors';
+import { formatAmount } from '@/lib/salary';
 import { useHasPermission } from '@/auth/session';
 import { toast } from '@/components/ui/Toast';
 import {
@@ -724,11 +725,11 @@ export function PayrollPage() {
                 <Avatar initials={initials} photo={emp?.photo} size={32} />
                 <span className="truncate text-body-sm font-semibold text-ink">{fullName}</span>
               </div>
-              <span className="nums font-mono text-body-sm text-ink">{ps.basic_salary.toLocaleString()}</span>
-              <span className="nums font-mono text-body-sm text-ink">{ps.gross_salary.toLocaleString()}</span>
+              <span className="nums font-mono text-body-sm text-ink">{formatAmount(ps.basic_salary)}</span>
+              <span className="nums font-mono text-body-sm text-ink">{formatAmount(ps.gross_salary)}</span>
               <span className="nums font-mono text-body-sm text-ink">{ps.total_earnings.toLocaleString()}</span>
               <span className="nums font-mono text-body-sm text-coral">{ps.total_deductions.toLocaleString()}</span>
-              <span className="nums font-mono text-body-sm font-bold text-navy">{ps.net_salary.toLocaleString()}</span>
+              <span className="nums font-mono text-body-sm font-bold text-navy">{formatAmount(ps.net_salary)}</span>
               <PayslipStatusBadge status={ps.status} />
               <RowActions
                 onEdit={canEditPayslip ? () => openEditPayslip(ps) : undefined}
@@ -773,11 +774,11 @@ export function PayrollPage() {
               <div className="grid grid-cols-2 gap-3 border-t border-divider pt-3">
                 <div className="flex flex-col gap-0.5">
                   <span className="text-caption text-ink-faint">{t('payroll.payslip.table.basic')}</span>
-                  <span className="nums font-mono text-[12px] text-ink">{ps.basic_salary.toLocaleString()}</span>
+                  <span className="nums font-mono text-[12px] text-ink">{formatAmount(ps.basic_salary)}</span>
                 </div>
                 <div className="flex flex-col gap-0.5">
                   <span className="text-caption text-ink-faint">{t('payroll.payslip.table.gross')}</span>
-                  <span className="nums font-mono text-[12px] text-ink">{ps.gross_salary.toLocaleString()}</span>
+                  <span className="nums font-mono text-[12px] text-ink">{formatAmount(ps.gross_salary)}</span>
                 </div>
                 <div className="flex flex-col gap-0.5">
                   <span className="text-caption text-ink-faint">{t('payroll.payslip.table.deductions')}</span>
@@ -785,7 +786,7 @@ export function PayrollPage() {
                 </div>
                 <div className="flex flex-col gap-0.5">
                   <span className="text-caption text-ink-faint">{t('payroll.payslip.table.net')}</span>
-                  <span className="nums font-mono text-[12px] font-bold text-navy">{ps.net_salary.toLocaleString()}</span>
+                  <span className="nums font-mono text-[12px] font-bold text-navy">{formatAmount(ps.net_salary)}</span>
                 </div>
               </div>
 

@@ -65,7 +65,7 @@ function buildDefaultValues(contract: ContractWire | undefined): ContractFormVal
     start_date: contract.start_date.slice(0, 10),
     end_date: contract.end_date ? contract.end_date.slice(0, 10) : '',
     probation_months: contract.probation_months !== undefined ? String(contract.probation_months) : '',
-    basic_salary: String(contract.basic_salary),
+    basic_salary: contract.basic_salary != null ? String(contract.basic_salary) : '',
     terms: contract.terms ?? '',
     status: contract.status,
     signed_at: contract.signed_at ? contract.signed_at.slice(0, 10) : '',

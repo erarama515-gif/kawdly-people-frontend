@@ -9,6 +9,7 @@ import { Avatar } from '@/components/ui/Avatar';
 import { Button } from '@/components/ui/Button';
 import { Skeleton } from '@/components/ui/Skeleton';
 import { userFacingMessage } from '@/lib/api/errors';
+import { formatAmount } from '@/lib/salary';
 import { useHasPermission } from '@/auth/session';
 import { useEmployeeDetail } from '../api/queries';
 import { EmployeePromoteDialog } from './EmployeePromoteDialog';
@@ -182,7 +183,7 @@ function ContractsTab({ employeeId }: { employeeId: number }) {
           </div>
           <div className="flex flex-col gap-0.5">
             <span className="text-caption text-ink-faint">{t('contracts.table.salary')}</span>
-            <span className="nums font-mono text-[12px] text-ink">{c.basic_salary.toLocaleString()}</span>
+            <span className="nums font-mono text-[12px] text-ink">{formatAmount(c.basic_salary)}</span>
           </div>
           <div className="flex items-start pt-3">
             <Badge

@@ -68,11 +68,11 @@ function buildDefaultValues(payslip: PayslipWire | undefined): PayslipFormValues
 
   return {
     employee_id: String(payslip.employee_id),
-    basic_salary: String(payslip.basic_salary),
-    gross_salary: String(payslip.gross_salary),
+    basic_salary: payslip.basic_salary != null ? String(payslip.basic_salary) : '',
+    gross_salary: payslip.gross_salary != null ? String(payslip.gross_salary) : '',
     total_earnings: String(payslip.total_earnings),
     total_deductions: String(payslip.total_deductions),
-    net_salary: String(payslip.net_salary),
+    net_salary: payslip.net_salary != null ? String(payslip.net_salary) : '',
     working_days: payslip.working_days !== undefined ? String(payslip.working_days) : '',
     present_days: payslip.present_days !== undefined ? String(payslip.present_days) : '',
     absent_days: payslip.absent_days !== undefined ? String(payslip.absent_days) : '',

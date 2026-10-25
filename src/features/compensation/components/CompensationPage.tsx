@@ -10,6 +10,7 @@ import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { Pagination } from '@/components/ui/Pagination';
 import { userFacingMessage } from '@/lib/api/errors';
 import { useLocalizeEntity } from '@/lib/localizeEntity';
+import { formatAmount } from '@/lib/salary';
 import { useHasPermission } from '@/auth/session';
 import {
   useSalaryStructureList,
@@ -829,8 +830,8 @@ function EmployeeSalaryAssignmentsSection() {
                   {localize(rec.salaryStructure?.name ?? structureName(rec.salary_structure_id))}
                 </span>
                 <span className="nums font-mono text-[12px] text-ink-muted">{rec.effective_date.slice(0, 10)}</span>
-                <span className="nums font-mono text-body-sm text-ink">{rec.gross_salary.toLocaleString()}</span>
-                <span className="nums font-mono text-body-sm text-ink">{rec.net_salary.toLocaleString()}</span>
+                <span className="nums font-mono text-body-sm text-ink">{formatAmount(rec.gross_salary)}</span>
+                <span className="nums font-mono text-body-sm text-ink">{formatAmount(rec.net_salary)}</span>
                 <BoolPill value={rec.is_current} />
                 <RowActions
                   onEdit={canEdit ? () => openEditForm(rec) : undefined}
@@ -867,11 +868,11 @@ function EmployeeSalaryAssignmentsSection() {
                   </div>
                   <div className="flex flex-col gap-0.5">
                     <span className="text-caption text-ink-faint">{t('compensation.employeeSalary.col.gross')}</span>
-                    <span className="nums font-mono text-body-sm text-ink">{rec.gross_salary.toLocaleString()}</span>
+                    <span className="nums font-mono text-body-sm text-ink">{formatAmount(rec.gross_salary)}</span>
                   </div>
                   <div className="flex flex-col gap-0.5">
                     <span className="text-caption text-ink-faint">{t('compensation.employeeSalary.col.net')}</span>
-                    <span className="nums font-mono text-body-sm text-ink">{rec.net_salary.toLocaleString()}</span>
+                    <span className="nums font-mono text-body-sm text-ink">{formatAmount(rec.net_salary)}</span>
                   </div>
                 </div>
               </Card>
