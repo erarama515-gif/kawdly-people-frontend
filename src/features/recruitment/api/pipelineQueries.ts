@@ -72,6 +72,11 @@ const candidateStageDecoder = literalUnion([
 
 export type CandidateStage = ReturnType<typeof candidateStageDecoder.decode>;
 
+const candidateJobPostingDecoder = object({
+  id: num(),
+  title: str(),
+});
+
 const candidateDecoder = object({
   id:                    num(),
   first_name:            str(),
@@ -79,6 +84,12 @@ const candidateDecoder = object({
   email:                 str(),
   phone:                 optional(str()),
   stage:                 candidateStageDecoder,
+  job_posting_id:        optional(num()),
+  job_posting:           optional(candidateJobPostingDecoder),
+  source:                optional(str()),
+  match_score:           optional(passthrough()),
+  notes:                 optional(str()),
+  applied_at:            optional(str()),
   converted_employee_id: optional(num()),
 });
 
@@ -93,6 +104,93 @@ const candidateListDecoder = object({
     last_page:    num(),
   }),
 });
+
+export interface CandidateListParams {
+  page: number;
+  perPage: number;
+  search?: string | undefined;
+  stage?: CandidateStage | 'all' | undefined;
+  job_posting_id?: number | undefined;
+}
+
+export type CandidateListWire = ReturnType<typeof candidateListDecoder.decode>;
+
+export interface UseCandidateListResult {
+  state: QueryState<CandidateListWire>;
+  refetch: () => void;
+}
+
+/**
+ * Fetches paginated candidate list from GET /api/v1/candidates with optional
+ * stage and job_posting_id filters, debounced search, and includes jobPosting.
+ */
+export function useCandidateList(params: CandidateListParams): UseCandidateListResult {
+  const { state, refetch } = useQuery<CandidateListWire>({
+    queryKey: ['recruitment', 'candidates', 'list', params] as const,
+    queryFn: async (context) => {
+      const { data } = await http('/candidates', {
+        query: {
+          page: params.page,
+          per_page: params.perPage,
+          search: params.search || undefined,
+          stage: params.stage && params.stage !== 'all' ? params.stage : undefined,
+          job_posting_id: params.job_posting_id || undefined,
+          include: 'jobPosting',
+        },
+        signal: context.signal,
+        schema: candidateListDecoder,
+      });
+      if (data === undefined) {
+        throw new Error('GET /candidates returned an empty body');
+      }
+      return data;
+    },
+    staleTime: 15_000,
+  });
+
+  return { state, refetch };
+}
+
+/**
+ * Updates a candidate's pipeline stage (e.g. applied -> screening -> interview -> offer).
+ */
+export function useUpdateCandidateStage() {
+  const client = useQueryClient();
+
+  return useMutation<{ candidateId: number; stage: CandidateStage }, void>({
+    mutationFn: async ({ candidateId, stage }, { signal }) => {
+      await http(`/candidates/${candidateId}`, {
+        method: 'PATCH',
+        body: { stage },
+        signal,
+        schema: passthrough(),
+      });
+    },
+    onSuccess: () => {
+      void client.invalidate({ predicate: isPipelineKey });
+    },
+  });
+}
+
+/**
+ * Removes a candidate from the recruitment pipeline.
+ */
+export function useDeleteCandidate() {
+  const client = useQueryClient();
+
+  return useMutation<number, void>({
+    mutationFn: async (candidateId, { signal }) => {
+      await http(`/candidates/${candidateId}`, {
+        method: 'DELETE',
+        signal,
+        ignoreBody: true,
+      });
+    },
+    onSuccess: () => {
+      void client.invalidate({ predicate: isPipelineKey });
+    },
+  });
+}
 
 const OFFER_CANDIDATES_KEY = ['recruitment', 'candidates', 'offer-hired'] as const;
 
