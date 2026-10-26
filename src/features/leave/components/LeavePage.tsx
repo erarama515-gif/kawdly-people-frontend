@@ -26,9 +26,13 @@ import {
   useRejectLeaveRequest,
 } from '../api/queries';
 import { useCan } from '@/hooks/useCan';
+import { useHasPermission } from '@/auth/session';
 import type { LeaveRequestListParams, LeaveRequestStatus } from '../api/resource';
 import type { LeaveRequestWire } from '../api/schema';
 import { LeaveRequestFormDialog } from './LeaveRequestFormDialog';
+import { LeaveTypesPanel } from './LeaveTypesPanel';
+import { LeaveBalancesPanel } from './LeaveBalancesPanel';
+import { LeavePoliciesPanel } from './LeavePoliciesPanel';
 import { DateRangeFilter } from '@/components/ui/DateRangeFilter';
 import type { DateRange } from '@/components/ui/DateRangeFilter';
 
@@ -184,6 +188,16 @@ export function LeavePage() {
   const [rejectionReason, setRejectionReason] = useState('');
   const [reasonError, setReasonError] = useState<string | undefined>(undefined);
 
+  // A6.5: the page also hosts the three configuration surfaces. They are gated
+  // on the real Spatie slugs — `useCan` maps these resources to `leave.type` /
+  // `leave.balance`, which do not exist.
+  const [activeTab, setActiveTab] = useState<'requests' | 'types' | 'balances' | 'policies'>(
+    'requests',
+  );
+  const canViewTypes = useHasPermission('leave.leave_type.view');
+  const canViewBalances = useHasPermission('leave.leave_balance.view');
+  const canViewPolicies = useHasPermission('leave.leave_policy.view');
+
   // Debounce the free-text search so every keystroke doesn't fire a request.
   useEffect(() => {
     const timer = window.setTimeout(() => setSearch(searchInput.trim()), 300);
@@ -322,6 +336,7 @@ export function LeavePage() {
       <PageHeader
         title={t('leave.title')}
         actions={
+          activeTab === 'requests' ? (
           <div className="flex items-center gap-2">
             <ExportButton
               endpoint="/export/leaves"
@@ -337,9 +352,46 @@ export function LeavePage() {
               </Button>
             )}
           </div>
+          ) : undefined
         }
       />
 
+      {/* Tabs — request workflow vs the three configuration surfaces */}
+      <div className="mb-6 flex flex-wrap items-center border-b border-divider">
+        {(
+          [
+            { value: 'requests', label: t('leave.admin.tabs.requests'), visible: true },
+            { value: 'types', label: t('leave.admin.tabs.types'), visible: canViewTypes },
+            { value: 'balances', label: t('leave.admin.tabs.balances'), visible: canViewBalances },
+            { value: 'policies', label: t('leave.admin.tabs.policies'), visible: canViewPolicies },
+          ] as const
+        )
+          .filter((tab) => tab.visible)
+          .map((tab) => (
+            <button
+              key={tab.value}
+              type="button"
+              onClick={() => setActiveTab(tab.value)}
+              className={cn(
+                'px-4 py-2.5 text-body-sm font-semibold border-b-2 transition-colors',
+                activeTab === tab.value
+                  ? 'border-navy text-navy'
+                  : 'border-transparent text-ink-muted hover:text-ink',
+              )}
+            >
+              {tab.label}
+            </button>
+          ))}
+      </div>
+
+      {activeTab === 'types' ? (
+        <LeaveTypesPanel />
+      ) : activeTab === 'balances' ? (
+        <LeaveBalancesPanel />
+      ) : activeTab === 'policies' ? (
+        <LeavePoliciesPanel />
+      ) : (
+        <>
       {/* Stat strip — total, pending, approved; all genuinely derived from the live list endpoint */}
       <div className="mb-8 grid grid-cols-1 gap-3 sm:grid-cols-3">
         <StatCard label={t('leave.stat.total')}    value={totalState.data?.meta.total} />
@@ -564,6 +616,8 @@ export function LeavePage() {
               onPageChange={setPage}
             />
           ) : null}
+        </>
+      )}
         </>
       )}
 

@@ -1048,6 +1048,156 @@
       "sick": "Sick Leave",
       "personal": "Personal Leave",
       "unpaid": "Unpaid Leave"
+    },
+    "admin": {
+      "tabs": {
+        "requests": "Requests",
+        "types": "Leave Types",
+        "balances": "Balances",
+        "policies": "Policies"
+      },
+      "common": {
+        "active": "Active",
+        "inactive": "Inactive",
+        "actions": "Actions",
+        "all": "All",
+        "select": "Select…",
+        "year": "Year",
+        "employee": "Employee",
+        "leaveType": "Leave Type",
+        "any": "Any",
+        "male": "Male",
+        "female": "Female"
+      },
+      "types": {
+        "title": "Leave Types",
+        "hint": "The catalogue offered by the leave-request form.",
+        "add": "Add Type",
+        "loadFailed": "Could not load leave types.",
+        "empty": "No leave types yet.",
+        "paid": "Paid",
+        "unpaid": "Unpaid",
+        "required": "Required",
+        "optional": "Optional",
+        "editAction": "Edit leave type",
+        "deleteAction": "Delete leave type",
+        "table": {
+          "name": "Type",
+          "code": "Code",
+          "paid": "Paid",
+          "maxDays": "Max Days/Request",
+          "attachment": "Attachment",
+          "active": "Status"
+        },
+        "fields": {
+          "name": "Name",
+          "code": "Code",
+          "maxDays": "Max days per request",
+          "minDays": "Min days per request",
+          "gender": "Restricted to gender",
+          "sortOrder": "Display order",
+          "color": "Colour",
+          "colorHint": "Shown next to the type in tables.",
+          "isPaid": "Paid leave",
+          "requiresAttachment": "Requires an attachment",
+          "allowsHalfDay": "Allows half days"
+        },
+        "validation": {
+          "maxDays": "Enter a whole number greater than zero.",
+          "minDays": "Enter a number greater than or equal to zero.",
+          "sortOrder": "Enter a whole number."
+        },
+        "addTitle": "Add Leave Type",
+        "editTitle": "Edit Leave Type",
+        "createdToast": "Leave type created.",
+        "updatedToast": "Leave type updated.",
+        "deleteTitle": "Delete Leave Type",
+        "deleteDescription": "Delete \"{{name}}\"? It will no longer appear in the request form."
+      },
+      "balances": {
+        "title": "Leave Balances",
+        "hint": "The yearly balance per employee and leave type.",
+        "add": "Add Balance",
+        "loadFailed": "Could not load leave balances.",
+        "empty": "No balances for this year.",
+        "editAction": "Edit balance",
+        "deleteAction": "Delete balance",
+        "deleteTitle": "Delete Balance",
+        "deleteDescription": "Delete the balance of \"{{name}}\" for this year?",
+        "table": {
+          "employee": "Employee",
+          "leaveType": "Leave Type",
+          "year": "Year",
+          "entitled": "Entitled",
+          "taken": "Taken",
+          "pending": "Pending",
+          "remaining": "Remaining"
+        },
+        "fields": {
+          "year": "Year",
+          "entitled": "Entitled days",
+          "taken": "Taken days",
+          "pending": "Pending days",
+          "carriedForward": "Carried forward",
+          "adjustment": "Adjustment"
+        },
+        "validation": {
+          "year": "Enter a four-digit year.",
+          "amount": "Enter a number greater than or equal to zero."
+        },
+        "addTitle": "Add Leave Balance",
+        "editTitle": "Edit Leave Balance",
+        "createdToast": "Balance created.",
+        "updatedToast": "Balance updated."
+      },
+      "policies": {
+        "title": "Leave Policies",
+        "hint": "Entitlement, carry-forward, and encashment per leave type.",
+        "add": "Add Policy",
+        "loadFailed": "Could not load leave policies.",
+        "empty": "No leave policies yet.",
+        "editAction": "Edit policy",
+        "deleteAction": "Delete policy",
+        "deleteTitle": "Delete Policy",
+        "deleteDescription": "Delete \"{{name}}\"?",
+        "table": {
+          "name": "Policy",
+          "leaveType": "Leave Type",
+          "entitlement": "Entitlement",
+          "accrual": "Accrual",
+          "carryForward": "Max Carry",
+          "encashment": "Encashment",
+          "active": "Status"
+        },
+        "fields": {
+          "name": "Policy name",
+          "entitlement": "Annual entitlement (days)",
+          "accrual": "Accrual method",
+          "carryForwardMax": "Max carry-forward days",
+          "carryForwardExpiry": "Carry-forward expiry (months)",
+          "encashmentMaxDays": "Max encashment days",
+          "minServiceMonths": "Minimum service (months)",
+          "encashmentAllowed": "Encashment allowed"
+        },
+        "accrual": {
+          "yearly": "Yearly",
+          "monthly": "Monthly",
+          "none": "None"
+        },
+        "encashmentAllowed": "Allowed",
+        "encashmentNotAllowed": "Not allowed",
+        "validation": {
+          "entitlement": "Enter a number greater than or equal to zero.",
+          "carryForward": "Enter a number greater than or equal to zero.",
+          "expiryMonths": "Enter a whole number.",
+          "encashmentDays": "Enter a number greater than or equal to zero.",
+          "minService": "Enter a whole number."
+        },
+        "addTitle": "Add Leave Policy",
+        "editTitle": "Edit Leave Policy",
+        "createdToast": "Policy created.",
+        "updatedToast": "Policy updated."
+      }
     }
   },
   "payroll": {

@@ -1048,6 +1048,156 @@
       "sick": "إجازة مرضية",
       "personal": "إجازة شخصية",
       "unpaid": "إجازة بدون راتب"
+    },
+    "admin": {
+      "tabs": {
+        "requests": "الطلبات",
+        "types": "أنواع الإجازات",
+        "balances": "الأرصدة",
+        "policies": "السياسات"
+      },
+      "common": {
+        "active": "نشط",
+        "inactive": "غير نشط",
+        "actions": "الإجراءات",
+        "all": "الكل",
+        "select": "اختر…",
+        "year": "السنة",
+        "employee": "الموظف",
+        "leaveType": "نوع الإجازة",
+        "any": "غير محدد",
+        "male": "ذكر",
+        "female": "أنثى"
+      },
+      "types": {
+        "title": "أنواع الإجازات",
+        "hint": "الأنواع المتاحة في نموذج طلب الإجازة.",
+        "add": "إضافة نوع",
+        "loadFailed": "تعذّر تحميل أنواع الإجازات.",
+        "empty": "لا توجد أنواع إجازات بعد.",
+        "paid": "مدفوعة",
+        "unpaid": "بدون راتب",
+        "required": "مطلوب",
+        "optional": "غير مطلوب",
+        "editAction": "تعديل نوع الإجازة",
+        "deleteAction": "حذف نوع الإجازة",
+        "table": {
+          "name": "النوع",
+          "code": "الكود",
+          "paid": "مدفوعة",
+          "maxDays": "أقصى أيام/طلب",
+          "attachment": "مرفق",
+          "active": "الحالة"
+        },
+        "fields": {
+          "name": "الاسم",
+          "code": "الكود",
+          "maxDays": "أقصى أيام في الطلب",
+          "minDays": "أقل أيام في الطلب",
+          "gender": "قصر على الجنس",
+          "sortOrder": "ترتيب العرض",
+          "color": "اللون",
+          "colorHint": "يظهر بجانب النوع في الجداول.",
+          "isPaid": "إجازة مدفوعة",
+          "requiresAttachment": "تتطلب مرفقًا",
+          "allowsHalfDay": "تسمح بنصف يوم"
+        },
+        "validation": {
+          "maxDays": "أدخل عددًا صحيحًا أكبر من صفر.",
+          "minDays": "أدخل رقمًا أكبر من أو يساوي صفرًا.",
+          "sortOrder": "أدخل رقمًا صحيحًا."
+        },
+        "addTitle": "إضافة نوع إجازة",
+        "editTitle": "تعديل نوع الإجازة",
+        "createdToast": "تم إنشاء نوع الإجازة.",
+        "updatedToast": "تم تحديث نوع الإجازة.",
+        "deleteTitle": "حذف نوع الإجازة",
+        "deleteDescription": "هل تريد حذف \"{{name}}\"؟ لن يظهر بعد ذلك في نموذج الطلب."
+      },
+      "balances": {
+        "title": "أرصدة الإجازات",
+        "hint": "الرصيد السنوي لكل موظف ونوع إجازة.",
+        "add": "إضافة رصيد",
+        "loadFailed": "تعذّر تحميل الأرصدة.",
+        "empty": "لا توجد أرصدة لهذه السنة.",
+        "editAction": "تعديل الرصيد",
+        "deleteAction": "حذف الرصيد",
+        "deleteTitle": "حذف الرصيد",
+        "deleteDescription": "هل تريد حذف رصيد \"{{name}}\" لهذه السنة؟",
+        "table": {
+          "employee": "الموظف",
+          "leaveType": "نوع الإجازة",
+          "year": "السنة",
+          "entitled": "المستحق",
+          "taken": "المستخدم",
+          "pending": "المعلق",
+          "remaining": "المتبقي"
+        },
+        "fields": {
+          "year": "السنة",
+          "entitled": "الأيام المستحقة",
+          "taken": "الأيام المستخدمة",
+          "pending": "الأيام المعلقة",
+          "carriedForward": "مرحّل من العام السابق",
+          "adjustment": "تسوية"
+        },
+        "validation": {
+          "year": "أدخل سنة من أربعة أرقام.",
+          "amount": "أدخل رقمًا أكبر من أو يساوي صفرًا."
+        },
+        "addTitle": "إضافة رصيد إجازات",
+        "editTitle": "تعديل رصيد الإجازات",
+        "createdToast": "تم إنشاء الرصيد.",
+        "updatedToast": "تم تحديث الرصيد."
+      },
+      "policies": {
+        "title": "سياسات الإجازات",
+        "hint": "الاستحقاق والترحيل والاستبدال لكل نوع إجازة.",
+        "add": "إضافة سياسة",
+        "loadFailed": "تعذّر تحميل السياسات.",
+        "empty": "لا توجد سياسات إجازات بعد.",
+        "editAction": "تعديل السياسة",
+        "deleteAction": "حذف السياسة",
+        "deleteTitle": "حذف السياسة",
+        "deleteDescription": "هل تريد حذف \"{{name}}\"؟",
+        "table": {
+          "name": "السياسة",
+          "leaveType": "نوع الإجازة",
+          "entitlement": "الاستحقاق",
+          "accrual": "طريقة الاستحقاق",
+          "carryForward": "أقصى ترحيل",
+          "encashment": "الاستبدال",
+          "active": "الحالة"
+        },
+        "fields": {
+          "name": "اسم السياسة",
+          "entitlement": "الاستحقاق السنوي (أيام)",
+          "accrual": "طريقة الاستحقاق",
+          "carryForwardMax": "أقصى أيام ترحيل",
+          "carryForwardExpiry": "انتهاء الترحيل (شهور)",
+          "encashmentMaxDays": "أقصى أيام استبدال",
+          "minServiceMonths": "أقل مدة خدمة (شهور)",
+          "encashmentAllowed": "يسمح باستبدال الأيام"
+        },
+        "accrual": {
+          "yearly": "سنوي",
+          "monthly": "شهري",
+          "none": "بدون"
+        },
+        "encashmentAllowed": "مسموح",
+        "encashmentNotAllowed": "غير مسموح",
+        "validation": {
+          "entitlement": "أدخل رقمًا أكبر من أو يساوي صفرًا.",
+          "carryForward": "أدخل رقمًا أكبر من أو يساوي صفرًا.",
+          "expiryMonths": "أدخل عددًا صحيحًا.",
+          "encashmentDays": "أدخل رقمًا أكبر من أو يساوي صفرًا.",
+          "minService": "أدخل عددًا صحيحًا."
+        },
+        "addTitle": "إضافة سياسة إجازات",
+        "editTitle": "تعديل سياسة الإجازات",
+        "createdToast": "تم إنشاء السياسة.",
+        "updatedToast": "تم تحديث السياسة."
+      }
     }
   },
   "payroll": {
