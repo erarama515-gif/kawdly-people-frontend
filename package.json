@@ -11,6 +11,7 @@
     "build": "tsc -b && vite build",
     "typecheck": "tsc -b",
     "typecheck:desktop": "tsc -p electron/tsconfig.json --noEmit",
+    "test:electron": "tsc -p electron/tsconfig.json && node --test \"electron/test/*.test.mjs\"",
     "preview": "vite preview",
     "build:desktop": "tsc -b && vite build --base=/app/ --outDir ../backend/public/app --emptyOutDir",
     "electron:build": "npm run build:desktop && npx tsc -p electron/tsconfig.json",

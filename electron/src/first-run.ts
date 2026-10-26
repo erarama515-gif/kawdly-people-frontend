@@ -19,10 +19,15 @@
  * The install marker
  * ---------------------------------------------------------------------------
  * `userData/.kawdly-installed` is JSON holding the app version that last
- * provisioned this profile. Its presence means "userData is usable"; its
- * version field drives the upgrade path. It is written LAST, after everything
- * else has succeeded, so a bootstrap that dies halfway is retried on the next
- * launch instead of leaving a profile that claims to be ready and is not.
+ * provisioned this profile, when it last migrated, and a fingerprint of the
+ * shipped migrations. Its presence means "userData is usable". It is written
+ * LAST, after everything else has succeeded, so a bootstrap that dies halfway
+ * is retried on the next launch instead of leaving a profile that claims to be
+ * ready and is not.
+ *
+ * Note that presence — not the version field — gates first-run. Migrations run
+ * on every launch (see `migrateIfNeeded`); the version and fingerprint are
+ * recorded for diagnosis and to decide when a backup is warranted.
  *
  * ---------------------------------------------------------------------------
  * Template database and the first admin account (T6.5)
@@ -101,6 +106,15 @@ interface InstallMarker {
   readonly version: string;
   readonly installedAt: string;
   readonly lastMigratedAt?: string;
+  /**
+   * Short hash of `database/migrations/*.php` as of the last launch.
+   *
+   * Informational for diagnosis AND the trigger for the pre-migration backup:
+   * a rebuild that ships new migrations without changing the version bumps
+   * this, so the profile is backed up before the schema moves. See
+   * `migrateIfNeeded()`.
+   */
+  readonly migrationFingerprint?: string;
 }
 
 /** The account created on a fresh install, as handed to the UI once. */
@@ -163,6 +177,9 @@ function readMarker(userDataPath: string): InstallMarker | null {
         installedAt: typeof parsed.installedAt === 'string' ? parsed.installedAt : '',
         ...(typeof parsed.lastMigratedAt === 'string'
           ? { lastMigratedAt: parsed.lastMigratedAt }
+          : {}),
+        ...(typeof parsed.migrationFingerprint === 'string'
+          ? { migrationFingerprint: parsed.migrationFingerprint }
           : {}),
       };
     }
@@ -339,6 +356,46 @@ export function backupDatabase(userDataPath: string, reason: string): string | n
 }
 
 // ─── migrate ──────────────────────────────────────────────────────────────────
+
+/**
+ * Short digest of the migration files this build ships.
+ *
+ * Both the filename and its contents are hashed: a build can add a migration
+ * (new name) or edit one that has not run yet (same name), and in either case
+ * the installed schema may be about to change. Ordering is explicit so the
+ * fingerprint does not depend on directory enumeration order.
+ *
+ * Costs ~100 small reads (<10 ms). Deliberately not memoised: this runs at most
+ * once per launch, and a stale cache is the one failure mode worth ruling out.
+ */
+export function migrationFingerprint(backendPath: string): string {
+  const dir = path.join(backendPath, 'database', 'migrations');
+
+  let files: string[];
+  try {
+    files = fs
+      .readdirSync(dir)
+      .filter((name) => name.endsWith('.php'))
+      .sort();
+  } catch {
+    // A missing migrations directory means the build is broken, not that there
+    // is nothing to migrate; a stable sentinel keeps the marker readable.
+    return 'unavailable';
+  }
+
+  const hash = crypto.createHash('sha256');
+  for (const file of files) {
+    hash.update(file);
+    hash.update('\0');
+    try {
+      hash.update(fs.readFileSync(path.join(dir, file)));
+    } catch {
+      hash.update('unreadable');
+    }
+  }
+
+  return hash.digest('hex').slice(0, 16);
+}
 
 /**
  * Runs `php artisan migrate --force` against the userData database.
@@ -656,6 +713,7 @@ export async function initializeUserData(options: BootstrapOptions): Promise<voi
     version: appVersion,
     installedAt: new Date().toISOString(),
     lastMigratedAt: new Date().toISOString(),
+    migrationFingerprint: migrationFingerprint(paths.backendPath),
   });
 
   console.log(
@@ -667,10 +725,28 @@ export async function initializeUserData(options: BootstrapOptions): Promise<voi
 /**
  * Upgrade path for an existing profile.
  *
- * Only acts when the installed version differs from the marker, so a normal
- * launch pays nothing: no PHP spawn, no file copy. Version STRINGS are
- * compared rather than ordered, which also covers a downgrade — running an
- * older build against a newer schema is exactly when a backup matters most.
+ * Runs `artisan migrate --force` on EVERY launch, not only when the version
+ * string changes.
+ *
+ * Why the version gate was wrong: `appVersion` is a release string, not a
+ * schema version. Rebuilding 0.1.0 with four new migrations produced an
+ * installer that looked like "same version" to the marker and skipped the
+ * migrate entirely — observed 2026-10-26, when the installed profile was left
+ * with 17 tables missing `company_id`, `leave_requests.approved_at` missing,
+ * and writes to Recruitment/Documents/Payroll/Contracts/Attendance/Onboarding
+ * answering HTTP 500. The upgrade path was fine for a version bump and
+ * silently broken for a rebuild, which is exactly the build a beta tester
+ * receives.
+ *
+ * Why always-migrate is safe: Laravel records applied migrations in the
+ * `migrations` table and skips them, so a launch with nothing to do costs one
+ * PHP spawn (~2s) behind the splash screen. A "did database/migrations change?"
+ * gate would also work, but it is another moving part that can be wrong;
+ * always-migrate cannot forget.
+ *
+ * The backup keys off BOTH the version and the migration fingerprint, so a
+ * rebuild that adds migrations still copies the database aside before touching
+ * it, while a plain relaunch does not accumulate one backup per start.
  */
 export async function migrateIfNeeded(options: BootstrapOptions): Promise<void> {
   const { paths, appVersion, onProgress } = options;
@@ -682,26 +758,36 @@ export async function migrateIfNeeded(options: BootstrapOptions): Promise<void> 
   ensureDatabase(paths);
 
   const marker = readMarker(paths.userDataPath);
-  if (marker !== null && marker.version === appVersion) {
-    return;
+  const previous = marker?.version ?? 'unknown';
+  const fingerprint = migrationFingerprint(paths.backendPath);
+
+  const versionChanged = marker === null || marker.version !== appVersion;
+  const migrationsChanged = marker?.migrationFingerprint !== fingerprint;
+
+  if (versionChanged || migrationsChanged) {
+    const backup = backupDatabase(
+      paths.userDataPath,
+      versionChanged ? `upgrade-from-${previous}` : 'migrations-changed',
+    );
+    console.log(
+      `[first-run] ${
+        versionChanged ? `version ${previous} → ${appVersion}` : 'migration set changed'
+      }; backup=${backup ?? '(none)'}; running migrate`,
+    );
   }
 
-  const previous = marker?.version ?? 'unknown';
   onProgress?.('جاري تحديث قاعدة البيانات…');
-
-  const backup = backupDatabase(paths.userDataPath, `upgrade-from-${previous}`);
-  console.log(
-    `[first-run] version changed ${previous} → ${appVersion}; ` +
-      `backup=${backup ?? '(none)'}; running migrate`,
-  );
-
   await runMigrate(paths, appKey);
 
+  // Rewritten on every launch: `lastMigratedAt` is the "did the migrate
+  // actually run?" evidence a support session needs, and the fingerprint has
+  // to move with it or the next launch would back the database up again.
   writeMarker(paths.userDataPath, {
     version: appVersion,
     installedAt: marker?.installedAt !== undefined && marker.installedAt !== ''
       ? marker.installedAt
       : new Date().toISOString(),
     lastMigratedAt: new Date().toISOString(),
+    migrationFingerprint: fingerprint,
   });
 }

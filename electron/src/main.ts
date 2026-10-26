@@ -554,9 +554,10 @@ async function startup(): Promise<void> {
      *
      * First run builds the profile from scratch (tree, generated APP_KEY,
      * database from the shipped template, `migrate --force`). Every later
-     * launch takes `migrateIfNeeded`, which returns immediately unless the
-     * installed version differs from the marker — so a normal start pays no
-     * PHP spawn at all.
+     * launch takes `migrateIfNeeded`, which also runs `migrate --force` — on
+     * every launch, not only on a version change. Laravel skips applied
+     * migrations in ~2s, and the version gate it replaces silently skipped new
+     * migrations when a build was rebuilt without a version bump (2026-10-26).
      *
      * Both run in dev too. The old DEV-ONLY shortcuts meant the code users
      * depend on most was the code tested least.
