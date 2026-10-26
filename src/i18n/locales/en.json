@@ -1437,6 +1437,65 @@
         "description": "Are you sure you want to delete candidate \"{{name}}\" from the pipeline?"
       },
       "empty": "No candidates match your search or filter criteria."
+    },
+    "interviews": {
+      "title": "Interviews",
+      "add": "Add Interview",
+      "addTitle": "Add Interview",
+      "editTitle": "Edit Interview",
+      "scorecardTitle": "Interview Scorecard",
+      "scorecardHint": "Record the score, then mark the interview complete.",
+      "empty": "No interviews recorded for this candidate.",
+      "loadFailed": "Could not load interviews.",
+      "selectPlaceholder": "Select…",
+      "noInterviewer": "Unassigned",
+      "completed": "Interview completed and scorecard saved.",
+      "cancelled": "Interview cancelled.",
+      "fields": {
+        "type": "Interview Type",
+        "interviewer": "Interviewer",
+        "scheduledAt": "Scheduled At",
+        "duration": "Duration (minutes)",
+        "location": "Location",
+        "meetingLink": "Meeting Link",
+        "overallScore": "Overall Score (0–10)",
+        "technicalScore": "Technical (1–5)",
+        "communicationScore": "Communication (1–5)",
+        "recommendation": "Recommendation",
+        "notes": "Interview Notes"
+      },
+      "types": {
+        "screening": "Screening",
+        "technical": "Technical",
+        "hr": "HR",
+        "cultural": "Cultural",
+        "final": "Final"
+      },
+      "statuses": {
+        "scheduled": "Scheduled",
+        "completed": "Completed",
+        "cancelled": "Cancelled",
+        "no_show": "No Show"
+      },
+      "recommendations": {
+        "hire": "Hire",
+        "reject": "Reject",
+        "hold": "Hold",
+        "next_round": "Next Round"
+      },
+      "actions": {
+        "edit": "Edit interview",
+        "complete": "Complete & score",
+        "cancel": "Cancel interview"
+      },
+      "cancelConfirm": {
+        "title": "Cancel Interview",
+        "description": "Are you sure you want to cancel this interview? This cannot be undone."
+      },
+      "validation": {
+        "scoreRange": "Enter a score between 0 and 10.",
+        "competencyRange": "Enter a whole number between 1 and 5."
+      }
     }
   },
   "onboarding": {

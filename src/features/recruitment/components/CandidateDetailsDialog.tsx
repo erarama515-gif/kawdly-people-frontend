@@ -3,6 +3,7 @@ import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Avatar } from '@/components/ui/Avatar';
 import type { CandidateWire } from '../api/pipelineQueries';
+import { InterviewsSection } from './InterviewsSection';
 
 export interface CandidateDetailsDialogProps {
   candidate: CandidateWire | undefined;
@@ -31,7 +32,7 @@ export function CandidateDetailsDialog({ candidate, onClose }: CandidateDetailsD
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-      <Card className="w-full max-w-lg p-6 shadow-xl">
+      <Card className="scrollbar-slim max-h-[calc(100vh-32px)] w-full max-w-2xl overflow-y-auto p-6 shadow-xl">
         <div className="mb-4 flex items-center gap-3 border-b border-divider pb-4">
           <Avatar initials={initials} size={40} />
           <div>
@@ -82,6 +83,8 @@ export function CandidateDetailsDialog({ candidate, onClose }: CandidateDetailsD
               {candidate.notes || t('recruitment.candidate.details.noNotes')}
             </p>
           </div>
+
+          <InterviewsSection candidateId={candidate.id} />
         </div>
 
         <div className="mt-6 flex justify-end">

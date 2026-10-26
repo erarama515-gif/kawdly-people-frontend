@@ -1437,6 +1437,65 @@
         "description": "هل أنت متأكد من حذف المرشح \"{{name}}\" من قاعدة بيانات التوظيف؟"
       },
       "empty": "لا يوجد مرشحون يطابقون خيارات البحث أو التصفية الحالية."
+    },
+    "interviews": {
+      "title": "المقابلات",
+      "add": "إضافة مقابلة",
+      "addTitle": "إضافة مقابلة",
+      "editTitle": "تعديل المقابلة",
+      "scorecardTitle": "تقييم المقابلة",
+      "scorecardHint": "سجّل التقييم ثم أكمل المقابلة.",
+      "empty": "لا توجد مقابلات مسجلة لهذا المرشح.",
+      "loadFailed": "تعذّر تحميل المقابلات.",
+      "selectPlaceholder": "اختر…",
+      "noInterviewer": "غير محدد",
+      "completed": "تم إكمال المقابلة وحفظ التقييم.",
+      "cancelled": "تم إلغاء المقابلة.",
+      "fields": {
+        "type": "نوع المقابلة",
+        "interviewer": "المُقابل",
+        "scheduledAt": "موعد المقابلة",
+        "duration": "المدة (دقيقة)",
+        "location": "المكان",
+        "meetingLink": "رابط الاجتماع",
+        "overallScore": "التقييم العام (0–10)",
+        "technicalScore": "التقييم الفني (1–5)",
+        "communicationScore": "التواصل (1–5)",
+        "recommendation": "التوصية",
+        "notes": "ملاحظات المقابلة"
+      },
+      "types": {
+        "screening": "فرز أولي",
+        "technical": "فنية",
+        "hr": "موارد بشرية",
+        "cultural": "ثقافية",
+        "final": "نهائية"
+      },
+      "statuses": {
+        "scheduled": "مجدولة",
+        "completed": "مكتملة",
+        "cancelled": "ملغاة",
+        "no_show": "لم يحضر"
+      },
+      "recommendations": {
+        "hire": "توظيف",
+        "reject": "رفض",
+        "hold": "قيد الانتظار",
+        "next_round": "جولة تالية"
+      },
+      "actions": {
+        "edit": "تعديل المقابلة",
+        "complete": "إكمال وتقييم",
+        "cancel": "إلغاء المقابلة"
+      },
+      "cancelConfirm": {
+        "title": "إلغاء المقابلة",
+        "description": "هل أنت متأكد من إلغاء هذه المقابلة؟ لا يمكن التراجع عن هذا الإجراء."
+      },
+      "validation": {
+        "scoreRange": "أدخل تقييماً بين 0 و10.",
+        "competencyRange": "أدخل رقماً صحيحاً بين 1 و5."
+      }
     }
   },
   "onboarding": {
