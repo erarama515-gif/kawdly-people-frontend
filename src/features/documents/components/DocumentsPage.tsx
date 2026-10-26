@@ -302,7 +302,7 @@ export function DocumentsPage() {
         title={t('documents.title')}
         actions={
           <div className="flex items-center gap-2">
-            <ExportButton data={exportData} columns={exportColumns} filename="documents" />
+            <ExportButton endpoint="/export/documents" data={exportData} columns={exportColumns} filename="documents" />
             {canGenerate && (
               <Button variant="secondary" onClick={() => setLetterOpen(true)}>
                 <FileText className="h-3.5 w-3.5" strokeWidth={1.75} aria-hidden="true" />

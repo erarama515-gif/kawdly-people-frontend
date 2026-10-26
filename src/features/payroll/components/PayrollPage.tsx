@@ -453,7 +453,7 @@ export function PayrollPage() {
         title={t('payroll.title')}
         actions={
           <div className="flex items-center gap-2">
-            <ExportButton data={runExportData} columns={runExportColumns} filename="payroll-runs" />
+            <ExportButton endpoint="/export/payroll" data={runExportData} columns={runExportColumns} filename="payroll-runs" />
             {canCreateRun ? (
               <Button variant="primary" onClick={openAddRun}>
                 <Plus className="h-3.5 w-3.5" strokeWidth={2} aria-hidden="true" />

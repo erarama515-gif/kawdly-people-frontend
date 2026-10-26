@@ -9,6 +9,8 @@
 import * as XLSX from 'xlsx';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
+import { env } from '@/config/env';
+import { getAuthorizationHeader } from '@/auth/token';
 
 export interface ExportColumn {
   /** The key to pluck from each data row. */
@@ -111,6 +113,56 @@ export function exportToPdf(
 
   const blob = doc.output('blob');
   triggerDownload(blob, `${filename}.pdf`);
+}
+
+// ─── Server-side CSV Export ──────────────────────────────────────────────────
+
+/**
+ * Downloads full server dataset as CSV directly from backend export endpoint.
+ */
+export async function downloadCsvExport(
+  endpoint: string,
+  fallbackFilename: string,
+  queryParams?: Record<string, string | number | undefined> | undefined,
+): Promise<void> {
+  const normalizedEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
+  const base = env.apiBaseUrl || '/api/v1';
+  const url = new URL(`${base}${normalizedEndpoint}`, window.location.origin);
+
+  if (queryParams) {
+    for (const [key, val] of Object.entries(queryParams)) {
+      if (val !== undefined && val !== null && val !== '') {
+        url.searchParams.set(key, String(val));
+      }
+    }
+  }
+
+  const token = getAuthorizationHeader();
+  const headers: Record<string, string> = {};
+  if (token) {
+    headers['Authorization'] = token;
+  }
+
+  const response = await fetch(url.toString(), {
+    method: 'GET',
+    headers,
+  });
+
+  if (!response.ok) {
+    throw new Error(`Export failed with HTTP ${response.status}`);
+  }
+
+  const blob = await response.blob();
+  let filename = `${fallbackFilename}.csv`;
+  const disposition = response.headers.get('Content-Disposition');
+  if (disposition) {
+    const match = disposition.match(/filename="?([^";]+)"?/);
+    if (match && match[1]) {
+      filename = match[1].trim();
+    }
+  }
+
+  triggerDownload(blob, filename);
 }
 
 // ─── Shared helper ────────────────────────────────────────────────────────────

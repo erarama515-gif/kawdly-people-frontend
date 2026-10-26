@@ -290,7 +290,13 @@ export function AttendancePage() {
         title={t('attendance.title')}
         actions={
           <div className="flex items-center gap-2">
-            <ExportButton data={exportData} columns={exportColumns} filename="attendance" />
+            <ExportButton
+              endpoint="/export/attendance"
+              endpointParams={{ from: dateRange?.from, to: dateRange?.to }}
+              data={exportData}
+              columns={exportColumns}
+              filename="attendance"
+            />
             {canCreate && (
               <Button variant="primary" onClick={openAddForm}>
                 <Plus className="h-3.5 w-3.5" strokeWidth={2} aria-hidden="true" />

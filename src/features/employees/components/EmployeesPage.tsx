@@ -270,7 +270,7 @@ export function EmployeesPage() {
         title={t('employees.title')}
         actions={
           <div className="flex items-center gap-2">
-            <ExportButton data={exportData} columns={exportColumns} filename="employees" />
+            <ExportButton endpoint="/export/employees" data={exportData} columns={exportColumns} filename="employees" />
             {canCreate && (
               <Button variant="primary" onClick={openAddForm}>
                 <Plus className="h-3.5 w-3.5" strokeWidth={2} aria-hidden="true" />

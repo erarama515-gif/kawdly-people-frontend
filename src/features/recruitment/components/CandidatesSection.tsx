@@ -5,6 +5,7 @@ import { cn } from '@/lib/cn';
 import { Card } from '@/components/ui/Card';
 import { Avatar } from '@/components/ui/Avatar';
 import { Button } from '@/components/ui/Button';
+import { ExportButton, type ExportColumn } from '@/components/ui/ExportButton';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { Pagination } from '@/components/ui/Pagination';
 import { SkeletonTable } from '@/components/ui/SkeletonTable';
@@ -105,6 +106,22 @@ export function CandidatesSection() {
   const candidates = state.data?.data ?? [];
   const meta = state.data?.meta;
 
+  const exportColumns: ExportColumn[] = [
+    { key: 'name', label: t('recruitment.candidate.name', 'Candidate Name') },
+    { key: 'email', label: t('common.email', 'Email') },
+    { key: 'phone', label: t('common.phone', 'Phone') },
+    { key: 'job', label: t('recruitment.candidate.jobPosting', 'Job Posting') },
+    { key: 'stage', label: t('recruitment.candidate.stage', 'Stage') },
+  ];
+
+  const exportData = candidates.map((c) => ({
+    name: `${c.first_name} ${c.last_name}`.trim(),
+    email: c.email,
+    phone: c.phone ?? '',
+    job: c.job_posting?.title ?? '',
+    stage: c.stage,
+  }));
+
   async function handleStageChange(candidateId: number, nextStage: CandidateStage) {
     await updateStageMutation.mutate({ candidateId, stage: nextStage });
   }
@@ -170,6 +187,11 @@ export function CandidatesSection() {
               {t(`recruitment.candidate.stages.${stage}`)}
             </button>
           ))}
+        </div>
+
+        {/* Server-side Export (A5.3) */}
+        <div className="ms-auto">
+          <ExportButton endpoint="/export/candidates" data={exportData} columns={exportColumns} filename="candidates" />
         </div>
       </div>
 
