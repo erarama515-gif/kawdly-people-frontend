@@ -852,6 +852,60 @@
         "failed": "Could not delete the document type: {{message}}",
         "submit": "Delete"
       }
+    },
+    "tabs": {
+      "documents": "Document Register",
+      "generated": "Generated Documents"
+    },
+    "generated": {
+      "generate": "Generate Document",
+      "generateTitle": "Generate a Document from a Template",
+      "generateHint": "Pick the template and employee, preview the output, then generate.",
+      "preview": "Preview",
+      "previewTitle": "Document Preview",
+      "previewEmpty": "Pick a template and an employee, then press Preview to see the output here.",
+      "availableVariables": "Variables available in templates",
+      "selectPlaceholder": "Select…",
+      "searchPlaceholder": "Search by title or reference number…",
+      "empty": "No generated documents yet.",
+      "loadFailed": "Could not load generated documents.",
+      "generatedToast": "Document {{reference}} generated.",
+      "finalizedToast": "Document finalized and PDF generated.",
+      "revokedToast": "Document revoked.",
+      "download": "Download PDF",
+      "downloadUnavailable": "A PDF is not available for this document yet. Finalize it first.",
+      "finalize": "Finalize Document",
+      "revoke": "Revoke Document",
+      "view": "View document",
+      "revokeTitle": "Revoke Document",
+      "revokeHint": "Revocation is permanent and recorded on the document.",
+      "revokeConfirm": "Confirm Revocation",
+      "revokeReason": "Revocation Reason",
+      "filter": {
+        "all": "All"
+      },
+      "status": {
+        "draft": "Draft",
+        "final": "Final",
+        "revoked": "Revoked"
+      },
+      "table": {
+        "document": "Document",
+        "employee": "Employee",
+        "template": "Template",
+        "generatedAt": "Generated",
+        "status": "Status",
+        "actions": "Actions"
+      },
+      "fields": {
+        "template": "Template",
+        "employee": "Employee"
+      },
+      "autoMetaHint": "The reference number and document date are generated automatically.",
+      "finalizeConfirm": {
+        "title": "Finalize Document",
+        "description": "The PDF will be generated and the document locked as final. Continue?"
+      }
     }
   },
   "attendance": {

@@ -25,6 +25,7 @@ import type { EmployeeDocumentListParams, EmployeeDocumentStatus } from '../api/
 import type { EmployeeDocumentWire } from '../api/schema';
 import { EmployeeDocumentFormDialog } from './EmployeeDocumentFormDialog';
 import { LetterGenerator } from './LetterGenerator';
+import { GeneratedDocumentsTab } from './GeneratedDocumentsTab';
 
 /**
  * Documents module live-data page. Mirrors `AttendancePage` conventions:
@@ -194,6 +195,10 @@ export function DocumentsPage() {
   const [editTarget, setEditTarget] = useState<EmployeeDocumentWire | undefined>(undefined);
   const [deleteTarget, setDeleteTarget] = useState<EmployeeDocumentWire | undefined>(undefined);
   const [letterOpen, setLetterOpen] = useState(false);
+  // A6.3: the page now hosts two surfaces — the employee-document register and
+  // the generated-document engine. Requests/stat queries keep running above so
+  // switching back is instant.
+  const [activeTab, setActiveTab] = useState<'documents' | 'generated'>('documents');
 
   // Debounce the free-text search so every keystroke doesn't fire a request.
   useEffect(() => {
@@ -301,6 +306,7 @@ export function DocumentsPage() {
       <PageHeader
         title={t('documents.title')}
         actions={
+          activeTab === 'documents' ? (
           <div className="flex items-center gap-2">
             <ExportButton endpoint="/export/documents" data={exportData} columns={exportColumns} filename="documents" />
             {canGenerate && (
@@ -316,9 +322,42 @@ export function DocumentsPage() {
               </Button>
             )}
           </div>
+          ) : undefined
         }
       />
 
+      {/* Tabs — employee-document register vs generated-document engine */}
+      <div className="mb-6 flex items-center border-b border-divider">
+        <button
+          type="button"
+          onClick={() => setActiveTab('documents')}
+          className={cn(
+            'px-4 py-2.5 text-body-sm font-semibold border-b-2 transition-colors',
+            activeTab === 'documents'
+              ? 'border-navy text-navy'
+              : 'border-transparent text-ink-muted hover:text-ink',
+          )}
+        >
+          {t('documents.tabs.documents')}
+        </button>
+        <button
+          type="button"
+          onClick={() => setActiveTab('generated')}
+          className={cn(
+            'px-4 py-2.5 text-body-sm font-semibold border-b-2 transition-colors',
+            activeTab === 'generated'
+              ? 'border-navy text-navy'
+              : 'border-transparent text-ink-muted hover:text-ink',
+          )}
+        >
+          {t('documents.tabs.generated')}
+        </button>
+      </div>
+
+      {activeTab === 'generated' ? (
+        <GeneratedDocumentsTab />
+      ) : (
+        <>
       {/* Stat strip */}
       <div className="mb-8 grid grid-cols-2 gap-3 sm:grid-cols-5">
         <StatCard label={t('documents.stat.totalDocuments')} value={totalState.data?.meta.total} />
@@ -566,6 +605,8 @@ export function DocumentsPage() {
               onPageChange={setPage}
             />
           ) : null}
+        </>
+      )}
         </>
       )}
 

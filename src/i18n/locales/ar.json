@@ -852,6 +852,60 @@
         "failed": "تعذر حذف نوع المستند: {{message}}",
         "submit": "حذف"
       }
+    },
+    "tabs": {
+      "documents": "سجل المستندات",
+      "generated": "المستندات المُولّدة"
+    },
+    "generated": {
+      "generate": "توليد مستند",
+      "generateTitle": "توليد مستند من قالب",
+      "generateHint": "اختر القالب والموظف، عاين الناتج، ثم ولّد المستند.",
+      "preview": "معاينة",
+      "previewTitle": "معاينة المستند",
+      "previewEmpty": "اختر قالبًا وموظفًا ثم اضغط «معاينة» لعرض الناتج هنا.",
+      "availableVariables": "المتغيرات المتاحة في القوالب",
+      "selectPlaceholder": "اختر…",
+      "searchPlaceholder": "بحث بالعنوان أو الرقم المرجعي…",
+      "empty": "لا توجد مستندات مُولّدة بعد.",
+      "loadFailed": "تعذّر تحميل المستندات المُولّدة.",
+      "generatedToast": "تم توليد المستند {{reference}}.",
+      "finalizedToast": "تم اعتماد المستند وتوليد ملف PDF.",
+      "revokedToast": "تم إلغاء المستند.",
+      "download": "تنزيل PDF",
+      "downloadUnavailable": "ملف PDF غير متاح لهذا المستند بعد. اعتمد المستند أولاً.",
+      "finalize": "اعتماد المستند",
+      "revoke": "إلغاء المستند",
+      "view": "عرض المستند",
+      "revokeTitle": "إلغاء المستند",
+      "revokeHint": "الإلغاء نهائي ويُسجَّل في سجل المستند.",
+      "revokeConfirm": "تأكيد الإلغاء",
+      "revokeReason": "سبب الإلغاء",
+      "filter": {
+        "all": "الكل"
+      },
+      "status": {
+        "draft": "مسودة",
+        "final": "معتمد",
+        "revoked": "ملغى"
+      },
+      "table": {
+        "document": "المستند",
+        "employee": "الموظف",
+        "template": "القالب",
+        "generatedAt": "تاريخ التوليد",
+        "status": "الحالة",
+        "actions": "الإجراءات"
+      },
+      "fields": {
+        "template": "القالب",
+        "employee": "الموظف"
+      },
+      "autoMetaHint": "يُولَّد الرقم المرجعي وتاريخ المستند تلقائيًا عند التوليد.",
+      "finalizeConfirm": {
+        "title": "اعتماد المستند",
+        "description": "سيتم توليد ملف PDF واعتماد المستند نهائيًا. هل تريد المتابعة؟"
+      }
     }
   },
   "attendance": {
