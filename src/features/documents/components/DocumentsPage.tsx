@@ -12,7 +12,7 @@ import { Button } from '@/components/ui/Button';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { Pagination } from '@/components/ui/Pagination';
 import { SortableHeader } from '@/components/ui/SortableHeader';
-import { useSort, sortData } from '@/hooks/useSort';
+import { useSort } from '@/hooks/useSort';
 import { userFacingMessage } from '@/lib/api/errors';
 import {
   useEmployeeDocumentList,
@@ -206,14 +206,31 @@ export function DocumentsPage() {
     setPage(1);
   }, [search, statusFilter]);
 
+  // Server-side sorting (A5.1)
+  type DocSortCol = 'employee' | 'documentType' | 'documentNumber' | 'issueDate' | 'expiryDate' | 'status';
+  const { sort, toggle: toggleSort } = useSort<DocSortCol>();
+
+  const serverSortField = useMemo(() => {
+    if (!sort.column) return undefined;
+    switch (sort.column) {
+      case 'documentNumber': return 'document_number';
+      case 'issueDate': return 'issue_date';
+      case 'expiryDate': return 'expiry_date';
+      case 'status': return 'status';
+      default: return undefined;
+    }
+  }, [sort.column]);
+
   const params = useMemo<EmployeeDocumentListParams>(
     () => ({
       page,
       perPage: PER_PAGE,
       search: search || undefined,
       status: statusFilter === 'all' ? undefined : statusFilter,
+      sort: serverSortField,
+      direction: sort.column ? sort.direction : undefined,
     }),
-    [page, search, statusFilter],
+    [page, search, statusFilter, serverSortField, sort.column, sort.direction],
   );
 
   const { state, refetch } = useEmployeeDocumentList(params);
@@ -241,19 +258,8 @@ export function DocumentsPage() {
   const canDelete = useCan('document', 'delete');
   const canGenerate = useCan('document_template', 'view');
 
-  // Client-side sorting
-  type DocSortCol = 'employee' | 'documentType' | 'documentNumber' | 'issueDate' | 'expiryDate' | 'status';
-  const { sort, toggle: toggleSort } = useSort<DocSortCol>();
-  const SORT_ACCESSORS: Record<DocSortCol, (d: EmployeeDocumentWire) => string | number | undefined> = {
-    employee:       (d) => `${d.employee?.first_name ?? ''} ${d.employee?.last_name ?? ''}`,
-    documentType:   (d) => d.document_type?.name ?? docTypeMap[d.document_type_id] ?? '',
-    documentNumber: (d) => d.document_number ?? '',
-    issueDate:      (d) => d.issue_date ?? '',
-    expiryDate:     (d) => d.expiry_date ?? '',
-    status:         (d) => d.status ?? '',
-  };
   const rawRecords = state.data?.data ?? [];
-  const records = sortData(rawRecords, sort, SORT_ACCESSORS);
+  const records = rawRecords;
   const meta = state.data?.meta;
 
   const exportColumns: ExportColumn[] = [

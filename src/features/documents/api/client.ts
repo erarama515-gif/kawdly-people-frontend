@@ -43,6 +43,8 @@ export const httpEmployeeDocumentApi: EmployeeDocumentApi = {
       query: {
         page: params.page,
         per_page: params.perPage,
+        sort: params.sort,
+        direction: params.direction,
         search: params.search || undefined,
         status: params.status,
         employee_id: params.employeeId,

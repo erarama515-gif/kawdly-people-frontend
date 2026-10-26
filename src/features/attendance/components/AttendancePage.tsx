@@ -12,7 +12,7 @@ import { Button } from '@/components/ui/Button';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { Pagination } from '@/components/ui/Pagination';
 import { SortableHeader } from '@/components/ui/SortableHeader';
-import { useSort, sortData } from '@/hooks/useSort';
+import { useSort } from '@/hooks/useSort';
 import { userFacingMessage } from '@/lib/api/errors';
 import { useDeleteAttendance, useAttendanceList } from '../api/queries';
 import { useCan } from '@/hooks/useCan';
@@ -206,16 +206,31 @@ export function AttendancePage() {
     setPage(1);
   }, [search, statusFilter, dateRange]);
 
+  // Server-side sorting (A5.1)
+  type AttendanceSortCol = 'employee' | 'date' | 'checkIn' | 'checkOut' | 'hours' | 'late' | 'status';
+  const { sort, toggle: toggleSort } = useSort<AttendanceSortCol>();
+
+  const serverSortField = useMemo(() => {
+    if (!sort.column) return undefined;
+    switch (sort.column) {
+      case 'date': return 'date';
+      case 'status': return 'status';
+      default: return undefined;
+    }
+  }, [sort.column]);
+
   const params = useMemo<AttendanceListParams>(
     () => ({
       page,
       perPage: PER_PAGE,
       search: search || undefined,
       status: statusFilter === 'all' ? undefined : statusFilter,
+      sort: serverSortField,
+      direction: sort.column ? sort.direction : undefined,
       dateFrom: dateRange?.from,
       dateTo: dateRange?.to,
     }),
-    [page, search, statusFilter, dateRange],
+    [page, search, statusFilter, serverSortField, sort.column, sort.direction, dateRange],
   );
 
   const { state, refetch } = useAttendanceList(params);
@@ -229,21 +244,8 @@ export function AttendancePage() {
   const canEdit = useCan('attendance', 'edit');
   const canDelete = useCan('attendance', 'delete');
 
-  // Client-side sorting
-  type AttendanceSortCol = 'employee' | 'date' | 'checkIn' | 'checkOut' | 'hours' | 'late' | 'status';
-  const { sort, toggle: toggleSort } = useSort<AttendanceSortCol>();
-  const SORT_ACCESSORS: Record<AttendanceSortCol, (r: AttendanceWire) => string | number | undefined> = {
-    employee: (r) => `${r.employee?.first_name ?? ''} ${r.employee?.last_name ?? ''}`,
-    date:     (r) => r.date,
-    checkIn:  (r) => r.check_in ?? '',
-    checkOut: (r) => r.check_out ?? '',
-    hours:    (r) => (r.regular_hours ? parseFloat(r.regular_hours) : 0),
-    late:     (r) => r.late_minutes ?? 0,
-    status:   (r) => r.status,
-  };
   const rawRecords = state.data?.data ?? [];
-  // Date range is now applied server-side via `params.dateFrom`/`dateTo` (see above).
-  const records = sortData(rawRecords, sort, SORT_ACCESSORS);
+  const records = rawRecords;
   const meta = state.data?.meta;
 
   const exportColumns: ExportColumn[] = [

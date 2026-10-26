@@ -14,7 +14,7 @@ import { Button } from '@/components/ui/Button';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { BulkActionBar } from '@/components/ui/BulkActionBar';
 import { Pagination } from '@/components/ui/Pagination';
-import { useSort, sortData } from '@/hooks/useSort';
+import { useSort } from '@/hooks/useSort';
 import { useBulkSelect } from '@/hooks/useBulkSelect';
 import { userFacingMessage } from '@/lib/api/errors';
 import { exportToExcel } from '@/lib/export';
@@ -156,14 +156,31 @@ export function EmployeesPage() {
     setPage(1);
   }, [search, statusFilter]);
 
+  // Server-side sorting (A5.1)
+  type EmpSortCol = 'employee' | 'id' | 'department' | 'position' | 'status' | 'joined';
+  const { sort, toggle: toggleSort } = useSort<EmpSortCol>();
+
+  const serverSortField = useMemo(() => {
+    if (!sort.column) return undefined;
+    switch (sort.column) {
+      case 'employee': return 'first_name';
+      case 'id': return 'employee_number';
+      case 'joined': return 'joining_date';
+      case 'status': return 'status';
+      default: return undefined;
+    }
+  }, [sort.column]);
+
   const params = useMemo<EmployeeListParams>(
     () => ({
       page,
       perPage: PER_PAGE,
       search: search || undefined,
       status: statusFilter === 'all' ? undefined : statusFilter,
+      sort: serverSortField,
+      direction: sort.column ? sort.direction : undefined,
     }),
-    [page, search, statusFilter],
+    [page, search, statusFilter, serverSortField, sort.direction, sort.column],
   );
 
   const { state, refetch } = useEmployeeList(params);
@@ -176,19 +193,8 @@ export function EmployeesPage() {
   const canEdit = useCan('employee', 'edit');
   const canDelete = useCan('employee', 'delete');
 
-  // Client-side sorting
-  type EmpSortCol = 'employee' | 'id' | 'department' | 'position' | 'status' | 'joined';
-  const { sort, toggle: toggleSort } = useSort<EmpSortCol>();
-  const SORT_ACCESSORS: Record<EmpSortCol, (e: EmployeeWire) => string | number | undefined> = {
-    employee: (e) => `${e.first_name} ${e.last_name}`,
-    id: (e) => e.employee_number,
-    department: (e) => e.department?.name,
-    position: (e) => e.job_position?.title,
-    status: (e) => e.status,
-    joined: (e) => e.joining_date,
-  };
   const rawEmployees = state.data?.data ?? [];
-  const employees = sortData(rawEmployees, sort, SORT_ACCESSORS);
+  const employees = rawEmployees;
   const meta = state.data?.meta;
 
   /**

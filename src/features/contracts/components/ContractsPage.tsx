@@ -13,7 +13,7 @@ import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { BulkActionBar } from '@/components/ui/BulkActionBar';
 import { Pagination } from '@/components/ui/Pagination';
 import { SortableHeader } from '@/components/ui/SortableHeader';
-import { useSort, sortData } from '@/hooks/useSort';
+import { useSort } from '@/hooks/useSort';
 import { useBulkSelect } from '@/hooks/useBulkSelect';
 import { userFacingMessage } from '@/lib/api/errors';
 import { exportToExcel } from '@/lib/export';
@@ -172,14 +172,32 @@ export function ContractsPage() {
     setPage(1);
   }, [search, statusFilter]);
 
+  // Server-side sorting (A5.1)
+  type ContractSortCol = 'employee' | 'type' | 'startDate' | 'endDate' | 'salary' | 'status';
+  const { sort, toggle: toggleSort } = useSort<ContractSortCol>();
+
+  const serverSortField = useMemo(() => {
+    if (!sort.column) return undefined;
+    switch (sort.column) {
+      case 'type': return 'type';
+      case 'startDate': return 'start_date';
+      case 'endDate': return 'end_date';
+      case 'salary': return 'basic_salary';
+      case 'status': return 'status';
+      default: return undefined;
+    }
+  }, [sort.column]);
+
   const params = useMemo<ContractListParams>(
     () => ({
       page,
       perPage: PER_PAGE,
       search: search || undefined,
       status: statusFilter === 'all' ? undefined : statusFilter,
+      sort: serverSortField,
+      direction: sort.column ? sort.direction : undefined,
     }),
-    [page, search, statusFilter],
+    [page, search, statusFilter, serverSortField, sort.column, sort.direction],
   );
 
   const { state, refetch } = useContractList(params);
@@ -196,19 +214,8 @@ export function ContractsPage() {
   const canEdit = useCan('contract', 'edit');
   const canDelete = useCan('contract', 'delete');
 
-  // Client-side sorting
-  type ContractSortCol = 'employee' | 'type' | 'startDate' | 'endDate' | 'salary' | 'status';
-  const { sort, toggle: toggleSort } = useSort<ContractSortCol>();
-  const SORT_ACCESSORS: Record<ContractSortCol, (c: ContractWire) => string | number | undefined> = {
-    employee: (c) => `${c.employee?.first_name ?? ''} ${c.employee?.last_name ?? ''}`,
-    type:      (c) => c.type,
-    startDate: (c) => c.start_date,
-    endDate:   (c) => c.end_date ?? '',
-    salary:    (c) => c.basic_salary,
-    status:    (c) => c.status,
-  };
   const rawContracts = state.data?.data ?? [];
-  const contracts = sortData(rawContracts, sort, SORT_ACCESSORS);
+  const contracts = rawContracts;
   const meta = state.data?.meta;
 
   // ── Bulk selection ──────────────────────────────────────────────────────────

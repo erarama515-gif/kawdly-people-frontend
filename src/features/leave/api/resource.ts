@@ -17,6 +17,8 @@ export interface LeaveRequestListParams {
   page?: number;
   perPage?: number;
   search?: string | undefined;
+  sort?: string | undefined;
+  direction?: 'asc' | 'desc' | undefined;
   status?: LeaveRequestStatus | undefined;
   employeeId?: number | undefined;
   leaveTypeId?: number | undefined;

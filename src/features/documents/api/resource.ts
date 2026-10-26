@@ -60,6 +60,8 @@ export interface EmployeeDocumentListParams {
   page?: number;
   perPage?: number;
   search?: string | undefined;
+  sort?: string | undefined;
+  direction?: 'asc' | 'desc' | undefined;
   status?: EmployeeDocumentStatus | undefined;
   employeeId?: number | undefined;
   documentTypeId?: number | undefined;

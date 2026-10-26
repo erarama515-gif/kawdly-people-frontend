@@ -27,6 +27,8 @@ export interface AttendanceListParams {
   page?: number;
   perPage?: number;
   search?: string | undefined;
+  sort?: string | undefined;
+  direction?: 'asc' | 'desc' | undefined;
   status?: AttendanceStatus | undefined;
   employeeId?: number | undefined;
   /** Inclusive range filter on `date`, mapped to `date_from`/`date_to` on the wire. */

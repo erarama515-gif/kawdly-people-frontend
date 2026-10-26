@@ -21,6 +21,8 @@ export interface EmployeeListParams {
   page?: number;
   perPage?: number;
   search?: string | undefined;
+  sort?: string | undefined;
+  direction?: 'asc' | 'desc' | undefined;
   status?: EmployeeStatus | undefined;
   departmentId?: number | undefined;
 }

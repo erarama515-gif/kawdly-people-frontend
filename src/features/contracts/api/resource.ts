@@ -22,6 +22,8 @@ export interface ContractListParams {
   page?: number;
   perPage?: number;
   search?: string | undefined;
+  sort?: string | undefined;
+  direction?: 'asc' | 'desc' | undefined;
   status?: ContractStatus | undefined;
   employeeId?: number | undefined;
 }

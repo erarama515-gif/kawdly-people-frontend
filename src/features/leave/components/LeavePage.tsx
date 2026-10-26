@@ -16,7 +16,7 @@ import { Textarea } from '@/components/ui/form/Textarea';
 import { toast } from '@/components/ui/Toast';
 import { Pagination } from '@/components/ui/Pagination';
 import { SortableHeader } from '@/components/ui/SortableHeader';
-import { useSort, sortData } from '@/hooks/useSort';
+import { useSort } from '@/hooks/useSort';
 import { userFacingMessage } from '@/lib/api/errors';
 import { useLocalizeEntity } from '@/lib/localizeEntity';
 import {
@@ -195,16 +195,33 @@ export function LeavePage() {
     setPage(1);
   }, [search, statusFilter, dateRange]);
 
+  // Server-side sorting (A5.1)
+  type LeaveSortCol = 'employee' | 'leaveType' | 'from' | 'to' | 'days' | 'status';
+  const { sort, toggle: toggleSort } = useSort<LeaveSortCol>();
+
+  const serverSortField = useMemo(() => {
+    if (!sort.column) return undefined;
+    switch (sort.column) {
+      case 'from': return 'start_date';
+      case 'to': return 'end_date';
+      case 'days': return 'days';
+      case 'status': return 'status';
+      default: return undefined;
+    }
+  }, [sort.column]);
+
   const params = useMemo<LeaveRequestListParams>(
     () => ({
       page,
       perPage: PER_PAGE,
       search: search || undefined,
       status: statusFilter === 'all' ? undefined : statusFilter,
+      sort: serverSortField,
+      direction: sort.column ? sort.direction : undefined,
       dateFrom: dateRange?.from,
       dateTo: dateRange?.to,
     }),
-    [page, search, statusFilter, dateRange],
+    [page, search, statusFilter, serverSortField, sort.column, sort.direction, dateRange],
   );
 
   const { state, refetch } = useLeaveRequestList(params);
@@ -223,20 +240,8 @@ export function LeavePage() {
   const canDelete = useCan('leave', 'delete');
   const canApprove = useCan('leave', 'approve');
 
-  // Client-side sorting
-  type LeaveSortCol = 'employee' | 'leaveType' | 'from' | 'to' | 'days' | 'status';
-  const { sort, toggle: toggleSort } = useSort<LeaveSortCol>();
-  const SORT_ACCESSORS: Record<LeaveSortCol, (r: LeaveRequestWire) => string | number | undefined> = {
-    employee:  (r) => `${r.employee?.first_name ?? ''} ${r.employee?.last_name ?? ''}`,
-    leaveType: (r) => r.leave_type?.name ?? String(r.leave_type_id),
-    from:      (r) => r.start_date,
-    to:        (r) => r.end_date,
-    days:      (r) => parseFloat(r.days),
-    status:    (r) => r.status,
-  };
   const rawRequests = state.data?.data ?? [];
-  // Date range is now applied server-side via `params.dateFrom`/`dateTo` (see above).
-  const requests = sortData(rawRequests, sort, SORT_ACCESSORS);
+  const requests = rawRequests;
   const meta     = state.data?.meta;
 
   const exportColumns: ExportColumn[] = [

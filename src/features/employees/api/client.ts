@@ -48,6 +48,8 @@ export const httpEmployeeApi: EmployeeApi = {
       query: {
         page: params.page,
         per_page: params.perPage,
+        sort: params.sort,
+        direction: params.direction,
         search: params.search || undefined,
         status: params.status,
         department_id: params.departmentId,
