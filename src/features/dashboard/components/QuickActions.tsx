@@ -4,6 +4,7 @@ import { Plus } from 'lucide-react';
 import { cn } from '@/lib/cn';
 import { pathById } from '@/config/navigation';
 import type { Role } from '@/auth/session';
+import type { DashboardQuickAction } from '../model';
 
 type Tone = 'primary' | 'secondary' | 'tertiary';
 
@@ -39,9 +40,9 @@ const TONE_STYLES: Record<Tone, string> = {
   tertiary: 'border border-navy text-navy bg-transparent hover:bg-surface-hover',
 };
 
-export function QuickActions({ role }: { role: Role }) {
+export function QuickActions({ role, actions: provided }: { role: Role; actions?: DashboardQuickAction[] | undefined }) {
   const { t } = useTranslation();
-  const actions = QUICK_ACTIONS[role] ?? QUICK_ACTIONS.hr_admin ?? [];
+  const actions = provided ?? QUICK_ACTIONS[role] ?? QUICK_ACTIONS.hr_admin ?? [];
 
   return (
     <div className="flex flex-wrap items-center gap-2" role="group" aria-label={t('dashboard.quickActions.label')}>

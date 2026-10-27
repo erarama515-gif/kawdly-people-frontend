@@ -127,7 +127,8 @@
     "learning": "التعلّم والتطوير",
     "career": "المسار الوظيفي",
     "analytics": "التحليلات",
-    "copilot": "مساعد الذكاء الاصطناعي"
+    "copilot": "مساعد الذكاء الاصطناعي",
+    "myPayslips": "كشوف رواتبي"
   },
   "page": {
     "dashboard": {
@@ -214,7 +215,9 @@
       "runPayroll": "تشغيل المسير",
       "publishJob": "نشر وظيفة",
       "requestLeave": "طلب إجازة لعضو",
+      "requestLeaveSelf": "طلب إجازة لنفسك",
       "manualAttendance": "تسجيل حضور يدوي",
+      "myAttendance": "حضوري",
       "startReview": "بدء تقييم أداء"
     },
     "queue": {
@@ -291,6 +294,25 @@
       "reviewsDue": {
         "caption": "تقييمات مستحقة",
         "delta": "خلال 7 أيام"
+      },
+      "myLeaveBalance": {
+        "caption": "رصيد الإجازات",
+        "delta": "{{days}} يوم"
+      },
+      "myPendingRequests": {
+        "caption": "الطلبات المعلقة",
+        "delta": "{{count}} معلق"
+      },
+      "myAttendanceToday": {
+        "caption": "حضوري اليوم",
+        "delta": "حاضر",
+        "present": "حاضر",
+        "notClockedIn": "لم تسجّل حضورك بعد"
+      },
+      "myLastNetPay": {
+        "caption": "آخر صافي راتب",
+        "delta": "{{amount}} ج.م",
+        "noPayslip": "لا يوجد قسيمة راتب هذا الشهر"
       },
       "delta": {
         "noChange": "بلا تغيير",
@@ -1274,6 +1296,11 @@
       "editAction": "تعديل القسيمة",
       "deleteAction": "حذف القسيمة",
       "breakdownAction": "عرض التفاصيل",
+      "status": {
+        "draft": "مسودة",
+        "finalized": "معتمد",
+        "paid": "مدفوع"
+      },
       "deleteTitle": "حذف قسيمة الراتب",
       "deleteDescription": "هل أنت متأكد من حذف قسيمة الراتب لـ \"{{name}}\"؟ لا يمكن التراجع عن هذا الإجراء.",
       "table": {
@@ -2644,6 +2671,71 @@
       "documents": "لا توجد مستندات لهذا الموظف.",
       "leave": "لا توجد طلبات إجازة لهذا الموظف.",
       "attendance": "لا توجد سجلات حضور لهذا الموظف."
+    }
+  },
+  "my": {
+    "dashboard": {
+      "requests": {
+        "title": "طلباتي",
+        "empty": "لا توجد طلبات إجازة بعد.",
+        "viewAll": "عرض كل الطلبات",
+        "days": "{{count}} يوم"
+      },
+      "payslip": {
+        "title": "آخر قسيمة راتب",
+        "empty": "لم تُصدر قسيمة راتب بعد.",
+        "viewAll": "عرض كل الكشوف"
+      },
+      "attendance": {
+        "title": "حضوري",
+        "empty": "لا توجد سجلات حضور بعد.",
+        "today": "حضور اليوم",
+        "present": "{{count}} حاضر",
+        "late": "{{count}} متأخر",
+        "absent": "{{count}} غائب",
+        "viewAll": "عرض سجلات الحضور"
+      },
+      "present": "حاضر",
+      "notClockedIn": "لم تسجّل حضورك بعد"
+    },
+    "requests": {
+      "status": {
+        "pending": "معلق",
+        "approved": "معتمد",
+        "rejected": "مرفوض",
+        "cancelled": "ملغى"
+      }
+    },
+    "payslips": {
+      "title": "كشوف رواتبي",
+      "view": "عرض",
+      "empty": "لا توجد كشوف رواتب بعد.",
+      "table": {
+        "period": "الفترة",
+        "gross": "الإجمالي",
+        "deductions": "الاستقطاعات",
+        "net": "الصافي",
+        "status": "الحالة"
+      }
+    },
+    "payslip": {
+      "title": "قسيمة الراتب",
+      "back": "العودة إلى كشوف رواتبي",
+      "for": "قسيمة راتب لـ",
+      "period": "الفترة",
+      "gross": "الإجمالي",
+      "earnings": "المكتسبات",
+      "deductions": "الاستقطاعات",
+      "net": "صافي الراتب",
+      "breakdownTitle": "التفاصيل",
+      "breakdownEmpty": "لا توجد بنود في هذه القسيمة.",
+      "description": "الوصف",
+      "type": "النوع",
+      "amount": "المبلغ",
+      "types": {
+        "earning": "مكتسب",
+        "deduction": "استقطاع"
+      }
     }
   }
 }

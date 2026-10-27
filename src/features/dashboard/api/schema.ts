@@ -103,8 +103,32 @@ export const alertDecoder = object({
   params: optional(params),
 });
 
+const quickAction = object({
+  key: str(),
+  labelKey: str(),
+  to: str(),
+  tone: literalUnion(['primary', 'secondary', 'tertiary'] as const),
+});
+
+const myLeaveRequest = object({
+  id: num(),
+  leaveType: str(),
+  startDate: isoDate(),
+  endDate: isoDate(),
+  days: num(),
+  status: str(),
+});
+
+const myPayslipSummary = object({
+  id: num(),
+  period: str(),
+  net: num(),
+  status: str(),
+});
+
 /** The full dashboard payload for one role, as served by the API. */
 export const dashboardDatasetDecoder = object({
+  mode: literalUnion(['admin', 'manager', 'self'] as const),
   queues: array(decisionQueueRow),
   kpis: array(kpi),
   departments: array(object({ name: localeText, count: num() })),
@@ -119,6 +143,9 @@ export const dashboardDatasetDecoder = object({
   attendance,
   upcoming: array(upcomingItem),
   updatedAt: isoDate(),
+  quickActions: optional(array(quickAction)),
+  myRequests: optional(array(myLeaveRequest)),
+  myPayslip: optional(myPayslipSummary),
 });
 
 export type DashboardDatasetWire = ReturnType<typeof dashboardDatasetDecoder.decode>;

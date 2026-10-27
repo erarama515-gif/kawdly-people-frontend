@@ -127,7 +127,8 @@
     "learning": "Learning & Development",
     "career": "Career Path",
     "analytics": "Analytics",
-    "copilot": "AI Copilot"
+    "copilot": "AI Copilot",
+    "myPayslips": "My payslips"
   },
   "page": {
     "dashboard": {
@@ -214,7 +215,9 @@
       "runPayroll": "Run payroll",
       "publishJob": "Post a job",
       "requestLeave": "Request leave for a member",
+      "requestLeaveSelf": "Request leave for yourself",
       "manualAttendance": "Log attendance",
+      "myAttendance": "My attendance",
       "startReview": "Start a review"
     },
     "queue": {
@@ -291,6 +294,25 @@
       "reviewsDue": {
         "caption": "Reviews due",
         "delta": "within 7 days"
+      },
+      "myLeaveBalance": {
+        "caption": "Leave balance",
+        "delta": "{{days}} days"
+      },
+      "myPendingRequests": {
+        "caption": "Pending requests",
+        "delta": "{{count}} pending"
+      },
+      "myAttendanceToday": {
+        "caption": "Attendance today",
+        "delta": "present",
+        "present": "Present",
+        "notClockedIn": "Not clocked in yet today"
+      },
+      "myLastNetPay": {
+        "caption": "Last net pay",
+        "delta": "EGP {{amount}}",
+        "noPayslip": "No payslip this month"
       },
       "delta": {
         "noChange": "no change",
@@ -1274,6 +1296,11 @@
       "editAction": "Edit payslip",
       "deleteAction": "Delete payslip",
       "breakdownAction": "View breakdown",
+      "status": {
+        "draft": "Draft",
+        "finalized": "Finalized",
+        "paid": "Paid"
+      },
       "deleteTitle": "Delete Payslip",
       "deleteDescription": "Are you sure you want to delete the payslip for \"{{name}}\"? This action cannot be undone.",
       "table": {
@@ -2644,6 +2671,71 @@
       "documents": "No documents found for this employee.",
       "leave": "No leave requests found for this employee.",
       "attendance": "No attendance records found for this employee."
+    }
+  },
+  "my": {
+    "dashboard": {
+      "requests": {
+        "title": "My leave requests",
+        "empty": "No leave requests yet.",
+        "viewAll": "View all requests",
+        "days": "{{count}} days"
+      },
+      "payslip": {
+        "title": "My latest payslip",
+        "empty": "No payslip issued yet.",
+        "viewAll": "View all payslips"
+      },
+      "attendance": {
+        "title": "My attendance",
+        "empty": "No attendance recorded yet.",
+        "today": "Attendance today",
+        "present": "{{count}} present",
+        "late": "{{count}} late",
+        "absent": "{{count}} absent",
+        "viewAll": "View attendance records"
+      },
+      "present": "Present",
+      "notClockedIn": "Not clocked in yet today"
+    },
+    "requests": {
+      "status": {
+        "pending": "Pending",
+        "approved": "Approved",
+        "rejected": "Rejected",
+        "cancelled": "Cancelled"
+      }
+    },
+    "payslips": {
+      "title": "My payslips",
+      "view": "View",
+      "empty": "No payslips yet.",
+      "table": {
+        "period": "Period",
+        "gross": "Gross",
+        "deductions": "Deductions",
+        "net": "Net",
+        "status": "Status"
+      }
+    },
+    "payslip": {
+      "title": "Payslip",
+      "back": "Back to my payslips",
+      "for": "Payslip for",
+      "period": "Period",
+      "gross": "Gross",
+      "earnings": "Earnings",
+      "deductions": "Deductions",
+      "net": "Net pay",
+      "breakdownTitle": "Breakdown",
+      "breakdownEmpty": "No line items on this payslip.",
+      "description": "Description",
+      "type": "Type",
+      "amount": "Amount",
+      "types": {
+        "earning": "Earning",
+        "deduction": "Deduction"
+      }
     }
   }
 }

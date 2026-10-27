@@ -1,6 +1,6 @@
 import { useTranslation } from 'react-i18next';
 import { resolveLocaleText } from '../model';
-import type { DecisionQueueRow, QueueId } from '../model';
+import type { DashboardQuickAction, DecisionQueueRow, QueueId } from '../model';
 import type { SessionUser } from '@/auth/session';
 import type { Role } from '@/auth/session';
 import { QuickActions } from './QuickActions';
@@ -14,6 +14,7 @@ interface HeroHeaderProps {
   rows: DecisionQueueRow[];
   counts: Record<QueueId, number>;
   removing: ReadonlySet<QueueId>;
+  actions?: DashboardQuickAction[];
 }
 
 /**
@@ -25,7 +26,7 @@ interface HeroHeaderProps {
  * No oversized photo or decisions sentence — those are handled by the KPI
  * strip's "Open actions" panel and the DecisionQueue below.
  */
-export function HeroHeader({ user, role, roleLabel, today }: HeroHeaderProps) {
+export function HeroHeader({ user, role, roleLabel, today, actions }: HeroHeaderProps) {
   const { t, i18n } = useTranslation();
   const language = i18n.language === 'en' ? 'en' : 'ar';
   const name = resolveLocaleText(user.name, language);
@@ -46,7 +47,7 @@ export function HeroHeader({ user, role, roleLabel, today }: HeroHeaderProps) {
           {t('dashboard.greeting', { name })}
         </h1>
 
-        <QuickActions role={role} />
+        <QuickActions role={role} actions={actions} />
       </div>
     </div>
   );

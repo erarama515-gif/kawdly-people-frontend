@@ -17,6 +17,7 @@ import { HeroHeader } from './HeroHeader';
 import { KpiStrip } from './KpiStrip';
 import { RosterCard } from './RightRailCards';
 import { RightRail } from './RightRail';
+import { SelfDashboard } from './SelfDashboard';
 import { TrendsBand } from './TrendsBand';
 import { OrgTreemap } from './OrgTreemap';
 import { WhatChanged } from './WhatChanged';
@@ -95,21 +96,44 @@ export function DashboardPage() {
     [counts, resolveQueue.isPending, resolveQueue.mutate],
   );
 
-  const roleLabel = t(role === 'department_manager' ? 'dashboard.role.manager' : 'dashboard.role.admin');
   const today = new Intl.DateTimeFormat(language, {
-    weekday: 'long',
-    day: 'numeric',
-    month: 'long',
-    year: 'numeric',
-  }).format(new Date());
+  weekday: 'long',
+  day: 'numeric',
+  month: 'long',
+  year: 'numeric',
+}).format(new Date());
 
-  if (!data) {
-    return dataset.status === 'error' ? (
-      <DashboardError onRetry={refresh} />
-    ) : (
-      <DashboardPageSkeleton />
-    );
-  }
+if (!data) {
+  return dataset.status === 'error' ? (
+    <DashboardError onRetry={refresh} />
+  ) : (
+    <DashboardPageSkeleton />
+  );
+}
+
+let roleLabel: string;
+if (data.mode === 'self') {
+  roleLabel = t(`dashboard.role.${role}`, { defaultValue: role });
+} else if (role === 'department_manager') {
+  roleLabel = t('dashboard.role.manager');
+} else {
+  roleLabel = t('dashboard.role.admin');
+}
+
+if (data.mode === 'self') {
+  return (
+    <SelfDashboard
+      data={data}
+      user={user}
+      role={role}
+      roleLabel={roleLabel}
+      today={today}
+      language={language}
+      onRefresh={refresh}
+      isFetching={dataset.isFetching || alerts.isFetching}
+    />
+  );
+}
 
   return (
     <div className="flex flex-col">

@@ -122,7 +122,40 @@ export interface TeamMember {
   photo?: string;
 }
 
+/**
+ * Which dashboard the API built for this user. `self` means the payload is
+ * personal-only; it must never be rendered with the admin org chart / payroll
+ * cards even if a field is accidentally non-empty.
+ */
+export type DashboardMode = 'admin' | 'manager' | 'self';
+
+export interface DashboardQuickAction {
+  key: string;
+  labelKey: string;
+  to: string;
+  tone: 'primary' | 'secondary' | 'tertiary';
+}
+
+export interface MyLeaveRequest {
+  id: number;
+  leaveType: string;
+  startDate: string;
+  endDate: string;
+  days: number;
+  status: string;
+}
+
+export interface MyPayslipSummary {
+  id: number;
+  /** `YYYY-MM`, derived from the payslip's payroll run. */
+  period: string;
+  /** Net pay in major currency units (EGP), not piastres. */
+  net: number;
+  status: string;
+}
+
 export interface DashboardDataset {
+  mode: DashboardMode;
   queues: DecisionQueueRow[];
   kpis: Kpi[];
   departments: DepartmentShare[];
@@ -130,6 +163,10 @@ export interface DashboardDataset {
   updatedAt: string;
   attendance: AttendanceSummary;
   upcoming: UpcomingItem[];
+  /** Personal-only fields (present only when `mode === 'self'`). */
+  quickActions?: DashboardQuickAction[];
+  myRequests?: MyLeaveRequest[];
+  myPayslip?: MyPayslipSummary | null;
 }
 
 export const leave: DecisionQueueRow = {
@@ -247,6 +284,46 @@ export const adminKpis: Kpi[] = [
   },
 ];
 
+export const selfKpis: Kpi[] = [
+  {
+    id: 'myLeaveBalance',
+    captionKey: 'dashboard.kpi.myLeaveBalance.caption',
+    value: 18,
+    deltaKey: 'dashboard.kpi.myLeaveBalance.delta',
+    up: true,
+    trend: [18],
+    path: pathById('leave'),
+  },
+  {
+    id: 'myPendingRequests',
+    captionKey: 'dashboard.kpi.myPendingRequests.caption',
+    value: 1,
+    deltaKey: 'dashboard.kpi.myPendingRequests.delta',
+    up: true,
+    trend: [1],
+    path: pathById('leave'),
+  },
+  {
+    id: 'myAttendanceToday',
+    captionKey: 'dashboard.kpi.myAttendanceToday.caption',
+    value: 1,
+    deltaKey: 'dashboard.kpi.myAttendanceToday.present',
+    up: true,
+    trend: [1],
+    path: pathById('attendance'),
+  },
+  {
+    id: 'myLastNetPay',
+    captionKey: 'dashboard.kpi.myLastNetPay.caption',
+    value: 0,
+    suffix: 'EGP',
+    deltaKey: 'dashboard.kpi.myLastNetPay.noPayslip',
+    up: true,
+    trend: [0],
+    path: '/my/payslips',
+  },
+];
+
 export const managerKpis: Kpi[] = [
   {
     id: 'teamMembers',
@@ -340,6 +417,7 @@ const nowIso = new Date().toISOString();
 export function createDataset(role: Role): DashboardDataset {
   if (role === 'department_manager') {
     return {
+      mode: 'manager',
       queues: [leaveFromTeam, performanceReview],
       kpis: managerKpis,
       departments: [],
@@ -355,7 +433,36 @@ export function createDataset(role: Role): DashboardDataset {
     };
   }
 
+  if (!['super_admin', 'hr_admin', 'hr_manager'].includes(role)) {
+    return {
+      mode: 'self',
+      queues: [],
+      kpis: selfKpis,
+      departments: [],
+      teamRoster: [],
+      updatedAt: nowIso,
+      attendance: {
+        today: 100,
+        weekTrend: [100],
+        weekLabels: sharedAttendance.weekLabels,
+        totalEmployees: 1,
+        present: 1,
+        absent: 0,
+        late: 0,
+      },
+      upcoming: [],
+      quickActions: [
+        { key: 'requestLeave', labelKey: 'dashboard.quickActions.requestLeaveSelf', to: pathById('leave'), tone: 'secondary' },
+        { key: 'myPayslips', labelKey: 'nav.myPayslips', to: '/my/payslips', tone: 'primary' },
+        { key: 'myAttendance', labelKey: 'dashboard.quickActions.myAttendance', to: pathById('attendance'), tone: 'tertiary' },
+      ],
+      myRequests: [],
+      myPayslip: null,
+    };
+  }
+
   return {
+    mode: 'admin',
     queues: [leave, payroll, contracts],
     kpis: adminKpis,
     departments: [
