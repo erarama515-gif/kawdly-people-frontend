@@ -154,11 +154,14 @@ const EXPECTED_COUNTS = {
   attendances: 0,
   payslips: 0,
   roles: 10,
-  // 875 = T5 baseline 869 + employee.sensitive_fields.view (W1.2e)
-  //        + payroll.payslip_item.view (W1.2g)
-  //        + document.generated_document.{view,create,finalize,revoke} (P0 fix).
+  // 874 = 817 matrix rows (RolePermissionSeeder)
+  //      + 9 standalone guards: users.manage, employee.sensitive_fields.view,
+  //        analytics.{view,dashboard.view,sensitive.view} and
+  //        document.generated_document.{view,create,finalize,revoke}
+  //      + 48 PermissionRegistry names the matrix never carries.
+  // PermissionSeeder creates those last 48, so DatabaseSeeder must call it.
   // Keep this in sync when the permission registry changes.
-  permissions: 875,
+  permissions: 874,
   companies: 1,
 };
 
