@@ -29,10 +29,13 @@ const CareerPage = lazy(() => import('@/features/career/components/CareerPage').
 const AnalyticsPage = lazy(() => import('@/features/analytics/components/AnalyticsPage').then(m => ({ default: m.AnalyticsPage })));
 const CopilotPage = lazy(() => import('@/features/copilot/components/CopilotPage').then(m => ({ default: m.CopilotPage })));
 const SettingsPage = lazy(() => import('@/features/settings/components/SettingsPage').then(m => ({ default: m.SettingsPage })));
+const MyPayslipsPage = lazy(() => import('@/features/my/components/MyPayslipsPage').then(m => ({ default: m.MyPayslipsPage })));
+const MyPayslipDetailPage = lazy(() => import('@/features/my/components/MyPayslipDetailPage').then(m => ({ default: m.MyPayslipDetailPage })));
 
 /* ------------------------------------------------------------------ */
 
 const PAGE_COMPONENTS: Record<string, React.ReactNode> = {
+  '/my/payslips': <MyPayslipsPage />,
   '/people/organization': <OrganizationPage />,
   '/people/employees': <EmployeesPage />,
   '/people/contracts': <ContractsPage />,
@@ -124,6 +127,20 @@ export function buildNavRoutes() {
           <PermissionGatedPage permission="employee.list.view">
             <EmployeeProfilePage />
           </PermissionGatedPage>
+        </PageWithBoundary>
+      }
+    />,
+  );
+
+  // My payslip detail — not a nav leaf; lives inside the shell, visible to any
+  // authenticated user (the list endpoint scopes rows to their own payslips).
+  navRoutes.push(
+    <Route
+      key="/my/payslips/:id"
+      path="/my/payslips/:id"
+      element={
+        <PageWithBoundary>
+          <MyPayslipDetailPage />
         </PageWithBoundary>
       }
     />,

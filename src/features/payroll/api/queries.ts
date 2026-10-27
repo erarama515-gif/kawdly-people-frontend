@@ -157,6 +157,21 @@ export function usePayslipList(params: PayslipListParams): PayslipListData {
   return { state, refetch };
 }
 
+export interface PayslipData {
+  state: QueryState<PayslipWire>;
+  refetch: () => void;
+}
+
+export function usePayslip(id: number | undefined, enabled = true): PayslipData {
+  const { state, refetch } = useQuery<PayslipWire>({
+    queryKey: payslipKeys.single(id ?? -1),
+    queryFn: (context) => payslipApi.get(context, id as number),
+    staleTime: 15_000,
+    enabled: enabled && id !== undefined,
+  });
+  return { state, refetch };
+}
+
 function isPayslipKey(key: readonly unknown[]): boolean {
   return key[0] === 'payslips';
 }

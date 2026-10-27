@@ -627,6 +627,18 @@ export const mockPayslipApi: PayslipApi = {
     return payslipListDecoder.decode(structuredClone(wire));
   },
 
+  async get(context, id) {
+    await simulate(context, READ_LATENCY_MS);
+    const row = findPayslipOrThrow(id);
+    const wire = payslipToWire(row) as PayslipWire & {
+      payslipItems?: PayslipItemWire[];
+    };
+    wire.payslipItems = payslipItemStore
+      .filter((item) => item.payslip_id === id)
+      .map(payslipItemToWire);
+    return payslipDecoder.decode(structuredClone(wire));
+  },
+
   async create(context, input) {
     await simulate(context, WRITE_LATENCY_MS);
 

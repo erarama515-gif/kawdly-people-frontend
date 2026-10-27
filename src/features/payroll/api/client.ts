@@ -145,6 +145,15 @@ export const httpPayslipApi: PayslipApi = {
     return requireData(data, 'GET /payslips');
   },
 
+  async get({ signal }, id) {
+    const { data } = await http(`${PAYSLIP_BASE}/${id}`, {
+      query: { include: `${PAYSLIP_LIST_INCLUDE},payslipItems` },
+      signal,
+      schema: payslipEnvelopeDecoder,
+    });
+    return requireData(data, `GET /payslips/${id}`).data;
+  },
+
   async create({ signal }, input: PayslipInput) {
     const { data } = await http(PAYSLIP_BASE, {
       method: 'POST',

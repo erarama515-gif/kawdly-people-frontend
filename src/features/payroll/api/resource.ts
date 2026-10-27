@@ -170,6 +170,7 @@ export type PayslipUpdateInput = Partial<PayslipInput>;
 
 export interface PayslipApi {
   list(context: FetchContext, params: PayslipListParams): Promise<PayslipListWire>;
+  get(context: FetchContext, id: number): Promise<PayslipWire>;
   create(context: FetchContext, input: PayslipInput): Promise<PayslipWire>;
   update(context: FetchContext, id: number, input: PayslipUpdateInput): Promise<PayslipWire>;
   remove(context: FetchContext, id: number): Promise<void>;
@@ -178,6 +179,7 @@ export interface PayslipApi {
 export const payslipKeys = {
   all: ['payslips'] as const satisfies QueryKey,
   list: (params: PayslipListParams) => ['payslips', 'list', params] as const satisfies QueryKey,
+  single: (id: number) => ['payslips', 'single', id] as const satisfies QueryKey,
 };
 
 // ─── EmployeeSalary ───────────────────────────────────────────────────────────

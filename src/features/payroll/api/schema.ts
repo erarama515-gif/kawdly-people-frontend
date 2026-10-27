@@ -69,6 +69,43 @@ export type PayrollRunListWire = ReturnType<typeof payrollRunListDecoder.decode>
 export const payrollRunEnvelopeDecoder = object({ data: payrollRunDecoder });
 export type PayrollRunEnvelopeWire = ReturnType<typeof payrollRunEnvelopeDecoder.decode>;
 
+// ─── PayslipItem ──────────────────────────────────────────────────────────────
+
+export const payslipItemTypeDecoder = literalUnion(['earning', 'deduction'] as const);
+
+/** Minimal salary-component ref embedded when `include=salaryComponent` is passed. */
+const salaryComponentRefDecoder = object({
+  id: num(),
+  name: str(),
+});
+
+export const payslipItemDecoder = object({
+  id: num(),
+  payslip_id: num(),
+  salary_component_id: optional(num()),
+  description: str(),
+  type: payslipItemTypeDecoder,
+  amount: num(),
+  is_taxable: optional(bool()),
+  sort_order: optional(num()),
+  created_at: optional(str()),
+  updated_at: optional(str()),
+  /** Eager-loaded via `include=salaryComponent`. */
+  salaryComponent: optional(salaryComponentRefDecoder),
+});
+
+export type PayslipItemWire = ReturnType<typeof payslipItemDecoder.decode>;
+
+export const payslipItemListDecoder = object({
+  data: array(payslipItemDecoder),
+  meta: pageMetaDecoder,
+});
+
+export type PayslipItemListWire = ReturnType<typeof payslipItemListDecoder.decode>;
+
+export const payslipItemEnvelopeDecoder = object({ data: payslipItemDecoder });
+export type PayslipItemEnvelopeWire = ReturnType<typeof payslipItemEnvelopeDecoder.decode>;
+
 // ─── Payslip ──────────────────────────────────────────────────────────────────
 
 export const payslipStatusDecoder = literalUnion(['draft', 'finalized', 'paid'] as const);
@@ -107,6 +144,8 @@ export const payslipDecoder = object({
   updated_at: optional(str()),
   /** Eager-loaded via `include=employee`. */
   employee: optional(employeeRefDecoder),
+  /** Eager-loaded via `include=payslipItems` on the show endpoint. */
+  payslipItems: optional(array(payslipItemDecoder)),
 });
 
 export type PayslipWire = ReturnType<typeof payslipDecoder.decode>;
@@ -160,40 +199,3 @@ export type EmployeeSalaryListWire = ReturnType<typeof employeeSalaryListDecoder
 
 export const employeeSalaryEnvelopeDecoder = object({ data: employeeSalaryDecoder });
 export type EmployeeSalaryEnvelopeWire = ReturnType<typeof employeeSalaryEnvelopeDecoder.decode>;
-
-// ─── PayslipItem ──────────────────────────────────────────────────────────────
-
-export const payslipItemTypeDecoder = literalUnion(['earning', 'deduction'] as const);
-
-/** Minimal salary-component ref embedded when `include=salaryComponent` is passed. */
-const salaryComponentRefDecoder = object({
-  id: num(),
-  name: str(),
-});
-
-export const payslipItemDecoder = object({
-  id: num(),
-  payslip_id: num(),
-  salary_component_id: optional(num()),
-  description: str(),
-  type: payslipItemTypeDecoder,
-  amount: num(),
-  is_taxable: optional(bool()),
-  sort_order: optional(num()),
-  created_at: optional(str()),
-  updated_at: optional(str()),
-  /** Eager-loaded via `include=salaryComponent`. */
-  salaryComponent: optional(salaryComponentRefDecoder),
-});
-
-export type PayslipItemWire = ReturnType<typeof payslipItemDecoder.decode>;
-
-export const payslipItemListDecoder = object({
-  data: array(payslipItemDecoder),
-  meta: pageMetaDecoder,
-});
-
-export type PayslipItemListWire = ReturnType<typeof payslipItemListDecoder.decode>;
-
-export const payslipItemEnvelopeDecoder = object({ data: payslipItemDecoder });
-export type PayslipItemEnvelopeWire = ReturnType<typeof payslipItemEnvelopeDecoder.decode>;

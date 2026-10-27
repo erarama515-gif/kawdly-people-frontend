@@ -10,6 +10,7 @@ import {
   Handshake,
   LayoutDashboard,
   Network,
+  Receipt,
   Settings,
   Sparkles,
   Target,
@@ -49,6 +50,7 @@ export interface NavigationConfig {
 export const navigation: NavigationConfig = {
   primary: [
     { id: 'dashboard', path: '/', icon: LayoutDashboard },
+    { id: 'my-payslips', path: '/my/payslips', icon: Receipt },
   ],
   groups: [
     {
