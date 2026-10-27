@@ -128,7 +128,8 @@
     "career": "Career Path",
     "analytics": "Analytics",
     "copilot": "AI Copilot",
-    "myPayslips": "My payslips"
+    "myPayslips": "My payslips",
+    "my-payslips": "My payslips"
   },
   "page": {
     "dashboard": {
