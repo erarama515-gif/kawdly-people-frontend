@@ -709,7 +709,7 @@ export function PayrollPage() {
           <p className="px-5 py-6 text-center text-body-sm text-ink-muted">{t('payroll.payslip.empty')}</p>
         ) : null}
 
-        {payslips.map((ps) => {
+        {selectedRunId ? payslips.map((ps) => {
           const emp = ps.employee;
           const firstName = emp?.first_name ?? '';
           const lastName  = emp?.last_name ?? '';
@@ -741,7 +741,7 @@ export function PayrollPage() {
               />
             </div>
           );
-        })}
+        }) : null}
       </Card>
 
       {/* Mobile payslip cards */}
