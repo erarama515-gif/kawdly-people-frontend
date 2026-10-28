@@ -2539,7 +2539,37 @@
       "newPassword": "New Password",
       "confirmPassword": "Confirm Password",
       "passwordResetSuccess": "Password has been reset successfully.",
-      "noUsers": "No users found."
+      "noUsers": "No users found.",
+      "subtitle": "Manage team members and permissions",
+      "empty": "No users found",
+      "selectRole": "Select role",
+      "addDialog": {
+        "title": "Add User",
+        "description": "Create a new user account",
+        "submit": "Add User"
+      },
+      "editDialog": {
+        "title": "Edit User",
+        "description": "Update user details",
+        "submit": "Save Changes"
+      },
+      "deactivateDialog": {
+        "title": "Deactivate User",
+        "submit": "Deactivate"
+      },
+      "resetDialog": {
+        "title": "Reset Password",
+        "submit": "Reset"
+      },
+      "fields": {
+        "name": "Name",
+        "email": "Email",
+        "role": "Role",
+        "status": "Status",
+        "password": "Password",
+        "newPassword": "New Password",
+        "confirmPassword": "Confirm Password"
+      }
     },
     "roles": {
       "title": "Roles & Permissions",
